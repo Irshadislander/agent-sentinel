@@ -25,3 +25,10 @@ build/
 # local/private data
 private/
 runs/
+private/
+runs/
+dist/
+build/
+*.egg-info/
+.DS_Store
+.venv/
