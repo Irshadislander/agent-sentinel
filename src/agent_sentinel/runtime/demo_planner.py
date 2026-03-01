@@ -16,7 +16,9 @@ _FIXED_STEPS: tuple[dict[str, Any], ...] = (
 
 class DemoPlanner:
     def build_task(self, *, policy_path: str | None = None) -> TaskSpec:
-        steps = [{"tool_name": step["tool_name"], "args": dict(step["args"])} for step in _FIXED_STEPS]
+        steps = [
+            {"tool_name": step["tool_name"], "args": dict(step["args"])} for step in _FIXED_STEPS
+        ]
         return TaskSpec(name="demo_v1", steps=steps, policy_path=policy_path)
 
     def plan(self, task: TaskSpec) -> list[tuple[str, dict[str, Any]]]:

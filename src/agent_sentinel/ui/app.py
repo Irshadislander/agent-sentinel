@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
 import json
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -47,7 +47,7 @@ def _latest_runs_rows(ledger_paths: list[Path]) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     for path in ledger_paths:
         events = _load_events(path)
-        modified = datetime.fromtimestamp(path.stat().st_mtime, tz=timezone.utc).isoformat()
+        modified = datetime.fromtimestamp(path.stat().st_mtime, tz=UTC).isoformat()
         root_hash = events[-1].get("entry_hash", "") if events else ""
         rows.append(
             {

@@ -13,7 +13,9 @@ def _apply_params(url: str, params: dict[str, Any] | None) -> str:
         return url
     parsed = urlparse(url)
     query = urlencode(params, doseq=True)
-    return urlunparse((parsed.scheme, parsed.netloc, parsed.path, parsed.params, query, parsed.fragment))
+    return urlunparse(
+        (parsed.scheme, parsed.netloc, parsed.path, parsed.params, query, parsed.fragment)
+    )
 
 
 def _header_subset(headers: Any) -> dict[str, str]:

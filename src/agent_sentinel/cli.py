@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 import argparse
-from collections.abc import Callable
-from datetime import datetime, timezone
 import json
+from collections.abc import Callable
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -99,7 +99,7 @@ def load_policy(path: str) -> dict[str, Any]:
 
 
 def _default_run_id() -> str:
-    timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
+    timestamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%S%fZ")
     return f"run_{timestamp}"
 
 
@@ -166,7 +166,11 @@ def run_demo(policy_path: str = DEFAULT_POLICY_PATH) -> dict[str, Any]:
             else:
                 allowed += 1
                 action_results.append(
-                    {"tool_name": tool_name, "status": "allowed", "result_keys": sorted(result.keys())}
+                    {
+                        "tool_name": tool_name,
+                        "status": "allowed",
+                        "result_keys": sorted(result.keys()),
+                    }
                 )
         except PermissionError as exc:
             denied += 1
@@ -174,7 +178,11 @@ def run_demo(policy_path: str = DEFAULT_POLICY_PATH) -> dict[str, Any]:
         except Exception as exc:
             failures += 1
             action_results.append(
-                {"tool_name": tool_name, "status": "failed", "reason": f"{type(exc).__name__}: {exc}"}
+                {
+                    "tool_name": tool_name,
+                    "status": "failed",
+                    "reason": f"{type(exc).__name__}: {exc}",
+                }
             )
 
     verified, verify_reason = recorder.verify()

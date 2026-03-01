@@ -20,6 +20,9 @@ dev = [
     "mypy>=1.10",
     "types-requests",
 ]
+ui = [
+    "streamlit>=1.30",
+]
 
 [tool.setuptools]
 package-dir = {"" = "src"}

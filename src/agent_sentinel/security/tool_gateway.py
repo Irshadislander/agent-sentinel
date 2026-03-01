@@ -3,18 +3,18 @@ from __future__ import annotations
 import copy
 import hashlib
 import json
-from pathlib import Path
 from collections.abc import Callable
+from pathlib import Path
 from typing import Any
 
 from agent_sentinel.forensics.ledger import FlightRecorder
+from agent_sentinel.security import validators
 from agent_sentinel.security.capabilities import (
-    CapabilitySet,
     FS_READ_PRIVATE,
     NET_HTTP_GET,
     NET_HTTP_POST,
+    CapabilitySet,
 )
-from agent_sentinel.security import validators
 from agent_sentinel.security.policy_engine import (
     ALLOW,
     ALLOW_WITH_REDACTION,
@@ -104,7 +104,9 @@ class ToolGateway:
 
         normalized_tool = tool_name.strip().lower()
         if normalized_tool in _HTTP_REQUEST_TOOL_NAMES:
-            decision = type("InlineDecision", (), {"verdict": ALLOW, "reason": "ok", "redactions": None})()
+            decision = type(
+                "InlineDecision", (), {"verdict": ALLOW, "reason": "ok", "redactions": None}
+            )()
         else:
             decision = self._policy_engine.decide(
                 tool_name=tool_name,
@@ -257,7 +259,9 @@ class ToolGateway:
             "redacted_args": redacted_args,
         }
 
-    def _validate_tool_call(self, *, tool_name: str, args: dict[str, Any]) -> validators.ValidationResult:
+    def _validate_tool_call(
+        self, *, tool_name: str, args: dict[str, Any]
+    ) -> validators.ValidationResult:
         normalized = tool_name.strip().lower()
         base_dir = Path(self._policy.get("base_dir", "."))
         capabilities_map = self._policy.get("capabilities", {})
@@ -273,7 +277,9 @@ class ToolGateway:
             method = str(args.get("method", "GET")).upper()
             url = str(args.get("url", ""))
             if method == "GET" and not self._caps.has(NET_HTTP_GET):
-                return validators.ValidationResult(False, f"GET denied: missing capability {NET_HTTP_GET}")
+                return validators.ValidationResult(
+                    False, f"GET denied: missing capability {NET_HTTP_GET}"
+                )
             allowlist = self._policy.get("allowlist_domains", [])
             if not isinstance(allowlist, list):
                 allowlist = []

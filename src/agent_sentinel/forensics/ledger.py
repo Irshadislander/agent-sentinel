@@ -1,8 +1,8 @@
-from dataclasses import asdict, dataclass
-from datetime import datetime, timezone
 import hashlib
 import json
 import os
+from dataclasses import asdict, dataclass
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -45,7 +45,7 @@ def _sha256_hex(value: str) -> str:
 
 
 def _utc_iso8601() -> str:
-    return datetime.now(timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "Z")
+    return datetime.now(UTC).isoformat(timespec="milliseconds").replace("+00:00", "Z")
 
 
 def _should_redact(key: str) -> bool:

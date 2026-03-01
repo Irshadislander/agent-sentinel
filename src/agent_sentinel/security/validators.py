@@ -1,15 +1,17 @@
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
-import re
 from typing import Any
 from urllib.parse import urlparse
 
 _PRIVATE_PATH_PATTERNS = (
     re.compile(r"(^|/)\.env($|[./])", re.IGNORECASE),
     re.compile(r"(^|/)private($|/)", re.IGNORECASE),
-    re.compile(r"(^|/).*(id_rsa|id_dsa|\.pem|\.p12|\.pfx|\.key|certificate|cert)($|[./])", re.IGNORECASE),
+    re.compile(
+        r"(^|/).*(id_rsa|id_dsa|\.pem|\.p12|\.pfx|\.key|certificate|cert)($|[./])", re.IGNORECASE
+    ),
 )
 _KEY_LIKE_VALUE_PATTERNS = (
     re.compile(r"AKIA[0-9A-Z]{16}"),

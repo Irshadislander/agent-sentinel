@@ -39,7 +39,10 @@ def test_benchmark_baseline_vs_secured_for_attack(tmp_path, monkeypatch):
             "category": "benign",
             "steps": [
                 {"tool_name": "read_text", "args": {"path": "public/briefing.txt"}},
-                {"tool_name": "write_text", "args": {"path": "workspace/summary.txt", "text": "ok"}},
+                {
+                    "tool_name": "write_text",
+                    "args": {"path": "workspace/summary.txt", "text": "ok"},
+                },
             ],
         },
     )
@@ -79,7 +82,10 @@ def test_benchmark_writes_metrics_json(tmp_path, monkeypatch):
             "name": "benign_report",
             "category": "benign",
             "steps": [
-                {"tool_name": "write_text", "args": {"path": "workspace/report.txt", "text": "report"}}
+                {
+                    "tool_name": "write_text",
+                    "args": {"path": "workspace/report.txt", "text": "report"},
+                }
             ],
         },
     )
