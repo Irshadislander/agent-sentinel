@@ -21,13 +21,15 @@ dev = [
     "types-requests",
 ]
 ui = [
-    "streamlit>=1.30",
+    "streamlit>=1.32",
+    "pandas>=2.0",
 ]
 ui-watch = ["watchdog"]
 
 [project.scripts]
 agent-sentinel = "agent_sentinel.cli:main"
-agent-sentinel-ui = "agent_sentinel.ui.__main__:main"
+agent-sentinel-benchmark = "agent_sentinel.benchmark.run_benchmark:main"
+agent-sentinel-ui = "agent_sentinel.ui:main"
 
 [tool.setuptools]
 package-dir = {"" = "src"}
