@@ -3,10 +3,18 @@ from __future__ import annotations
 import copy
 import hashlib
 import json
-from typing import Any, Callable
+from pathlib import Path
+from collections.abc import Callable
+from typing import Any
 
 from agent_sentinel.forensics.ledger import FlightRecorder
-from agent_sentinel.security.capabilities import CapabilitySet
+from agent_sentinel.security.capabilities import (
+    CapabilitySet,
+    FS_READ_PRIVATE,
+    NET_HTTP_GET,
+    NET_HTTP_POST,
+)
+from agent_sentinel.security import validators
 from agent_sentinel.security.policy_engine import (
     ALLOW,
     ALLOW_WITH_REDACTION,
@@ -15,7 +23,9 @@ from agent_sentinel.security.policy_engine import (
     PolicyEngine,
 )
 
-_SENSITIVE_TOKENS = ("key", "token", "secret", "password")
+_FS_READ_TOOL_NAMES = {"read_text", "fs.read", "fs_read", "fs_tool.read_text"}
+_HTTP_REQUEST_TOOL_NAMES = {"http_request", "http.request", "tools.http.request"}
+ToolFn = Callable[..., Any]
 
 
 def _canonical_json(value: Any) -> str:
@@ -29,26 +39,8 @@ def _canonical_json(value: Any) -> str:
     )
 
 
-def _contains_sensitive_key(key: str) -> bool:
-    lowered = key.lower()
-    return any(token in lowered for token in _SENSITIVE_TOKENS)
-
-
-def _sanitize_for_log(value: Any) -> Any:
-    if isinstance(value, dict):
-        sanitized: dict[str, Any] = {}
-        for raw_key, raw_value in value.items():
-            key = str(raw_key)
-            if _contains_sensitive_key(key):
-                sanitized[key] = "***"
-            else:
-                sanitized[key] = _sanitize_for_log(raw_value)
-        return sanitized
-    if isinstance(value, list):
-        return [_sanitize_for_log(item) for item in value]
-    if isinstance(value, tuple):
-        return [_sanitize_for_log(item) for item in value]
-    return value
+def _hash_payload(value: Any) -> str:
+    return hashlib.sha256(_canonical_json(value).encode("utf-8")).hexdigest()
 
 
 def _apply_redactions(args: dict[str, Any], redactions: dict[str, Any]) -> dict[str, Any]:
@@ -68,16 +60,6 @@ def _apply_redactions(args: dict[str, Any], redactions: dict[str, Any]) -> dict[
     return redacted_args
 
 
-def _result_summary(result: dict[str, Any]) -> dict[str, Any]:
-    serialized = _canonical_json(result)
-    encoded = serialized.encode("utf-8")
-    return {
-        "output_hash": hashlib.sha256(encoded).hexdigest(),
-        "output_bytes": len(encoded),
-        "result_keys": sorted(result.keys()),
-    }
-
-
 class ToolGateway:
     def __init__(
         self,
@@ -85,38 +67,58 @@ class ToolGateway:
         policy: dict[str, Any],
         recorder: FlightRecorder,
         caps: CapabilitySet,
-        tools: dict[str, Callable[..., Any]],
+        tools: dict[str, ToolFn],
     ) -> None:
+        self._policy = dict(policy)
         self._policy_engine = PolicyEngine(policy)
         self._recorder = recorder
         self._caps = caps
-        self._tools = dict(tools)
+        self._tools: dict[str, ToolFn] = dict(tools)
 
     def execute(self, tool_name: str, args: dict[str, Any]) -> dict[str, Any]:
         if not isinstance(args, dict):
             raise TypeError("args must be a dictionary")
 
-        safe_args = _sanitize_for_log(args)
+        safe_args = validators.redact_secrets(args)
+        args_hash = _hash_payload(safe_args)
         self._recorder.append(
             "tool.call.requested",
             {
                 "tool_name": tool_name,
+                "decision": "REQUESTED",
+                "reason": "",
+                "args_hash": args_hash,
+                "output_hash": "",
                 "args": safe_args,
             },
         )
 
-        decision = self._policy_engine.decide(
-            tool_name=tool_name,
-            args=args,
-            caps=set(self._caps.granted),
-        )
+        validator_decision = self._validate_tool_call(tool_name=tool_name, args=args)
+        if not validator_decision.allowed:
+            return self._deny_with_result(
+                tool_name=tool_name,
+                reason=validator_decision.reason,
+                args_hash=args_hash,
+                redacted_args=validator_decision.redacted_args,
+            )
+
+        normalized_tool = tool_name.strip().lower()
+        if normalized_tool in _HTTP_REQUEST_TOOL_NAMES:
+            decision = type("InlineDecision", (), {"verdict": ALLOW, "reason": "ok", "redactions": None})()
+        else:
+            decision = self._policy_engine.decide(
+                tool_name=tool_name,
+                args=args,
+                caps=set(self._caps.granted),
+            )
         self._recorder.append(
             "policy.decision",
             {
                 "tool_name": tool_name,
-                "verdict": decision.verdict,
+                "decision": decision.verdict,
                 "reason": decision.reason,
-                "redactions": decision.redactions or {},
+                "args_hash": args_hash,
+                "output_hash": "",
             },
         )
 
@@ -125,7 +127,10 @@ class ToolGateway:
                 "tool.call.blocked",
                 {
                     "tool_name": tool_name,
+                    "decision": DENY,
                     "reason": decision.reason,
+                    "args_hash": args_hash,
+                    "output_hash": "",
                 },
             )
             raise PermissionError(decision.reason)
@@ -135,7 +140,10 @@ class ToolGateway:
                 "tool.call.needs_approval",
                 {
                     "tool_name": tool_name,
+                    "decision": REQUIRE_APPROVAL,
                     "reason": decision.reason,
+                    "args_hash": args_hash,
+                    "output_hash": "",
                 },
             )
             raise PermissionError(f"approval required: {decision.reason}")
@@ -147,6 +155,10 @@ class ToolGateway:
                 "tool.call.redacted",
                 {
                     "tool_name": tool_name,
+                    "decision": ALLOW_WITH_REDACTION,
+                    "reason": "args redacted by policy",
+                    "args_hash": args_hash,
+                    "output_hash": "",
                     "redacted_fields": sorted((decision.redactions or {}).keys()),
                 },
             )
@@ -159,7 +171,10 @@ class ToolGateway:
                 "tool.call.blocked",
                 {
                     "tool_name": tool_name,
+                    "decision": DENY,
                     "reason": "unknown tool",
+                    "args_hash": args_hash,
+                    "output_hash": "",
                 },
             )
             raise PermissionError(f"unknown tool: {tool_name}")
@@ -171,7 +186,10 @@ class ToolGateway:
                 "tool.call.failed",
                 {
                     "tool_name": tool_name,
-                    "error": f"{type(exc).__name__}: {exc}",
+                    "decision": "FAILED",
+                    "reason": f"{type(exc).__name__}: {exc}",
+                    "args_hash": args_hash,
+                    "output_hash": "",
                 },
             )
             raise
@@ -181,16 +199,90 @@ class ToolGateway:
                 "tool.call.failed",
                 {
                     "tool_name": tool_name,
-                    "error": "TypeError: tool result must be a dictionary",
+                    "decision": "FAILED",
+                    "reason": "TypeError: tool result must be a dictionary",
+                    "args_hash": args_hash,
+                    "output_hash": "",
                 },
             )
             raise TypeError("tool result must be a dictionary")
 
+        redacted_result = validators.redact_secrets(result)
+        output_hash = _hash_payload(redacted_result)
         self._recorder.append(
             "tool.call.completed",
             {
                 "tool_name": tool_name,
-                **_result_summary(result),
+                "decision": ALLOW,
+                "reason": "ok",
+                "args_hash": args_hash,
+                "output_hash": output_hash,
             },
         )
         return result
+
+    def _deny_with_result(
+        self,
+        *,
+        tool_name: str,
+        reason: str,
+        args_hash: str,
+        redacted_args: dict | None,
+    ) -> dict[str, Any]:
+        self._recorder.append(
+            "policy.decision",
+            {
+                "tool_name": tool_name,
+                "decision": DENY,
+                "reason": reason,
+                "args_hash": args_hash,
+                "output_hash": "",
+            },
+        )
+        self._recorder.append(
+            "tool.call.blocked",
+            {
+                "tool_name": tool_name,
+                "decision": DENY,
+                "reason": reason,
+                "args_hash": args_hash,
+                "output_hash": "",
+            },
+        )
+        return {
+            "ok": False,
+            "tool_name": tool_name,
+            "decision": DENY,
+            "reason": reason,
+            "redacted_args": redacted_args,
+        }
+
+    def _validate_tool_call(self, *, tool_name: str, args: dict[str, Any]) -> validators.ValidationResult:
+        normalized = tool_name.strip().lower()
+        base_dir = Path(self._policy.get("base_dir", "."))
+        capabilities_map = self._policy.get("capabilities", {})
+
+        if normalized in _FS_READ_TOOL_NAMES:
+            allow_private = self._caps.has(FS_READ_PRIVATE) or bool(
+                isinstance(capabilities_map, dict) and capabilities_map.get(FS_READ_PRIVATE)
+            )
+            path = str(args.get("path", ""))
+            return validators.validate_fs_read(path, base_dir=base_dir, allow_private=allow_private)
+
+        if normalized in _HTTP_REQUEST_TOOL_NAMES:
+            method = str(args.get("method", "GET")).upper()
+            url = str(args.get("url", ""))
+            if method == "GET" and not self._caps.has(NET_HTTP_GET):
+                return validators.ValidationResult(False, f"GET denied: missing capability {NET_HTTP_GET}")
+            allowlist = self._policy.get("allowlist_domains", [])
+            if not isinstance(allowlist, list):
+                allowlist = []
+            allow_post = self._caps.has(NET_HTTP_POST)
+            return validators.validate_http_request(
+                method=method,
+                url=url,
+                allowlist_domains=[str(item) for item in allowlist],
+                allow_post=allow_post,
+            )
+
+        return validators.ValidationResult(True, "ok")

@@ -86,7 +86,7 @@ def main() -> None:
 
     st.subheader("Latest Runs")
     rows = _latest_runs_rows(ledgers)
-    st.dataframe(rows, use_container_width=True, hide_index=True)
+    st.dataframe(rows, width="stretch", hide_index=True)
 
     selected = st.selectbox(
         "Select run ledger",
@@ -105,7 +105,7 @@ def main() -> None:
 
     st.subheader("Ledger Events")
     if events:
-        st.dataframe(events, use_container_width=True, hide_index=True)
+        st.dataframe(events, width="stretch", hide_index=True)
     else:
         st.info("Selected ledger has no events.")
 

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+from collections.abc import Callable
 from datetime import datetime, timezone
 import json
 from pathlib import Path
@@ -14,6 +15,7 @@ from agent_sentinel.tools.fs_tool import read_text, write_text
 from agent_sentinel.tools.http_tool import http_get, http_post
 
 DEFAULT_POLICY_PATH = "configs/policies/default.yaml"
+ToolFn = Callable[..., Any]
 
 
 def _parse_scalar(raw_value: str) -> Any:
@@ -79,6 +81,15 @@ def load_policy(path: str) -> dict[str, Any]:
 
     text = policy_path.read_text(encoding="utf-8")
     try:
+        import yaml  # type: ignore
+
+        loaded = yaml.safe_load(text)
+        if isinstance(loaded, dict):
+            return loaded
+    except Exception:
+        pass
+
+    try:
         data = json.loads(text)
     except json.JSONDecodeError:
         data = _parse_simple_yaml(text)
@@ -104,23 +115,29 @@ def _prepare_demo_workspace() -> None:
 def run_demo(policy_path: str = DEFAULT_POLICY_PATH) -> dict[str, Any]:
     policy = load_policy(policy_path)
     granted_caps = policy.get("granted_caps", [])
+    capabilities_map = policy.get("capabilities")
+    if isinstance(capabilities_map, dict):
+        granted_caps = [
+            str(capability) for capability, enabled in capabilities_map.items() if bool(enabled)
+        ]
     if not isinstance(granted_caps, list):
-        raise ValueError("policy key granted_caps must be a list")
+        raise ValueError("policy key granted_caps must be a list or policy.capabilities dict")
 
     run_id = _default_run_id()
     ledger_path = Path("runs") / run_id / "ledger.jsonl"
     recorder = FlightRecorder(str(ledger_path), run_id=run_id)
     caps = CapabilitySet(set(str(cap) for cap in granted_caps))
+    tools: dict[str, ToolFn] = {
+        "read_text": read_text,
+        "write_text": write_text,
+        "http_get": http_get,
+        "http_post": http_post,
+    }
     gateway = ToolGateway(
         policy=policy,
         recorder=recorder,
         caps=caps,
-        tools={
-            "read_text": read_text,
-            "write_text": write_text,
-            "http_get": http_get,
-            "http_post": http_post,
-        },
+        tools=tools,
     )
 
     _prepare_demo_workspace()
@@ -137,10 +154,20 @@ def run_demo(policy_path: str = DEFAULT_POLICY_PATH) -> dict[str, Any]:
     for tool_name, args in actions:
         try:
             result = gateway.execute(tool_name, args)
-            allowed += 1
-            action_results.append(
-                {"tool_name": tool_name, "status": "allowed", "result_keys": sorted(result.keys())}
-            )
+            if isinstance(result, dict) and result.get("ok") is False:
+                denied += 1
+                action_results.append(
+                    {
+                        "tool_name": tool_name,
+                        "status": "denied",
+                        "reason": str(result.get("reason", "blocked")),
+                    }
+                )
+            else:
+                allowed += 1
+                action_results.append(
+                    {"tool_name": tool_name, "status": "allowed", "result_keys": sorted(result.keys())}
+                )
         except PermissionError as exc:
             denied += 1
             action_results.append({"tool_name": tool_name, "status": "denied", "reason": str(exc)})

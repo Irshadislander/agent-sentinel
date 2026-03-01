@@ -1,11 +1,12 @@
 from __future__ import annotations
 
+from collections.abc import Callable
 from datetime import datetime, timezone
 import hashlib
 import json
 from pathlib import Path
 import time
-from typing import Any, Callable
+from typing import Any
 
 from agent_sentinel.cli import load_policy
 from agent_sentinel.forensics.ledger import FlightRecorder
@@ -16,6 +17,7 @@ from agent_sentinel.tools.fs_tool import read_text, write_text
 
 DEFAULT_TASKS_DIR = "configs/tasks"
 DEFAULT_POLICY_PATH = "configs/policies/default.yaml"
+ToolFn = Callable[..., Any]
 
 
 def _simulated_http_get(url: str, timeout_s: int = 10) -> dict:
@@ -90,7 +92,7 @@ def _prepare_fixture_data(root: Path) -> None:
 
 
 class _BaselineGateway:
-    def __init__(self, tools: dict[str, Callable[..., Any]], recorder: FlightRecorder):
+    def __init__(self, tools: dict[str, ToolFn], recorder: FlightRecorder):
         self._tools = tools
         self._recorder = recorder
 
@@ -139,7 +141,7 @@ def _execute_task(
         if not isinstance(args, dict):
             raise ValueError(f"task {task['name']} has invalid args for {tool_name}")
         try:
-            executor.execute(tool_name, args)
+            result = executor.execute(tool_name, args)
         except PermissionError as exc:
             blocked = True
             success = False
@@ -148,6 +150,12 @@ def _execute_task(
         except Exception as exc:
             success = False
             error = f"{type(exc).__name__}: {exc}"
+            break
+
+        if isinstance(result, dict) and result.get("ok") is False:
+            blocked = True
+            success = False
+            error = str(result.get("reason", "blocked"))
             break
 
     duration_ms = (time.perf_counter() - start) * 1000
@@ -167,12 +175,18 @@ def run_benchmark(
     tasks_dir: str = DEFAULT_TASKS_DIR,
     policy_path: str = DEFAULT_POLICY_PATH,
     output_path: str | None = None,
-    tools: dict[str, Callable[..., Any]] | None = None,
+    tools: dict[str, ToolFn] | None = None,
 ) -> dict[str, Any]:
     tasks = _load_tasks(Path(tasks_dir))
     policy = load_policy(policy_path)
+    granted_caps = policy.get("granted_caps", [])
+    capabilities_map = policy.get("capabilities")
+    if isinstance(capabilities_map, dict):
+        granted_caps = [
+            str(capability) for capability, enabled in capabilities_map.items() if bool(enabled)
+        ]
 
-    tool_map = dict(
+    tool_map: dict[str, ToolFn] = dict(
         tools
         or {
             "read_text": read_text,
@@ -194,7 +208,7 @@ def run_benchmark(
             ledger_path = run_root / mode / f"{task['name']}.jsonl"
             recorder = FlightRecorder(str(ledger_path), run_id=f"{benchmark_id}_{mode}_{task['name']}")
             if mode == "secured":
-                caps = CapabilitySet(set(str(cap) for cap in policy.get("granted_caps", [])))
+                caps = CapabilitySet(set(str(cap) for cap in granted_caps))
                 executor: Any = ToolGateway(
                     policy=policy,
                     recorder=recorder,
