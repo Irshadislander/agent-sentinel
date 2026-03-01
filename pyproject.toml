@@ -4,10 +4,10 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "agent-sentinel"
-version = "0.0.0"
+version = "0.1.0"
 description = "Zero-trust runtime security layer for tool-using AI agents."
 authors = [{name="Irshad"}]
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 dependencies = [
     "requests>=2.31",
     "PyYAML>=6.0",
@@ -20,6 +20,15 @@ dev = [
     "mypy>=1.10",
     "types-requests",
 ]
+ui = [
+    "streamlit>=1.30",
+    "watchdog; platform_system=='Darwin'",
+]
+
+[project.scripts]
+agent-sentinel-benchmark = "agent_sentinel.benchmark.run_benchmark:main"
+agent-sentinel-ui = "agent_sentinel.ui.app:main"
+agent-sentinel = "agent_sentinel.cli:main"
 
 [tool.setuptools]
 package-dir = {"" = "src"}

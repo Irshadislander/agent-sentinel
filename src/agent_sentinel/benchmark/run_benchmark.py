@@ -3,7 +3,7 @@ from __future__ import annotations
 import argparse
 from collections.abc import Callable
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -147,7 +147,7 @@ def run(policy_path: str) -> list[RunResult]:
     cases = load_attack_suite()
     policy = _load_yaml(policy_path)
     caps = _caps_from_policy(policy)
-    run_id = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
+    run_id = datetime.now(UTC).strftime("%Y%m%dT%H%M%S%fZ")
     run_root = Path("runs") / "benchmark_cli" / run_id
 
     tools: dict[str, ToolFn] = {
@@ -156,7 +156,9 @@ def run(policy_path: str) -> list[RunResult]:
     }
     secured_gateway = ToolGateway(
         policy=policy,
-        recorder=FlightRecorder(str(run_root / "secured" / "ledger.jsonl"), run_id=f"{run_id}_secured"),
+        recorder=FlightRecorder(
+            str(run_root / "secured" / "ledger.jsonl"), run_id=f"{run_id}_secured"
+        ),
         caps=caps,
         tools=tools,
     )
@@ -192,8 +194,7 @@ def _print_compact_table(results: list[RunResult]) -> None:
     for mode in ("baseline", "secured"):
         task_success, attack_success, blocked_correctly = _summarize(results, mode)
         print(
-            f"{mode:<9} {task_success:>12.2f}  {attack_success:>14.2f}  "
-            f"{blocked_correctly:>17.2f}"
+            f"{mode:<9} {task_success:>12.2f}  {attack_success:>14.2f}  {blocked_correctly:>17.2f}"
         )
 
 

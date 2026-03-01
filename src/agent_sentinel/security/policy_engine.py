@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
 import ipaddress
+from dataclasses import dataclass
 from pathlib import PurePosixPath
 from typing import Any
 from urllib.parse import urlparse
@@ -205,10 +205,7 @@ class PolicyEngine:
                     redactions[path] = "***"
                 else:
                     redactions.update(PolicyEngine._collect_redactions(nested, path))
-        elif isinstance(value, list):
-            for item in value:
-                redactions.update(PolicyEngine._collect_redactions(item, prefix))
-        elif isinstance(value, tuple):
+        elif isinstance(value, list) or isinstance(value, tuple):
             for item in value:
                 redactions.update(PolicyEngine._collect_redactions(item, prefix))
         return redactions

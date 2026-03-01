@@ -1,16 +1,16 @@
 from __future__ import annotations
 
-from collections.abc import Callable
-from datetime import datetime, timezone
 import hashlib
 import json
-from pathlib import Path
 import time
+from collections.abc import Callable
+from datetime import UTC, datetime
+from pathlib import Path
 from typing import Any
 
+from agent_sentinel.benchmark.metrics import TaskResult, compute_metrics, serialize_results
 from agent_sentinel.cli import load_policy
 from agent_sentinel.forensics.ledger import FlightRecorder
-from agent_sentinel.benchmark.metrics import TaskResult, compute_metrics, serialize_results
 from agent_sentinel.security.capabilities import CapabilitySet
 from agent_sentinel.security.tool_gateway import ToolGateway
 from agent_sentinel.tools.fs_tool import read_text, write_text
@@ -196,7 +196,7 @@ def run_benchmark(
         }
     )
 
-    benchmark_id = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
+    benchmark_id = datetime.now(UTC).strftime("%Y%m%dT%H%M%S%fZ")
     run_root = Path("runs") / "benchmark" / benchmark_id
     run_root.mkdir(parents=True, exist_ok=True)
     _prepare_fixture_data(Path("."))
@@ -206,7 +206,9 @@ def run_benchmark(
     for mode in ("baseline", "secured"):
         for task in tasks:
             ledger_path = run_root / mode / f"{task['name']}.jsonl"
-            recorder = FlightRecorder(str(ledger_path), run_id=f"{benchmark_id}_{mode}_{task['name']}")
+            recorder = FlightRecorder(
+                str(ledger_path), run_id=f"{benchmark_id}_{mode}_{task['name']}"
+            )
             if mode == "secured":
                 caps = CapabilitySet(set(str(cap) for cap in granted_caps))
                 executor: Any = ToolGateway(

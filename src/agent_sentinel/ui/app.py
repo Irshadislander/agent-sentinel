@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
 import json
+import sys
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -47,7 +48,7 @@ def _latest_runs_rows(ledger_paths: list[Path]) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     for path in ledger_paths:
         events = _load_events(path)
-        modified = datetime.fromtimestamp(path.stat().st_mtime, tz=timezone.utc).isoformat()
+        modified = datetime.fromtimestamp(path.stat().st_mtime, tz=UTC).isoformat()
         root_hash = events[-1].get("entry_hash", "") if events else ""
         rows.append(
             {
@@ -75,7 +76,7 @@ def _render_verification(ledger_path: Path) -> None:
             st.error(f"Verification failed: {reason}")
 
 
-def main() -> None:
+def run() -> None:
     st.set_page_config(page_title="Agent Sentinel Runs", layout="wide")
     st.title("Agent Sentinel Run Browser")
 
@@ -110,5 +111,16 @@ def main() -> None:
         st.info("Selected ledger has no events.")
 
 
+def main() -> None:
+    try:
+        from streamlit.web import cli as stcli
+    except Exception as exc:  # pragma: no cover - import path depends on optional dependency
+        raise RuntimeError(f"Streamlit is required to run the UI: {exc}") from exc
+
+    app_path = Path(__file__).resolve()
+    sys.argv = ["streamlit", "run", str(app_path), *sys.argv[1:]]
+    stcli.main()
+
+
 if __name__ == "__main__":
-    main()
+    run()

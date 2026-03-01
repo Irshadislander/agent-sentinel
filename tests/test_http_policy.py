@@ -4,7 +4,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from agent_sentinel.forensics.ledger import FlightRecorder
-from agent_sentinel.security.capabilities import CapabilitySet, NET_HTTP_GET
+from agent_sentinel.security.capabilities import NET_HTTP_GET, CapabilitySet
 from agent_sentinel.security.tool_gateway import ToolGateway
 
 

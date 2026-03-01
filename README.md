@@ -18,3 +18,24 @@ It enforces **capability-based permissions** at the tool boundary and records **
 
 ## Status
 Under active development (v1).
+
+## Quickstart
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+python -m pip install -U pip
+python -m pip install -e ".[dev,ui]"
+pytest -q
+agent-sentinel-benchmark --policy configs/policies/default.yaml
+agent-sentinel-ui
+```
+
+## Troubleshooting (macOS + Python 3.14)
+
+If you see `ModuleNotFoundError: No module named agent_sentinel` after an editable install,
+run:
+
+```bash
+./scripts/macos_unhide_sitepackages.sh
+```

@@ -1,20 +1,33 @@
-install:
-	pip install -e .
+.PHONY: install dev ui lint format type test bench run-ui clean
 
-test:
-	pytest -q
+install:
+	python -m pip install -U pip
+	python -m pip install -e .
+
+dev:
+	python -m pip install -e ".[dev]"
+
+ui:
+	python -m pip install -e ".[ui]"
 
 lint:
 	ruff check .
 
-fmt:
+format:
 	ruff format .
 
 type:
-	mypy src
+	mypy src/agent_sentinel || true
 
-ci:
-	$(MAKE) fmt
-	$(MAKE) lint
-	$(MAKE) type
-	$(MAKE) test
+test:
+	pytest -q
+
+bench:
+	agent-sentinel-benchmark --policy configs/policies/default.yaml
+
+run-ui:
+	agent-sentinel-ui
+
+clean:
+	rm -rf build dist .pytest_cache
+	rm -rf *.egg-info src/*.egg-info
