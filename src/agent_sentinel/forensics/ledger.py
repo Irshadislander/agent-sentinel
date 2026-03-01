@@ -148,7 +148,12 @@ class FlightRecorder:
             for line_number, line in enumerate(handle, start=1):
                 raw_line = line.rstrip("\n")
                 if raw_line == "":
-                    return False, f"empty line at line {line_number}", expected_seq, expected_prev_hash
+                    return (
+                        False,
+                        f"empty line at line {line_number}",
+                        expected_seq,
+                        expected_prev_hash,
+                    )
 
                 try:
                     entry = json.loads(raw_line)
@@ -161,7 +166,12 @@ class FlightRecorder:
                     )
 
                 if not isinstance(entry, dict):
-                    return False, f"invalid entry object at line {line_number}", expected_seq, expected_prev_hash
+                    return (
+                        False,
+                        f"invalid entry object at line {line_number}",
+                        expected_seq,
+                        expected_prev_hash,
+                    )
 
                 missing = [field for field in _REQUIRED_FIELDS if field not in entry]
                 if missing:
@@ -174,7 +184,12 @@ class FlightRecorder:
 
                 seq = entry["seq"]
                 if not isinstance(seq, int):
-                    return False, f"invalid seq at line {line_number}", expected_seq, expected_prev_hash
+                    return (
+                        False,
+                        f"invalid seq at line {line_number}",
+                        expected_seq,
+                        expected_prev_hash,
+                    )
                 if seq != expected_seq:
                     return (
                         False,
@@ -185,13 +200,28 @@ class FlightRecorder:
 
                 prev_hash = entry["prev_hash"]
                 if not isinstance(prev_hash, str):
-                    return False, f"invalid prev_hash at line {line_number}", expected_seq, expected_prev_hash
+                    return (
+                        False,
+                        f"invalid prev_hash at line {line_number}",
+                        expected_seq,
+                        expected_prev_hash,
+                    )
                 if prev_hash != expected_prev_hash:
-                    return False, f"previous hash mismatch at line {line_number}", expected_seq, expected_prev_hash
+                    return (
+                        False,
+                        f"previous hash mismatch at line {line_number}",
+                        expected_seq,
+                        expected_prev_hash,
+                    )
 
                 stored_hash = entry["entry_hash"]
                 if not isinstance(stored_hash, str):
-                    return False, f"invalid entry_hash at line {line_number}", expected_seq, expected_prev_hash
+                    return (
+                        False,
+                        f"invalid entry_hash at line {line_number}",
+                        expected_seq,
+                        expected_prev_hash,
+                    )
 
                 try:
                     computed_hash = _compute_entry_hash(entry)
@@ -204,7 +234,12 @@ class FlightRecorder:
                     )
 
                 if computed_hash != stored_hash:
-                    return False, f"entry hash mismatch at line {line_number}", expected_seq, expected_prev_hash
+                    return (
+                        False,
+                        f"entry hash mismatch at line {line_number}",
+                        expected_seq,
+                        expected_prev_hash,
+                    )
 
                 expected_seq += 1
                 expected_prev_hash = stored_hash

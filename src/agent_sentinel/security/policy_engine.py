@@ -39,7 +39,9 @@ class PolicyEngine:
     def __init__(self, policy: dict[str, Any] | None):
         self._policy = policy or {}
         internal_domains = self._policy.get("internal_domains", ())
-        self._internal_domains = tuple(str(domain).lower().lstrip(".") for domain in internal_domains)
+        self._internal_domains = tuple(
+            str(domain).lower().lstrip(".") for domain in internal_domains
+        )
 
     def decide(self, *, tool_name: str, args: dict[str, Any], caps: set[str]) -> PolicyDecision:
         normalized_tool = tool_name.strip().lower()
@@ -67,9 +69,13 @@ class PolicyEngine:
 
         is_external = self._is_external_destination(url)
         if is_external and NET_EXTERNAL not in caps:
-            return PolicyDecision(DENY, f"{method} denied: external network requires {NET_EXTERNAL}")
+            return PolicyDecision(
+                DENY, f"{method} denied: external network requires {NET_EXTERNAL}"
+            )
         if not is_external and NET_INTERNAL not in caps:
-            return PolicyDecision(DENY, f"{method} denied: internal network requires {NET_INTERNAL}")
+            return PolicyDecision(
+                DENY, f"{method} denied: internal network requires {NET_INTERNAL}"
+            )
 
         if is_external and self._contains_sensitive_key(args):
             return PolicyDecision(
@@ -107,7 +113,9 @@ class PolicyEngine:
                     args=args,
                     reason=f"file write allowed under workspace/ with {FS_WRITE_WORKSPACE}",
                 )
-            return PolicyDecision(DENY, f"file write denied: missing capability {FS_WRITE_WORKSPACE}")
+            return PolicyDecision(
+                DENY, f"file write denied: missing capability {FS_WRITE_WORKSPACE}"
+            )
         if scope == "invalid":
             return PolicyDecision(DENY, "file write denied: invalid path")
         return PolicyDecision(DENY, "file write denied: only workspace/ is writable")
