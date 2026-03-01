@@ -1,20 +1,75 @@
-# Agent-Sentinel
+# Agent Sentinel
 
-**Agent-Sentinel** is a zero-trust runtime security layer for tool-using AI agents.
-It enforces **capability-based permissions** at the tool boundary and records **tamper-evident forensic logs** (“flight recorder”) to mitigate indirect prompt injection, data exfiltration, and tool abuse.
+## What Is Agent Sentinel
+Agent Sentinel is a zero-trust runtime security layer for tool-using AI agents. It treats the planner as untrusted, enforces policy at a single gateway, and records tamper-evident JSONL ledgers so runs can be audited and verified.
 
-## Core Ideas
-- LLM is an **untrusted planner**
-- All actions go through a **ToolGateway** (single choke point)
-- **Default deny** external network and sensitive data reads
-- **Tamper-evident logs** with hash chaining + verification
-- Benchmark suite for **baseline vs secured** evaluation
+## Features
+- Capability-aware policy decisions at tool execution time.
+- Tamper-evident flight recorder (hash-chained append-only ledger).
+- Baseline vs secured benchmark runner with attack cases.
+- Minimal Streamlit UI to browse runs and verify ledgers.
 
-## Repo Layout
-- `src/agent_sentinel/` core runtime
-- `docs/` architecture + notes
-- `configs/` policies and task specs
-- `tests/` unit/integration tests
+## Install
+```bash
+python -m pip install -e .
+```
 
-## Status
-Under active development (v1).
+For developer + UI extras:
+```bash
+python -m pip install -e ".[dev,ui]"
+```
+
+## Quickstart
+Run benchmark:
+```bash
+python -m agent_sentinel.benchmark.run_benchmark --policy configs/policies/default.yaml
+```
+
+Run UI:
+```bash
+python -m agent_sentinel.ui
+```
+
+Or use entrypoints after install:
+```bash
+agent-sentinel --policy configs/policies/default.yaml
+agent-sentinel-ui
+```
+
+## Example Policy Snippet
+```yaml
+allowlist_domains:
+  - api.github.com
+  - raw.githubusercontent.com
+default_allow: false
+capabilities:
+  fs.read.public: true
+  fs.read.private: false
+  fs.write.workspace: true
+  net.http.get: true
+  net.http.post: false
+  net.external: false
+```
+
+## Repo Structure
+```text
+src/agent_sentinel/
+  security/      # capabilities, policy, validators, gateway
+  forensics/     # ledger + verification
+  benchmark/     # attack suite + benchmark runners
+  runtime/       # task/planner/runner
+  tools/         # fs/http tool adapters
+  ui/            # streamlit app
+configs/
+  policies/
+  tasks/
+tests/
+```
+
+## Dev Commands
+```bash
+ruff check .
+ruff format .
+mypy src/agent_sentinel || true
+pytest -q
+```

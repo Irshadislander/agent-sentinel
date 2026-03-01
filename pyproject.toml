@@ -23,6 +23,11 @@ dev = [
 ui = [
     "streamlit>=1.30",
 ]
+ui-watch = ["watchdog"]
+
+[project.scripts]
+agent-sentinel = "agent_sentinel.cli:main"
+agent-sentinel-ui = "agent_sentinel.ui.__main__:main"
 
 [tool.setuptools]
 package-dir = {"" = "src"}
