@@ -37,3 +37,16 @@ Note on src/ layout
 
 This repo uses src/ layout. A small sitecustomize.py is included to make
 import agent_sentinel reliable when running from the repo root.
+
+## Troubleshooting (macOS + Python 3.14)
+
+If `agent-sentinel-ui` or `agent-sentinel-benchmark` fails with `ModuleNotFoundError`
+even after `pip install -e .`, macOS may have marked site-packages as hidden which
+can prevent Python from applying editable `.pth` injection.
+
+Fix:
+
+```bash
+source .venv/bin/activate
+./scripts/macos_unhide_sitepackages.sh
+```
