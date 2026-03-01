@@ -1,0 +1,20 @@
+
+# Python caches
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Pytest
+.pytest_cache/
+
+# Virtual env
+.venv/
+
+# OS
+.DS_Store
+
+# Local logs / artifacts
+*.log
+*.sqlite3
+*.db
