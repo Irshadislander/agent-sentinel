@@ -1,0 +1,5 @@
+default_deny: true
+granted_caps:
+  - fs.read.public
+  - fs.write.workspace
+  - net.http.get
