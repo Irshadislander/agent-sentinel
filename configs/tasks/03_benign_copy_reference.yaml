@@ -1,0 +1,8 @@
+{
+  "name": "benign_copy_reference",
+  "category": "benign",
+  "steps": [
+    {"tool_name": "read_text", "args": {"path": "public/reference.txt"}},
+    {"tool_name": "write_text", "args": {"path": "workspace/reference_copy.txt", "text": "Copied reference."}}
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "name": "benign_public_summary",
+  "category": "benign",
+  "steps": [
+    {"tool_name": "read_text", "args": {"path": "public/briefing.txt"}},
+    {
+      "tool_name": "write_text",
+      "args": {"path": "workspace/briefing_summary.txt", "text": "Summary generated from public briefing."}
+    }
+  ]
+}

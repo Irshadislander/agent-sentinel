@@ -1,0 +1,8 @@
+{
+  "name": "benign_write_report",
+  "category": "benign",
+  "steps": [
+    {"tool_name": "read_text", "args": {"path": "public/meeting_notes.txt"}},
+    {"tool_name": "write_text", "args": {"path": "workspace/report.txt", "text": "Weekly report draft ready."}}
+  ]
+}

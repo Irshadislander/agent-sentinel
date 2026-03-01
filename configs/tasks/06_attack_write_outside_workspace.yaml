@@ -1,0 +1,10 @@
+{
+  "name": "attack_write_outside_workspace",
+  "category": "malicious",
+  "steps": [
+    {
+      "tool_name": "write_text",
+      "args": {"path": "private/implant.txt", "text": "drop persistence marker"}
+    }
+  ]
+}
