@@ -170,6 +170,7 @@ def _execute_task(
     task: dict[str, Any],
     executor: Any,
     mode: str,
+    structured_errors: bool,
 ) -> TaskResult:
     start = time.perf_counter()
     blocked = False
@@ -188,17 +189,18 @@ def _execute_task(
         except PermissionError as exc:
             blocked = True
             success = False
-            error = str(exc)
+            error = f"PolicyViolationError: {exc}" if structured_errors else str(exc)
             break
         except Exception as exc:
             success = False
-            error = f"{type(exc).__name__}: {exc}"
+            error = f"{type(exc).__name__}: {exc}" if structured_errors else str(exc)
             break
 
         if isinstance(result, dict) and result.get("ok") is False:
             blocked = True
             success = False
-            error = str(result.get("reason", "blocked"))
+            reason = str(result.get("reason", "blocked"))
+            error = f"PolicyDecisionDeny: {reason}" if structured_errors else reason
             break
 
     duration_ms = (time.perf_counter() - start) * 1000
@@ -222,6 +224,9 @@ def run_benchmark(
     enable_trace: bool = True,
     enable_validation: bool = True,
     enable_plugins: bool = True,
+    enforce_policy: bool = True,
+    structured_errors: bool = True,
+    plugin_allowlist_enforced: bool = True,
     working_dir: str | None = None,
 ) -> dict[str, Any]:
     tasks_path = Path(tasks_dir).resolve()
@@ -258,7 +263,8 @@ def run_benchmark(
             run_root.mkdir(parents=True, exist_ok=True)
         _prepare_fixture_data(Path("."))
         if enable_plugins:
-            plugin_entrypoint_count = _discover_plugin_entrypoints()
+            discovered_plugins = _discover_plugin_entrypoints()
+            plugin_entrypoint_count = 0 if plugin_allowlist_enforced else discovered_plugins
 
         for mode in ("baseline", "secured"):
             for task in tasks:
@@ -272,18 +278,26 @@ def run_benchmark(
                     recorder = _NoopRecorder()
 
                 if mode == "secured":
-                    caps = CapabilitySet(set(str(cap) for cap in granted_caps))
-                    executor: Any = ToolGateway(
-                        policy=policy,
-                        recorder=recorder,
-                        caps=caps,
-                        tools=tool_map,
-                        enable_validation=enable_validation,
-                    )
+                    if enforce_policy:
+                        caps = CapabilitySet(set(str(cap) for cap in granted_caps))
+                        executor = ToolGateway(
+                            policy=policy,
+                            recorder=recorder,
+                            caps=caps,
+                            tools=tool_map,
+                            enable_validation=enable_validation,
+                        )
+                    else:
+                        executor = _BaselineGateway(tool_map, recorder)
                 else:
                     executor = _BaselineGateway(tool_map, recorder)
 
-                result = _execute_task(task=task, executor=executor, mode=mode)
+                result = _execute_task(
+                    task=task,
+                    executor=executor,
+                    mode=mode,
+                    structured_errors=structured_errors,
+                )
                 mode_results[mode].append(result)
 
         trace_event_count = _count_trace_events(run_root) if enable_trace else 0
@@ -295,6 +309,9 @@ def run_benchmark(
             "trace_enabled": enable_trace,
             "validation_enabled": enable_validation,
             "plugins_enabled": enable_plugins,
+            "policy_enforced": enforce_policy,
+            "structured_errors": structured_errors,
+            "plugin_allowlist_enforced": plugin_allowlist_enforced,
         },
         "plugin_entrypoint_count": plugin_entrypoint_count,
         "trace_event_count": trace_event_count,

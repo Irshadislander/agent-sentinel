@@ -78,7 +78,7 @@ pytest -q
 ## Matrix Benchmark + Report
 
 ```bash
-# Run ablation matrix and write bench/results/matrix.json + matrix.csv
+# Run full baseline matrix and write bench/results/matrix.json + matrix.csv
 make bench-matrix
 
 # Generate markdown report from matrix results

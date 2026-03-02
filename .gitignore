@@ -47,3 +47,10 @@ workspace/
 # benchmark outputs
 bench/results/*
 !bench/results/.gitkeep
+
+# generated benchmark report
+/docs/bench_report.md
+
+# generated bench outputs
+/bench/results/*.json
+/bench/results/*.csv
