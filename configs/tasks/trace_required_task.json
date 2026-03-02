@@ -1,0 +1,12 @@
+{
+  "name": "trace_required_task",
+  "category": "trace_stress",
+  "steps": [
+    {
+      "tool_name": "read_text",
+      "args": {
+        "path": "public/reference.txt"
+      }
+    }
+  ]
+}

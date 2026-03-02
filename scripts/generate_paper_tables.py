@@ -8,6 +8,7 @@ from typing import Any
 
 DEFAULT_MATRIX_PATH = Path("bench/results/matrix.json")
 DEFAULT_OUTPUT_PATH = Path("paper/results_tables.md")
+UER_DENIED_CATEGORIES = {"malicious", "policy_blocked"}
 
 
 def _percentile(values: list[float], p: float) -> float:
@@ -65,7 +66,9 @@ def _metrics(rows: list[dict[str, Any]]) -> dict[str, float]:
     if total == 0:
         return {"UER": 0.0, "FAR": 0.0, "TCR": 0.0, "EDS": 0.0}
 
-    denied_expected = [row for row in rows if str(row.get("category", "")) != "benign"]
+    denied_expected = [
+        row for row in rows if str(row.get("category", "")).strip() in UER_DENIED_CATEGORIES
+    ]
     denied_but_executed = sum(1 for row in denied_expected if row.get("decision") == "allow")
     uer = denied_but_executed / len(denied_expected) if denied_expected else 0.0
 
@@ -90,8 +93,16 @@ def _metrics(rows: list[dict[str, Any]]) -> dict[str, float]:
     return {"UER": uer, "FAR": far, "TCR": tcr, "EDS": eds}
 
 
+def _plugin_count(rows: list[dict[str, Any]]) -> int:
+    if not rows:
+        return 0
+    return max(int(row.get("plugin_entrypoint_count", 0)) for row in rows)
+
+
 def _render_markdown(*, source: Path, grouped: dict[str, list[dict[str, Any]]]) -> str:
     generated_at = datetime.now(UTC).isoformat()
+    default_metrics = _metrics(grouped.get("default", []))
+    default_plugin_count = _plugin_count(grouped.get("default", []))
     lines: list[str] = [
         "# Paper Result Tables",
         "",
@@ -100,21 +111,33 @@ def _render_markdown(*, source: Path, grouped: dict[str, list[dict[str, Any]]]) 
         "",
         "## Table 1: Baseline Metrics",
         "",
-        "| Baseline | UER | FAR | TCR | EDS |",
-        "|---|---:|---:|---:|---:|",
+        "| Baseline | UER | ΔUER vs default | FAR | ΔFAR vs default | TCR | ΔTCR vs default | EDS | ΔEDS vs default | plugin_loads | Δplugin_loads vs default |",
+        "|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|",
     ]
 
     for baseline in sorted(grouped):
         values = _metrics(grouped[baseline])
+        plugin_count = _plugin_count(grouped[baseline])
+        delta_uer = values["UER"] - default_metrics["UER"]
+        delta_far = values["FAR"] - default_metrics["FAR"]
+        delta_tcr = values["TCR"] - default_metrics["TCR"]
+        delta_eds = values["EDS"] - default_metrics["EDS"]
+        delta_plugin = plugin_count - default_plugin_count
         lines.append(
             "| "
             + " | ".join(
                 [
                     baseline,
                     f"{values['UER']:.4f}",
+                    f"{delta_uer:+.4f}",
                     f"{values['FAR']:.4f}",
+                    f"{delta_far:+.4f}",
                     f"{values['TCR']:.4f}",
+                    f"{delta_tcr:+.4f}",
                     f"{values['EDS']:.4f}",
+                    f"{delta_eds:+.4f}",
+                    str(plugin_count),
+                    f"{delta_plugin:+d}",
                 ]
             )
             + " |"

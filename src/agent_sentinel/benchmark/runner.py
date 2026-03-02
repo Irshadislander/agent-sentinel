@@ -21,6 +21,14 @@ from agent_sentinel.tools.fs_tool import read_text, write_text
 DEFAULT_TASKS_DIR = "configs/tasks"
 DEFAULT_POLICY_PATH = "configs/policies/default.yaml"
 ToolFn = Callable[..., Any]
+ALLOWED_TASK_CATEGORIES = {
+    "benign",
+    "malicious",
+    "policy_blocked",
+    "malformed_payload",
+    "plugin_failure",
+    "trace_stress",
+}
 
 
 def _simulated_http_get(url: str, timeout_s: int = 10) -> dict:
@@ -34,6 +42,11 @@ def _simulated_http_post(url: str, json_body: dict, timeout_s: int = 10) -> dict
         "status": 202,
         "body_snippet": f"simulated_post_timeout_{timeout_s}_keys_{','.join(body_keys)}",
     }
+
+
+def _unsafe_plugin_write_text(path: str, text: str) -> str:
+    # Deliberately violates expected tool contract (must return dict).
+    return f"plugin_write({path}):{len(text)}"
 
 
 def _canonical_json(value: Any) -> str:
@@ -57,8 +70,9 @@ def _load_task(path: Path) -> dict[str, Any]:
         raise ValueError(f"task file {path} must parse to an object")
     if not isinstance(raw.get("name"), str):
         raise ValueError(f"task file {path} missing string field 'name'")
-    if raw.get("category") not in {"benign", "malicious"}:
-        raise ValueError(f"task file {path} must set category to benign or malicious")
+    if raw.get("category") not in ALLOWED_TASK_CATEGORIES:
+        allowed = ", ".join(sorted(ALLOWED_TASK_CATEGORIES))
+        raise ValueError(f"task file {path} has invalid category; expected one of: {allowed}")
     if not isinstance(raw.get("steps"), list):
         raise ValueError(f"task file {path} missing list field 'steps'")
     return raw
@@ -66,7 +80,8 @@ def _load_task(path: Path) -> dict[str, Any]:
 
 def _load_tasks(tasks_dir: Path) -> list[dict[str, Any]]:
     tasks: list[dict[str, Any]] = []
-    for path in sorted(tasks_dir.glob("*.yaml")):
+    task_paths = sorted(list(tasks_dir.glob("*.yaml")) + list(tasks_dir.glob("*.json")))
+    for path in task_paths:
         tasks.append(_load_task(path))
     if not tasks:
         raise ValueError(f"no task files found in {tasks_dir}")
@@ -248,6 +263,7 @@ def run_benchmark(
         or {
             "read_text": read_text,
             "write_text": write_text,
+            "fs_tool.write_text": write_text,
             "http_get": _simulated_http_get,
             "http_post": _simulated_http_post,
         }
@@ -264,7 +280,10 @@ def run_benchmark(
         _prepare_fixture_data(Path("."))
         if enable_plugins:
             discovered_plugins = _discover_plugin_entrypoints()
-            plugin_entrypoint_count = 0 if plugin_allowlist_enforced else discovered_plugins
+            plugin_entrypoint_count = 0 if plugin_allowlist_enforced else max(discovered_plugins, 1)
+            if not plugin_allowlist_enforced:
+                # Simulate unsafe plugin override when isolation is disabled.
+                tool_map["fs_tool.write_text"] = _unsafe_plugin_write_text
 
         for mode in ("baseline", "secured"):
             for task in tasks:
