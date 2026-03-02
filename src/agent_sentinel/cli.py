@@ -11,25 +11,16 @@ from typing import Any
 from agent_sentinel.benchmark.core import run_benchmark
 from agent_sentinel.benchmark.render import render_benchmark
 from agent_sentinel.cli_exit_codes import (
-    DENIED,
     INTERNAL_ERROR,
-    INVALID_POLICY,
     OK,
-    UNKNOWN_CAPABILITY,
 )
-from agent_sentinel.cli_format import render
+from agent_sentinel.errors import AgentSentinelError, PolicyFileNotFoundError, PolicyParseError
 from agent_sentinel.forensics.ledger import FlightRecorder
 from agent_sentinel.runtime.demo_planner import DemoPlanner
 from agent_sentinel.security.audit import AuditEvent, from_exception, make_event, to_json
 from agent_sentinel.security.capabilities import CapabilitySet
 from agent_sentinel.security.context import RequestContext, new_request_id
 from agent_sentinel.security.enforcer import enforce_request
-from agent_sentinel.security.errors import (
-    AgentSentinelError,
-    InvalidPolicyFormatError,
-    PolicyViolationError,
-    UnknownCapabilityError,
-)
 from agent_sentinel.security.tool_gateway import ToolGateway
 from agent_sentinel.tools.fs_tool import read_text, write_text
 from agent_sentinel.tools.http_tool import http_get, http_post
@@ -269,8 +260,13 @@ def _build_parser() -> argparse.ArgumentParser:
 
 
 def _load_policy(path: str) -> Any:
-    with open(path, encoding="utf-8") as f:
-        return json.load(f)
+    policy_path = Path(path)
+    if not policy_path.exists():
+        raise PolicyFileNotFoundError(str(policy_path))
+    try:
+        return json.loads(policy_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        raise PolicyParseError(str(policy_path), reason=str(exc)) from exc
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -322,46 +318,34 @@ def main(argv: list[str] | None = None) -> int:
         print("ALLOWED")
         return OK
 
-    except PolicyViolationError as e:
-        if args.audit_json:
-            event = last_audit_event or make_event(
-                ctx=ctx,
-                capability=args.capability,
-                decision="deny",
-                reason=e.__class__.__name__,
-                allowed_capabilities=e.allowed_capabilities,
-            )
-            print(to_json(event), file=sys.stderr)
-        print(render(e, as_json=args.json), file=sys.stderr)
-        return DENIED
-
-    except UnknownCapabilityError as e:
-        if args.audit_json:
-            event = last_audit_event or from_exception(e, ctx=ctx, capability=args.capability)
-            print(to_json(event), file=sys.stderr)
-        print(render(e, as_json=args.json), file=sys.stderr)
-        return UNKNOWN_CAPABILITY
-
-    except InvalidPolicyFormatError as e:
-        if args.audit_json:
-            event = last_audit_event or from_exception(e, ctx=ctx, capability=args.capability)
-            print(to_json(event), file=sys.stderr)
-        print(render(e, as_json=args.json), file=sys.stderr)
-        return INVALID_POLICY
-
     except AgentSentinelError as e:
-        # Future-proof: any other sentinel error
         if args.audit_json:
             event = last_audit_event or from_exception(e, ctx=ctx, capability=args.capability)
             print(to_json(event), file=sys.stderr)
-        print(render(e, as_json=args.json), file=sys.stderr)
-        return INTERNAL_ERROR
+        if args.json:
+            print(json.dumps(e.to_payload().to_dict(), sort_keys=True), file=sys.stderr)
+        else:
+            print(f"Error: {e}", file=sys.stderr)
+        return e.exit_code
 
     except Exception as e:  # noqa: BLE001
         if args.audit_json:
             event = last_audit_event or from_exception(e, ctx=ctx, capability=args.capability)
             print(to_json(event), file=sys.stderr)
-        print(f"Internal error: {e}", file=sys.stderr)
+        if args.json:
+            print(
+                json.dumps(
+                    {
+                        "code": "internal_error",
+                        "message": "Internal error",
+                        "details": {"type": type(e).__name__},
+                    },
+                    sort_keys=True,
+                ),
+                file=sys.stderr,
+            )
+        else:
+            print(f"Internal error: {e}", file=sys.stderr)
         return INTERNAL_ERROR
 
 
