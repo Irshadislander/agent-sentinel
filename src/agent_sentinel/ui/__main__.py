@@ -4,18 +4,20 @@ import sys
 from pathlib import Path
 
 
-def main() -> int:
+def main() -> None:
+    # Run streamlit against our app.py
+    # Equivalent to: streamlit run src/agent_sentinel/ui/app.py
     try:
-        from streamlit.web import cli as stcli
-    except Exception as exc:
-        print(f"Streamlit is required to run the UI: {exc}", file=sys.stderr)
-        return 1
+        import streamlit.web.cli as stcli
+    except Exception as exc:  # pragma: no cover
+        raise SystemExit(
+            "Streamlit is not installed. Install UI deps: pip install -e '.[ui]'"
+        ) from exc
 
     app_path = Path(__file__).with_name("app.py")
-    sys.argv = ["streamlit", "run", str(app_path), *sys.argv[1:]]
-    stcli.main()
-    return 0
+    sys.argv = ["streamlit", "run", str(app_path)]
+    sys.exit(stcli.main())
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    main()

@@ -1,1 +1,3 @@
-# UI package marker (intentionally empty)
+from .app import main
+
+__all__ = ["main"]
