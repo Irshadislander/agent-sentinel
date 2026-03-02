@@ -4,10 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project follows Semantic Versioning.
 
-## [Unreleased]
+## Unreleased
+- TBD
 
-### Added
-- GitHub Actions: build + validate distributions and create GitHub Release on tags.
+## v0.1.2
+- Release automation: tag-based GitHub Release workflow
+- Added changelog + improved release checklist
 
 ## [0.1.1] - 2026-03-01
 
