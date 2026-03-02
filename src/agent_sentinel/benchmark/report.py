@@ -13,6 +13,7 @@ from agent_sentinel.cli_exit_codes import DENIED, INTERNAL_ERROR, OK
 
 DEFAULT_INPUT_PATH = Path("bench/results/latest.json")
 DEFAULT_OUTPUT_PATH = Path("docs/bench_report.md")
+DEFAULT_MATRIX_INPUT_PATH = Path("bench/results/matrix.json")
 
 
 @dataclass(frozen=True)
@@ -109,6 +110,7 @@ def _render_markdown(
     source_path: Path,
     generated_at: str,
     git_sha: str,
+    matrix_rows: list[dict[str, Any]] | None = None,
 ) -> str:
     benchmark_id = str(report.get("benchmark_id", "unknown"))
     tasks_total = int(report.get("tasks_total", 0))
@@ -204,14 +206,58 @@ def _render_markdown(
             f"| {idx} | {row.mode} | {_safe_cell(row.task_name)} | {row.latency_ms:.3f} | {row.exit_code} |"
         )
 
+    if matrix_rows:
+        lines.extend(
+            [
+                "",
+                "## Matrix Comparison",
+                "",
+                "| mode_label | avg_runtime_ms | failure_count | trace_event_count | exit_code_histogram |",
+                "|---|---:|---:|---:|---|",
+            ]
+        )
+        for row in sorted(matrix_rows, key=lambda item: str(item.get("mode_label", ""))):
+            histogram = row.get("exit_code_histogram", {})
+            histogram_text = json.dumps(histogram, sort_keys=True, separators=(",", ":"))
+            lines.append(
+                "| "
+                + " | ".join(
+                    [
+                        _safe_cell(row.get("mode_label", "n/a")),
+                        _safe_cell(row.get("avg_runtime_ms", "n/a")),
+                        _safe_cell(row.get("failure_count", "n/a")),
+                        _safe_cell(row.get("trace_event_count", "n/a")),
+                        _safe_cell(histogram_text),
+                    ]
+                )
+                + " |"
+            )
+
     lines.append("")
     return "\n".join(lines)
+
+
+def _load_matrix_rows(path: Path) -> list[dict[str, Any]]:
+    if not path.exists():
+        return []
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(payload, dict):
+        return []
+    runs = payload.get("runs", [])
+    if not isinstance(runs, list):
+        return []
+    rows: list[dict[str, Any]] = []
+    for run in runs:
+        if isinstance(run, dict):
+            rows.append(run)
+    return rows
 
 
 def generate_report(
     *,
     input_path: Path = DEFAULT_INPUT_PATH,
     output_path: Path = DEFAULT_OUTPUT_PATH,
+    matrix_input_path: Path | None = DEFAULT_MATRIX_INPUT_PATH,
     generated_at: str | None = None,
     git_sha: str | None = None,
 ) -> Path:
@@ -219,11 +265,13 @@ def generate_report(
     if not isinstance(report, dict):
         raise ValueError("benchmark report JSON must be an object")
 
+    matrix_rows = _load_matrix_rows(matrix_input_path) if matrix_input_path else []
     markdown = _render_markdown(
         report,
         source_path=input_path,
         generated_at=generated_at or _utc_now_iso(),
         git_sha=git_sha or _detect_git_sha(),
+        matrix_rows=matrix_rows,
     )
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(markdown, encoding="utf-8")
@@ -242,13 +290,22 @@ def _build_parser() -> argparse.ArgumentParser:
         default=str(DEFAULT_OUTPUT_PATH),
         help=f"Output markdown path (default: {DEFAULT_OUTPUT_PATH}).",
     )
+    parser.add_argument(
+        "--matrix-input",
+        default=str(DEFAULT_MATRIX_INPUT_PATH),
+        help=f"Optional matrix benchmark JSON path (default: {DEFAULT_MATRIX_INPUT_PATH}).",
+    )
     return parser
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = _build_parser()
     args = parser.parse_args(argv)
-    output = generate_report(input_path=Path(args.input), output_path=Path(args.output))
+    output = generate_report(
+        input_path=Path(args.input),
+        output_path=Path(args.output),
+        matrix_input_path=Path(args.matrix_input) if args.matrix_input else None,
+    )
     print(f"Benchmark markdown report written: {output}")
     return 0
 

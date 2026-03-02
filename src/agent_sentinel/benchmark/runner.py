@@ -2,9 +2,12 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import time
 from collections.abc import Callable
+from contextlib import contextmanager
 from datetime import UTC, datetime
+from importlib.metadata import entry_points
 from pathlib import Path
 from typing import Any
 
@@ -92,7 +95,7 @@ def _prepare_fixture_data(root: Path) -> None:
 
 
 class _BaselineGateway:
-    def __init__(self, tools: dict[str, ToolFn], recorder: FlightRecorder):
+    def __init__(self, tools: dict[str, ToolFn], recorder: Any):
         self._tools = tools
         self._recorder = recorder
 
@@ -120,6 +123,46 @@ class _BaselineGateway:
             },
         )
         return result
+
+
+class _NoopRecorder:
+    def append(self, event_type: str, payload: dict[str, Any]) -> None:
+        del event_type, payload
+        return None
+
+
+@contextmanager
+def _working_directory(path: Path | None):
+    if path is None:
+        yield
+        return
+
+    previous = Path.cwd()
+    path.mkdir(parents=True, exist_ok=True)
+    os.chdir(path)
+    try:
+        yield
+    finally:
+        os.chdir(previous)
+
+
+def _discover_plugin_entrypoints() -> int:
+    eps = entry_points()
+    if hasattr(eps, "select"):
+        return len(eps.select(group="agent_sentinel.capabilities"))
+    if isinstance(eps, dict):
+        return len(eps.get("agent_sentinel.capabilities", []))
+    return len([ep for ep in eps if getattr(ep, "group", "") == "agent_sentinel.capabilities"])
+
+
+def _count_trace_events(run_root: Path) -> int:
+    if not run_root.exists():
+        return 0
+    total = 0
+    for ledger_path in run_root.rglob("*.jsonl"):
+        with ledger_path.open("r", encoding="utf-8") as handle:
+            total += sum(1 for _ in handle)
+    return total
 
 
 def _execute_task(
@@ -176,9 +219,18 @@ def run_benchmark(
     policy_path: str = DEFAULT_POLICY_PATH,
     output_path: str | None = None,
     tools: dict[str, ToolFn] | None = None,
+    enable_trace: bool = True,
+    enable_validation: bool = True,
+    enable_plugins: bool = True,
+    working_dir: str | None = None,
 ) -> dict[str, Any]:
-    tasks = _load_tasks(Path(tasks_dir))
-    policy = load_policy(policy_path)
+    tasks_path = Path(tasks_dir).resolve()
+    policy_path_resolved = str(Path(policy_path).resolve())
+    output_path_resolved = Path(output_path).resolve() if output_path else None
+    work_root = Path(working_dir).resolve() if working_dir else None
+
+    tasks = _load_tasks(tasks_path)
+    policy = load_policy(policy_path_resolved)
     granted_caps = policy.get("granted_caps", [])
     capabilities_map = policy.get("capabilities")
     if isinstance(capabilities_map, dict):
@@ -198,34 +250,54 @@ def run_benchmark(
 
     benchmark_id = datetime.now(UTC).strftime("%Y%m%dT%H%M%S%fZ")
     run_root = Path("runs") / "benchmark" / benchmark_id
-    run_root.mkdir(parents=True, exist_ok=True)
-    _prepare_fixture_data(Path("."))
-
     mode_results: dict[str, list[TaskResult]] = {"baseline": [], "secured": []}
+    plugin_entrypoint_count = 0
 
-    for mode in ("baseline", "secured"):
-        for task in tasks:
-            ledger_path = run_root / mode / f"{task['name']}.jsonl"
-            recorder = FlightRecorder(
-                str(ledger_path), run_id=f"{benchmark_id}_{mode}_{task['name']}"
-            )
-            if mode == "secured":
-                caps = CapabilitySet(set(str(cap) for cap in granted_caps))
-                executor: Any = ToolGateway(
-                    policy=policy,
-                    recorder=recorder,
-                    caps=caps,
-                    tools=tool_map,
-                )
-            else:
-                executor = _BaselineGateway(tool_map, recorder)
+    with _working_directory(work_root):
+        if enable_trace:
+            run_root.mkdir(parents=True, exist_ok=True)
+        _prepare_fixture_data(Path("."))
+        if enable_plugins:
+            plugin_entrypoint_count = _discover_plugin_entrypoints()
 
-            result = _execute_task(task=task, executor=executor, mode=mode)
-            mode_results[mode].append(result)
+        for mode in ("baseline", "secured"):
+            for task in tasks:
+                recorder: Any
+                if enable_trace:
+                    ledger_path = run_root / mode / f"{task['name']}.jsonl"
+                    recorder = FlightRecorder(
+                        str(ledger_path), run_id=f"{benchmark_id}_{mode}_{task['name']}"
+                    )
+                else:
+                    recorder = _NoopRecorder()
+
+                if mode == "secured":
+                    caps = CapabilitySet(set(str(cap) for cap in granted_caps))
+                    executor: Any = ToolGateway(
+                        policy=policy,
+                        recorder=recorder,
+                        caps=caps,
+                        tools=tool_map,
+                        enable_validation=enable_validation,
+                    )
+                else:
+                    executor = _BaselineGateway(tool_map, recorder)
+
+                result = _execute_task(task=task, executor=executor, mode=mode)
+                mode_results[mode].append(result)
+
+        trace_event_count = _count_trace_events(run_root) if enable_trace else 0
 
     report = {
         "benchmark_id": benchmark_id,
         "tasks_total": len(tasks),
+        "flags": {
+            "trace_enabled": enable_trace,
+            "validation_enabled": enable_validation,
+            "plugins_enabled": enable_plugins,
+        },
+        "plugin_entrypoint_count": plugin_entrypoint_count,
+        "trace_event_count": trace_event_count,
         "baseline": {
             "metrics": compute_metrics(mode_results["baseline"]),
             "results": serialize_results(mode_results["baseline"]),
@@ -236,9 +308,10 @@ def run_benchmark(
         },
     }
 
-    if output_path:
-        output = Path(output_path)
-        output.parent.mkdir(parents=True, exist_ok=True)
-        output.write_text(json.dumps(report, indent=2, sort_keys=True), encoding="utf-8")
+    if output_path_resolved:
+        output_path_resolved.parent.mkdir(parents=True, exist_ok=True)
+        output_path_resolved.write_text(
+            json.dumps(report, indent=2, sort_keys=True), encoding="utf-8"
+        )
 
     return report

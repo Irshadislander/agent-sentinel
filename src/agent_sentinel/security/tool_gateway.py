@@ -68,12 +68,14 @@ class ToolGateway:
         recorder: FlightRecorder,
         caps: CapabilitySet,
         tools: dict[str, ToolFn],
+        enable_validation: bool = True,
     ) -> None:
         self._policy = dict(policy)
         self._policy_engine = PolicyEngine(policy)
         self._recorder = recorder
         self._caps = caps
         self._tools: dict[str, ToolFn] = dict(tools)
+        self._enable_validation = enable_validation
 
     def execute(self, tool_name: str, args: dict[str, Any]) -> dict[str, Any]:
         if not isinstance(args, dict):
@@ -93,14 +95,15 @@ class ToolGateway:
             },
         )
 
-        validator_decision = self._validate_tool_call(tool_name=tool_name, args=args)
-        if not validator_decision.allowed:
-            return self._deny_with_result(
-                tool_name=tool_name,
-                reason=validator_decision.reason,
-                args_hash=args_hash,
-                redacted_args=validator_decision.redacted_args,
-            )
+        if self._enable_validation:
+            validator_decision = self._validate_tool_call(tool_name=tool_name, args=args)
+            if not validator_decision.allowed:
+                return self._deny_with_result(
+                    tool_name=tool_name,
+                    reason=validator_decision.reason,
+                    args_hash=args_hash,
+                    redacted_args=validator_decision.redacted_args,
+                )
 
         normalized_tool = tool_name.strip().lower()
         if normalized_tool in _HTTP_REQUEST_TOOL_NAMES:

@@ -130,3 +130,44 @@ def test_generate_benchmark_markdown_snapshot(tmp_path: Path, monkeypatch) -> No
         """
     )
     assert output_path.read_text(encoding="utf-8") == expected
+
+
+def test_generate_report_includes_matrix_comparison(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.chdir(tmp_path)
+    input_path = Path("bench/results/latest.json")
+    matrix_path = Path("bench/results/matrix.json")
+    output_path = Path("docs/bench_report.md")
+    input_path.parent.mkdir(parents=True, exist_ok=True)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+
+    input_payload = {
+        "benchmark_id": "bench_matrix",
+        "tasks_total": 1,
+        "baseline": {"metrics": {}, "results": []},
+        "secured": {"metrics": {}, "results": []},
+    }
+    matrix_payload = {
+        "generated_at_utc": "2026-03-02T00:00:00Z",
+        "runs": [
+            {
+                "mode_label": "trace=off|validation=on|plugins=on",
+                "avg_runtime_ms": 1.23,
+                "failure_count": 0,
+                "trace_event_count": 0,
+                "exit_code_histogram": {"0": 2},
+            }
+        ],
+    }
+    input_path.write_text(json.dumps(input_payload), encoding="utf-8")
+    matrix_path.write_text(json.dumps(matrix_payload), encoding="utf-8")
+
+    generate_report(
+        input_path=input_path,
+        output_path=output_path,
+        matrix_input_path=matrix_path,
+        generated_at="2026-03-02T00:00:00Z",
+        git_sha="abc1234",
+    )
+    content = output_path.read_text(encoding="utf-8")
+    assert "## Matrix Comparison" in content
+    assert "trace=off\\|validation=on\\|plugins=on" in content
