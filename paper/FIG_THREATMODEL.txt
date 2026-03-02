@@ -1,0 +1,24 @@
+Threats                                      Defenses
+-------                                      --------
+
+prompt injection / payload poisoning  --->   policy gating (pre-execution deny)
+
+plugin override / unsafe extension     --->   allowlist isolation + plugin controls
+
+silent failures / ambiguous errors     --->   structured errors + stable exit classes
+
+missing forensic visibility            --->   trace completeness enforcement (TCR)
+
+
+Boundary view:
+
+Untrusted inputs (prompt, payload, plugin behavior)
+                    |
+                    v
+            +---------------+
+            | Runtime Core  |
+            | (trusted)     |
+            +-------+-------+
+                    |
+                    v
+      deterministic decision + error + trace artifacts
