@@ -22,6 +22,15 @@ Under active development (v1).
 ## Quickstart
 
 ```bash
+pip install agent-sentinel
+
+agent-sentinel --help
+agent-sentinel-ui
+```
+
+For local development from source:
+
+```bash
 python -m venv .venv
 source .venv/bin/activate
 python -m pip install -U pip
@@ -30,6 +39,22 @@ pytest -q
 agent-sentinel-benchmark --policy configs/policies/default.yaml
 agent-sentinel-ui
 ```
+
+## Example Policy
+
+```yaml
+capabilities:
+  - fs.read.public
+  - net.http.get
+```
+
+## Security Model
+
+Agent Sentinel enforces a capability-based security model:
+- Explicit allowlist only
+- No implicit permissions
+- Policy-driven runtime enforcement
+- Tool-level access control
 
 ## Dev workflow
 
