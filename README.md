@@ -42,10 +42,12 @@ agent-sentinel-ui
 
 ## Example Policy
 
-```yaml
+```bash
+cat > policy.yaml <<'YAML'
 capabilities:
   - fs.read.public
   - net.http.get
+YAML
 ```
 
 ## Security Model
@@ -91,7 +93,10 @@ See `docs/RELEASE.md`.
 Workflow check (latest run):
 
 ```bash
-RUN_ID=$(gh run list --branch <branch> --limit 1 --json databaseId -q '.[0].databaseId')
+BRANCH="$(git branch --show-current)"
+RUN_ID="$(gh run list --branch "$BRANCH" --limit 1 --json databaseId -q '.[0].databaseId')"
 gh run view "$RUN_ID" --log-failed
 gh run view "$RUN_ID" --web
 ```
+
+Note: `gh run view` does not support `--branch`; fetch the run id first.

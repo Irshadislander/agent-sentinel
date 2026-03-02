@@ -76,7 +76,7 @@ class UnknownCapabilityError(AgentSentinelError):
             f"Unknown capability: {capability}",
             code="unknown_capability",
             details={"capability": capability},
-            hint="Check spelling or run `agent-sentinel capabilities` (coming soon).",
+            hint="Check spelling or run `agent-sentinel capabilities list`.",
         )
 
 

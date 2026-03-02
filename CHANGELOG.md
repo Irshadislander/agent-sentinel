@@ -5,7 +5,10 @@ All notable changes to this project will be documented in this file.
 The format is based on Keep a Changelog, and this project follows Semantic Versioning.
 
 ## Unreleased
-- TBD
+
+### Added
+- Phase 4 test harness and smoke/contract suites for CLI, registry, payload validation, and trace events.
+- Phase 5 documentation updates for architecture boundaries, plugin API, and reproducible release workflow.
 
 ## [0.1.4] - 2026-03-02
 
@@ -32,3 +35,11 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 
 ### Fixed
 - Ruff SIM101/SIM103 simplifications in policy engine.
+
+## [0.1.0] - 2026-02-28
+
+### Added
+- Capability registry foundation with metadata-backed registration and deterministic lookup.
+- CLI capability commands (`capabilities list`) and capability execution (`run CAPABILITY_ID --payload ...`).
+- Trace/audit basics with structured JSON events and per-call runtime metadata.
+- Strict policy schema validation and stable CLI exit-code/error payload behavior.

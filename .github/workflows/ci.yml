@@ -21,6 +21,10 @@ jobs:
           python -m pip install -U pip
           python -m pip install -e ".[dev]"
 
+      - name: Pre-commit
+        run: |
+          pre-commit run --all-files
+
       - name: Lint (ruff)
         run: |
           ruff check .

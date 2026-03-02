@@ -1,11 +1,33 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
 from typing import Any
+
+from agent_sentinel.cli_exit_codes import ExitCode
 
 
 class CapabilityError(Exception):
     """Raised when a capability fails."""
+
+
+@dataclass(frozen=True)
+class CapabilitySpec:
+    id: str
+    name: str
+    version: str
+    description: str
+    schema: dict[str, Any]
+    entrypoint: str
+
+
+@dataclass(frozen=True)
+class Result:
+    ok: bool
+    code: ExitCode
+    data: dict[str, Any] | None = None
+    error: str | None = None
+    metadata: dict[str, Any] | None = None
 
 
 class Capability(ABC):
@@ -16,9 +38,10 @@ class Capability(ABC):
     """
 
     name: str
+    spec: CapabilitySpec
 
     @abstractmethod
-    def execute(self, payload: dict[str, Any]) -> dict[str, Any]:
+    def execute(self, payload: dict[str, Any]) -> Result:
         """
         Execute the capability.
 
@@ -26,6 +49,6 @@ class Capability(ABC):
             payload: Input data
 
         Returns:
-            Result dictionary
+            Structured capability result.
         """
         raise NotImplementedError

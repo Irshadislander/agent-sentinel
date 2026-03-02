@@ -4,16 +4,15 @@ This repo uses tags like `v0.1.1`.
 
 ## 0) Bump version
 
-Update `pyproject.toml`:
+Update `pyproject.toml` to the target version and verify:
 
-```toml
-[project]
-version = "X.Y.Z"
+```bash
+grep -n '^version = ' pyproject.toml
 ```
 
 Update `CHANGELOG.md`:
 - keep `Unreleased` at the top
-- add a new section for `vX.Y.Z`
+- add a new section for the target tag (for example `v0.1.5`)
 
 ## 1) Clean state + tests
 
@@ -51,14 +50,30 @@ deactivate
 ## 4) Tag and push
 
 ```bash
-git tag -a vX.Y.Z -m "vX.Y.Z: <message>"
-git push origin vX.Y.Z
+TAG="v$(python - <<'PY'
+import pathlib
+import tomllib
+
+data = tomllib.loads(pathlib.Path("pyproject.toml").read_text(encoding="utf-8"))
+print(data["project"]["version"])
+PY
+)"
+git tag -a "$TAG" -m "$TAG: release notes"
+git push origin "$TAG"
 ```
 
 ## 5) GitHub release (optional)
 
 ```bash
-gh release create vX.Y.Z --generate-notes
+TAG="v$(python - <<'PY'
+import pathlib
+import tomllib
+
+data = tomllib.loads(pathlib.Path("pyproject.toml").read_text(encoding="utf-8"))
+print(data["project"]["version"])
+PY
+)"
+gh release create "$TAG" --generate-notes
 ```
 
 ## Automated GitHub Release (recommended)
@@ -78,8 +93,16 @@ If CI is configured, tagging a version will automatically:
 5) Tag and push:
 
 ```bash
-git tag -a vX.Y.Z -m "vX.Y.Z: <short notes>"
-git push origin vX.Y.Z
+TAG="v$(python - <<'PY'
+import pathlib
+import tomllib
+
+data = tomllib.loads(pathlib.Path("pyproject.toml").read_text(encoding="utf-8"))
+print(data["project"]["version"])
+PY
+)"
+git tag -a "$TAG" -m "$TAG: release notes"
+git push origin "$TAG"
 ```
 
 6) Verify:
@@ -92,13 +115,21 @@ git push origin vX.Y.Z
 
 Your branch has no changes compared to the base branch. Create at least one commit, push, then retry.
 
-### `git push origin vX.Y.Z` fails because tag already exists
+### `git push origin "$TAG"` fails because tag already exists
 
 Pick a new version/tag, or delete and recreate the tag if it was created incorrectly:
 
 ```bash
-git tag -d vX.Y.Z
-git push origin :refs/tags/vX.Y.Z
+TAG="v$(python - <<'PY'
+import pathlib
+import tomllib
+
+data = tomllib.loads(pathlib.Path("pyproject.toml").read_text(encoding="utf-8"))
+print(data["project"]["version"])
+PY
+)"
+git tag -d "$TAG"
+git push origin ":refs/tags/$TAG"
 ```
 
 ### `ModuleNotFoundError: No module named agent_sentinel` after editable install
@@ -120,10 +151,13 @@ git ls-remote --tags origin | grep "refs/tags/v"
 Then check the latest workflow run with this 2-step flow:
 
 ```bash
-RUN_ID=$(gh run list --branch main --limit 1 --json databaseId -q '.[0].databaseId')
+BRANCH="$(git branch --show-current)"
+RUN_ID="$(gh run list --branch "$BRANCH" --limit 1 --json databaseId -q '.[0].databaseId')"
 gh run view "$RUN_ID" --log-failed
 gh run view "$RUN_ID" --web
 ```
+
+Note: `gh run view` does not support `--branch`; fetch the run id first.
 
 ### GitHub Release created but no assets attached
 

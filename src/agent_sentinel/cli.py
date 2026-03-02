@@ -6,17 +6,28 @@ import sys
 from collections.abc import Callable
 from datetime import UTC, datetime
 from pathlib import Path
+from time import perf_counter_ns
 from typing import Any
 
 from agent_sentinel.benchmark.core import run_benchmark
 from agent_sentinel.benchmark.render import render_benchmark
 from agent_sentinel.capabilities import registry
+from agent_sentinel.capabilities.base import Result
+from agent_sentinel.capabilities.plugins import load_capabilities
 from agent_sentinel.cli_exit_codes import (
     INTERNAL_ERROR,
     OK,
+    USAGE,
+    ExitCode,
 )
 from agent_sentinel.errors import AgentSentinelError, PolicyFileNotFoundError, PolicyParseError
 from agent_sentinel.forensics.ledger import FlightRecorder
+from agent_sentinel.observability import (
+    TraceEvent,
+    TraceStore,
+    new_run_context,
+    validate_payload_against_schema,
+)
 from agent_sentinel.policy_schema import validate_policy_schema
 from agent_sentinel.runtime.demo_planner import DemoPlanner
 from agent_sentinel.security.audit import AuditEvent, from_exception, make_event, to_json
@@ -29,6 +40,40 @@ from agent_sentinel.tools.http_tool import http_get, http_post
 
 DEFAULT_POLICY_PATH = "configs/policies/default.yaml"
 ToolFn = Callable[..., Any]
+
+
+def _build_plugin_options_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(add_help=False)
+    parser.add_argument(
+        "--no-plugins",
+        action="store_true",
+        help="Disable plugin discovery and load only core capabilities.",
+    )
+    parser.add_argument(
+        "--plugins",
+        default=None,
+        help="Path to allowlist file containing permitted plugin entrypoint names.",
+    )
+    parser.add_argument(
+        "--strict-plugins",
+        action="store_true",
+        help="Fail fast if any plugin fails to load.",
+    )
+    return parser
+
+
+def _load_plugin_allowlist(path: str) -> list[str]:
+    allowlist_path = Path(path)
+    if not allowlist_path.exists():
+        raise FileNotFoundError(f"plugin allowlist file not found: {allowlist_path}")
+
+    entries: list[str] = []
+    for raw_line in allowlist_path.read_text(encoding="utf-8").splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#"):
+            continue
+        entries.append(line)
+    return entries
 
 
 def _print_capabilities_table() -> None:
@@ -62,7 +107,208 @@ def _dispatch_command(argv: list[str]) -> int | None:
     if len(argv) >= 2 and argv[0] == "capabilities" and argv[1] == "list":
         _print_capabilities_table()
         return OK
+    if argv and argv[0] == "run":
+        return _dispatch_run_command(argv[1:])
+    if len(argv) >= 2 and argv[0] == "trace" and argv[1] == "view":
+        return _dispatch_trace_view_command(argv[2:])
     return None
+
+
+def _dispatch_run_command(argv: list[str]) -> int:
+    parser = argparse.ArgumentParser(prog="agent-sentinel run")
+    parser.add_argument("capability_id", help="Capability id (spec.id) to execute")
+    parser.add_argument("--payload", default="{}", help="JSON payload object")
+    parser.add_argument("--run-id", default=None, help="Optional run identifier")
+    parser.add_argument("--correlation-id", default=None, help="Optional correlation id")
+    parser.add_argument("--trace-path", default="runs/trace.jsonl", help="Trace JSONL output path")
+    parser.add_argument(
+        "--emit-json", action="store_true", help="Emit machine-readable JSON output"
+    )
+    args = parser.parse_args(argv)
+
+    trace_store = TraceStore(args.trace_path)
+    run_context = new_run_context(run_id=args.run_id, correlation_id=args.correlation_id)
+    capability_id = args.capability_id
+    schema_version = "unknown"
+    validation_outcome = "failed"
+    error_kind: str | None = None
+    error: str | None = None
+    duration_ms = 0.0
+    exit_code = int(ExitCode.RUNTIME)
+    output_data: dict[str, Any] | None = None
+
+    try:
+        payload_raw = json.loads(args.payload)
+    except json.JSONDecodeError as exc:
+        error_kind = "payload_parse_error"
+        error = str(exc)
+        exit_code = USAGE
+        event = TraceEvent(
+            event_type="capability.call",
+            run_context=run_context,
+            capability_id=capability_id,
+            schema_version=schema_version,
+            validation_outcome=validation_outcome,
+            duration_ms=duration_ms,
+            exit_code=exit_code,
+            error_kind=error_kind,
+            error=error,
+        )
+        trace_store.append(event)
+        if args.emit_json:
+            print(
+                json.dumps(
+                    {
+                        "ok": False,
+                        "error": "invalid payload json",
+                        "details": str(exc),
+                    },
+                    sort_keys=True,
+                )
+            )
+        else:
+            print(f"Error: invalid payload json: {exc}", file=sys.stderr)
+        return exit_code
+
+    try:
+        capability_cls = registry.get_by_id(capability_id)
+        spec = registry.get_spec_by_id(capability_id)
+        schema_version = str(spec.schema.get("$schema", spec.version))
+
+        is_valid, validation_error = validate_payload_against_schema(payload_raw, spec.schema)
+        if not is_valid:
+            validation_outcome = "failed"
+            error_kind = "validation_error"
+            error = validation_error
+            exit_code = USAGE
+            result = Result(ok=False, code=ExitCode.USAGE, error=validation_error)
+        else:
+            validation_outcome = "passed"
+            capability = capability_cls()
+            start_ns = perf_counter_ns()
+            try:
+                raw_result = capability.execute(
+                    payload_raw if isinstance(payload_raw, dict) else {}
+                )
+                duration_ms = (perf_counter_ns() - start_ns) / 1_000_000
+            except Exception as exc:
+                duration_ms = (perf_counter_ns() - start_ns) / 1_000_000
+                error_kind = type(exc).__name__
+                error = str(exc)
+                result = Result(ok=False, code=ExitCode.RUNTIME, error=error)
+            else:
+                if isinstance(raw_result, Result):
+                    result = raw_result
+                else:
+                    result = Result(ok=True, code=ExitCode.OK, data={"result": raw_result})
+
+        exit_code = int(result.code)
+        if result.error and error_kind is None:
+            error_kind = "capability_error"
+            error = result.error
+        output_data = result.data
+
+    except Exception as exc:
+        error_kind = type(exc).__name__
+        error = str(exc)
+        exit_code = INTERNAL_ERROR
+        validation_outcome = "failed"
+
+    event = TraceEvent(
+        event_type="capability.call",
+        run_context=run_context,
+        capability_id=capability_id,
+        schema_version=schema_version,
+        validation_outcome=validation_outcome,
+        duration_ms=duration_ms,
+        exit_code=exit_code,
+        error_kind=error_kind,
+        error=error,
+    )
+    trace_store.append(event)
+
+    if args.emit_json:
+        print(
+            json.dumps(
+                {
+                    "ok": exit_code == OK,
+                    "run_id": run_context.run_id,
+                    "capability_id": capability_id,
+                    "exit_code": exit_code,
+                    "data": output_data,
+                    "error_kind": error_kind,
+                    "error": error,
+                },
+                sort_keys=True,
+            )
+        )
+    elif exit_code == OK:
+        print("OK")
+    else:
+        print(f"Error: {error_kind or 'unknown_error'}: {error}", file=sys.stderr)
+
+    return exit_code
+
+
+def _dispatch_trace_view_command(argv: list[str]) -> int:
+    parser = argparse.ArgumentParser(prog="agent-sentinel trace view")
+    parser.add_argument(
+        "--last", type=int, default=20, help="Number of recent trace events to show"
+    )
+    parser.add_argument("--trace-path", default="runs/trace.jsonl", help="Trace JSONL input path")
+    parser.add_argument("--emit-json", action="store_true", help="Emit JSON array")
+    args = parser.parse_args(argv)
+
+    trace_store = TraceStore(args.trace_path)
+    events = trace_store.read_last(args.last)
+
+    if args.emit_json:
+        print(json.dumps(events, sort_keys=True))
+        return OK
+
+    if not events:
+        print("No trace events found.")
+        return OK
+
+    headers = (
+        "timestamp",
+        "run_id",
+        "capability_id",
+        "validation",
+        "duration_ms",
+        "exit_code",
+        "error_kind",
+    )
+    rows: list[tuple[str, str, str, str, str, str, str]] = []
+    for event in events:
+        context = event.get("run_context", {})
+        if not isinstance(context, dict):
+            context = {}
+        rows.append(
+            (
+                str(context.get("timestamp", "")),
+                str(context.get("run_id", "")),
+                str(event.get("capability_id", "")),
+                str(event.get("validation_outcome", "")),
+                f"{float(event.get('duration_ms', 0.0)):.3f}",
+                str(event.get("exit_code", "")),
+                str(event.get("error_kind", "")),
+            )
+        )
+
+    widths = [len(header) for header in headers]
+    for row in rows:
+        for index, value in enumerate(row):
+            widths[index] = max(widths[index], len(value))
+
+    def _format_row(values: tuple[str, ...]) -> str:
+        return " | ".join(value.ljust(widths[index]) for index, value in enumerate(values))
+
+    print(_format_row(headers))
+    print("-+-".join("-" * width for width in widths))
+    for row in rows:
+        print(_format_row(row))
+    return OK
 
 
 def _parse_scalar(raw_value: str) -> Any:
@@ -252,6 +498,21 @@ def _build_parser() -> argparse.ArgumentParser:
     p.add_argument("--policy", required=True, help="Path to policy JSON file")
     p.add_argument("--capability", required=True, help="Capability string to request")
     p.add_argument(
+        "--no-plugins",
+        action="store_true",
+        help="Disable plugin discovery and load only core capabilities.",
+    )
+    p.add_argument(
+        "--plugins",
+        default=None,
+        help="Path to allowlist file containing permitted plugin entrypoint names.",
+    )
+    p.add_argument(
+        "--strict-plugins",
+        action="store_true",
+        help="Fail fast if any plugin fails to load.",
+    )
+    p.add_argument(
         "--capability-name", default=None, help="Registered capability implementation to run"
     )
     p.add_argument("--payload", default=None, help="JSON payload for --capability-name execution")
@@ -313,12 +574,29 @@ def _load_policy(path: str) -> Any:
 
 def main(argv: list[str] | None = None) -> int:
     raw_args = argv if argv is not None else sys.argv[1:]
-    command_result = _dispatch_command(raw_args)
+    plugin_parser = _build_plugin_options_parser()
+    plugin_options, command_args = plugin_parser.parse_known_args(raw_args)
+
+    try:
+        if not plugin_options.no_plugins:
+            allowed_plugins: list[str] | None = None
+            if plugin_options.plugins:
+                allowed_plugins = _load_plugin_allowlist(plugin_options.plugins)
+            load_capabilities(
+                allowed=allowed_plugins,
+                strict=plugin_options.strict_plugins,
+                warn=lambda msg: print(f"Warning: {msg}", file=sys.stderr),
+            )
+    except Exception as exc:
+        print(f"Error: {exc}", file=sys.stderr)
+        return INTERNAL_ERROR
+
+    command_result = _dispatch_command(command_args)
     if command_result is not None:
         return command_result
 
     parser = _build_parser()
-    args = parser.parse_args(raw_args)
+    args = parser.parse_args(command_args)
     capability_name = args.capability_name
     payload = json.loads(args.payload) if args.payload else None
     ctx = RequestContext(

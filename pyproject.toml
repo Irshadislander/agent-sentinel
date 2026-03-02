@@ -18,6 +18,7 @@ dev = [
     "pytest>=9",
     "ruff>=0.6",
     "mypy>=1.10",
+    "pre-commit>=4.0",
     "types-requests",
 ]
 ui = [
@@ -30,12 +31,19 @@ agent-sentinel-benchmark = "agent_sentinel.benchmark.run_benchmark:main"
 agent-sentinel-ui = "agent_sentinel.ui:main"
 agent-sentinel = "agent_sentinel.cli:main"
 
+[project.entry-points."agent_sentinel.capabilities"]
+# External packages can register capability plugins here, e.g.
+# echo = "some_pkg.module:capability_object"
+
 [tool.setuptools]
 package-dir = {"" = "src"}
 
 [tool.setuptools.packages.find]
 where = ["src"]
 include = ["agent_sentinel*"]
+
+[tool.setuptools.package-data]
+agent_sentinel = ["py.typed"]
 
 [tool.ruff]
 line-length = 100
@@ -49,3 +57,17 @@ ignore = ["E501"]
 python_version = "3.11"
 warn_unused_ignores = true
 disallow_untyped_defs = false
+
+[[tool.mypy.overrides]]
+module = [
+    "agent_sentinel.capabilities.__init__",
+    "agent_sentinel.capabilities.base",
+    "agent_sentinel.capabilities.registry",
+]
+check_untyped_defs = true
+disallow_any_generics = true
+disallow_incomplete_defs = true
+disallow_untyped_defs = true
+no_implicit_optional = true
+strict_equality = true
+warn_return_any = true
