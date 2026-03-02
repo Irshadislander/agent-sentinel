@@ -7,6 +7,15 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 ## Unreleased
 - TBD
 
+## [0.1.4] - 2026-03-02
+
+### Added
+- Structured policy error system with dedicated exception types and richer fields.
+- Integration simulation harness for tool-using agent runtime enforcement.
+- CLI UX improvements: structured error rendering, JSON mode, and exit codes.
+- Enterprise capability registry with metadata (category, risk, description).
+- Deterministic benchmarking baseline with CLI benchmark mode and JSON output.
+
 ## v0.1.3
 - Added: edge-case tests for policy engine
 
