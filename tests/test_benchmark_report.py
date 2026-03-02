@@ -5,6 +5,7 @@ from pathlib import Path
 from textwrap import dedent
 
 from agent_sentinel.benchmark.report import generate_report
+from agent_sentinel.benchmark.report import main as report_main
 
 
 def test_generate_benchmark_markdown_snapshot(tmp_path: Path, monkeypatch) -> None:
@@ -171,3 +172,31 @@ def test_generate_report_includes_matrix_comparison(tmp_path: Path, monkeypatch)
     content = output_path.read_text(encoding="utf-8")
     assert "## Matrix Comparison" in content
     assert "trace=off\\|validation=on\\|plugins=on" in content
+
+
+def test_report_command_writes_output_to_tmp_path(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.chdir(tmp_path)
+    matrix_path = tmp_path / "matrix.json"
+    output_path = tmp_path / "report.md"
+    matrix_path.write_text(
+        json.dumps(
+            {
+                "runs": [
+                    {
+                        "mode_label": "trace=off|validation=off|plugins=off",
+                        "avg_runtime_ms": 0.1,
+                        "failure_count": 0,
+                        "trace_event_count": 0,
+                        "exit_code_histogram": {"0": 1},
+                    }
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    rc = report_main(["--matrix-input", str(matrix_path), "--output", str(output_path)])
+    assert rc == 0
+    assert output_path.exists()
+    content = output_path.read_text(encoding="utf-8")
+    assert "## Matrix Comparison" in content

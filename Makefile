@@ -1,4 +1,4 @@
-.PHONY: install dev ui lint format type test bench bench-report run-ui clean
+.PHONY: install dev ui lint format type test bench bench-matrix bench-report run-ui clean
 
 install:
 	python -m pip install -U pip
@@ -25,8 +25,11 @@ test:
 bench:
 	PYTHONPATH=src python -m agent_sentinel.benchmark.run_benchmark
 
-bench-report: bench
-	PYTHONPATH=src python -m agent_sentinel.benchmark.report --input bench/results/latest.json --output docs/bench_report.md
+bench-matrix:
+	PYTHONPATH=src python -m agent_sentinel.benchmark.run_benchmark --matrix --output-dir bench/results
+
+bench-report: bench-matrix
+	PYTHONPATH=src python -m agent_sentinel.benchmark.report --matrix-input bench/results/matrix.json --output docs/bench_report.md
 
 run-ui:
 	agent-sentinel-ui
