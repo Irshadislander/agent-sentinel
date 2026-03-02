@@ -23,6 +23,9 @@ def test_allow_emits_allow_audit_event() -> None:
     assert event.decision == "allow"
     assert event.capability == FS_READ_PUBLIC
     assert event.reason == "capability allowed by policy"
+    assert event.request_id
+    assert event.source == "cli"
+    assert event.correlation_id is None
 
 
 def test_deny_emits_deny_audit_event() -> None:
@@ -38,6 +41,9 @@ def test_deny_emits_deny_audit_event() -> None:
     assert event.capability == NET_HTTP_GET
     assert event.reason == "PolicyViolationError"
     assert event.allowed_capabilities == [FS_READ_PUBLIC]
+    assert event.request_id
+    assert event.source == "cli"
+    assert event.correlation_id is None
 
 
 def test_audit_json_serialization_is_valid() -> None:
@@ -51,3 +57,6 @@ def test_audit_json_serialization_is_valid() -> None:
     assert data["decision"] == "allow"
     assert data["capability"] == FS_READ_PUBLIC
     assert "timestamp_utc" in data
+    assert "request_id" in data
+    assert "source" in data
+    assert "correlation_id" in data

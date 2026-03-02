@@ -7,7 +7,7 @@ from pathlib import PurePosixPath
 from typing import Any
 from urllib.parse import urlparse
 
-from agent_sentinel.security.audit import AuditEvent, from_exception, now_utc_iso
+from agent_sentinel.security.audit import AuditEvent, from_exception, make_event
 from agent_sentinel.security.capabilities import (
     FS_READ_PRIVATE,
     FS_READ_PUBLIC,
@@ -18,6 +18,7 @@ from agent_sentinel.security.capabilities import (
     NET_INTERNAL,
     is_known,
 )
+from agent_sentinel.security.context import RequestContext, new_request_id
 from agent_sentinel.security.errors import (
     AgentSentinelError,
     InvalidPolicyFormatError,
@@ -75,14 +76,21 @@ def enforce_request(
     capability: str,
     policy: Any,
     *,
+    ctx: RequestContext | None = None,
     audit_sink: Callable[[AuditEvent], None] | None = None,
 ) -> None:
+    effective_ctx = ctx or RequestContext(
+        request_id=new_request_id(),
+        correlation_id=None,
+        source="cli",
+    )
+
     try:
         enforce(capability, policy)
         if audit_sink is not None:
             audit_sink(
-                AuditEvent(
-                    timestamp_utc=now_utc_iso(),
+                make_event(
+                    ctx=effective_ctx,
                     capability=capability,
                     decision="allow",
                     reason="capability allowed by policy",
@@ -91,8 +99,8 @@ def enforce_request(
     except PolicyViolationError as exc:
         if audit_sink is not None:
             audit_sink(
-                AuditEvent(
-                    timestamp_utc=now_utc_iso(),
+                make_event(
+                    ctx=effective_ctx,
                     capability=capability,
                     decision="deny",
                     reason=exc.__class__.__name__,
@@ -102,7 +110,7 @@ def enforce_request(
         raise
     except AgentSentinelError as exc:
         if audit_sink is not None:
-            audit_sink(from_exception(exc, capability=capability))
+            audit_sink(from_exception(exc, ctx=effective_ctx, capability=capability))
         raise
 
 
