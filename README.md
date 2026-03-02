@@ -31,6 +31,21 @@ agent-sentinel-benchmark --policy configs/policies/default.yaml
 agent-sentinel-ui
 ```
 
+## Dev workflow
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+python -m pip install -U pip
+python -m pip install -e ".[dev]"
+python -m pip install pre-commit
+pre-commit install
+
+ruff check .
+ruff format .
+pytest -q
+```
+
 ## Troubleshooting (macOS + Python 3.14)
 
 If you see `ModuleNotFoundError: No module named agent_sentinel` after an editable install,
