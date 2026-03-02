@@ -11,6 +11,10 @@ Update `pyproject.toml`:
 version = "X.Y.Z"
 ```
 
+Update `CHANGELOG.md`:
+- keep `Unreleased` at the top
+- add a new section for `vX.Y.Z`
+
 ## 1) Clean state + tests
 
 ```bash
@@ -68,16 +72,17 @@ If CI is configured, tagging a version will automatically:
 ### Steps
 
 1) Bump version in `pyproject.toml`.
-2) Merge PR to `main`.
-3) Pull latest `main` locally.
-4) Tag and push:
+2) Update `CHANGELOG.md`.
+3) Merge PR to `main`.
+4) Pull latest `main` locally.
+5) Tag and push:
 
 ```bash
 git tag -a vX.Y.Z -m "vX.Y.Z: <short notes>"
 git push origin vX.Y.Z
 ```
 
-5) Verify:
+6) Verify:
 - GitHub Actions Release workflow is green
 - GitHub Release exists with attached artifacts in `dist/`
 

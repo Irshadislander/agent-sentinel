@@ -7,6 +7,9 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 ## Unreleased
 - TBD
 
+## v0.1.3
+- Added: edge-case tests for policy engine
+
 ## v0.1.2
 - Release automation: tag-based GitHub Release workflow
 - Added changelog + improved release checklist
