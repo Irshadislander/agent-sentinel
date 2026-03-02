@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any
 
+from .audit import AuditEvent
 from .errors import AgentSentinelError
-from .policy_engine import enforce
+from .policy_engine import enforce_request as enforce_policy_request
 
 
 @dataclass(frozen=True)
@@ -25,6 +27,7 @@ def enforce_request(
     policy: Any,
     *,
     context: EnforcementContext | None = None,
+    audit_sink: Callable[[AuditEvent], None] | None = None,
 ) -> None:
     """
     Runtime enforcement entrypoint.
@@ -34,7 +37,7 @@ def enforce_request(
     """
 
     _ = context  # reserved for future logging/audit trail
-    enforce(capability, policy)
+    enforce_policy_request(capability, policy, audit_sink=audit_sink)
 
 
 def is_request_allowed(
@@ -42,13 +45,14 @@ def is_request_allowed(
     policy: Any,
     *,
     context: EnforcementContext | None = None,
+    audit_sink: Callable[[AuditEvent], None] | None = None,
 ) -> bool:
     """
     Convenience bool wrapper for runtime callers.
     """
 
     try:
-        enforce_request(capability, policy, context=context)
+        enforce_request(capability, policy, context=context, audit_sink=audit_sink)
         return True
     except AgentSentinelError:
         return False
