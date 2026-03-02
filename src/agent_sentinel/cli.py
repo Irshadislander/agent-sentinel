@@ -20,8 +20,9 @@ from agent_sentinel.cli_exit_codes import (
 from agent_sentinel.cli_format import render
 from agent_sentinel.forensics.ledger import FlightRecorder
 from agent_sentinel.runtime.demo_planner import DemoPlanner
-from agent_sentinel.security.audit import AuditEvent, from_exception, now_utc_iso, to_json
+from agent_sentinel.security.audit import AuditEvent, from_exception, make_event, to_json
 from agent_sentinel.security.capabilities import CapabilitySet
+from agent_sentinel.security.context import RequestContext, new_request_id
 from agent_sentinel.security.enforcer import enforce_request
 from agent_sentinel.security.errors import (
     AgentSentinelError,
@@ -225,6 +226,24 @@ def _build_parser() -> argparse.ArgumentParser:
     p.add_argument("--capability", required=True, help="Capability string to request")
     p.add_argument("--json", action="store_true", help="Output errors as JSON")
     p.add_argument(
+        "--request-id",
+        type=str,
+        default=None,
+        help="Optional request ID (auto-generated if omitted).",
+    )
+    p.add_argument(
+        "--correlation-id",
+        type=str,
+        default=None,
+        help="Optional correlation ID for tracing.",
+    )
+    p.add_argument(
+        "--source",
+        type=str,
+        default="cli",
+        help="Event source label (default: cli).",
+    )
+    p.add_argument(
         "--audit-json",
         action="store_true",
         help="Print one JSON audit event line to stderr.",
@@ -257,6 +276,11 @@ def _load_policy(path: str) -> Any:
 def main(argv: list[str] | None = None) -> int:
     parser = _build_parser()
     args = parser.parse_args(argv)
+    ctx = RequestContext(
+        request_id=args.request_id or new_request_id(),
+        correlation_id=args.correlation_id,
+        source=args.source,
+    )
     last_audit_event: AuditEvent | None = None
 
     def _audit_sink(event: AuditEvent) -> None:
@@ -269,15 +293,15 @@ def main(argv: list[str] | None = None) -> int:
         if args.benchmark:
 
             def _target() -> None:
-                enforce_request(args.capability, policy)
+                enforce_request(args.capability, policy, ctx=ctx)
 
             result = run_benchmark(_target, iterations=args.iterations, warmup=args.warmup)
             print(render_benchmark(result, as_json=args.json))
             if args.audit_json:
                 print(
                     to_json(
-                        AuditEvent(
-                            timestamp_utc=now_utc_iso(),
+                        make_event(
+                            ctx=ctx,
                             capability=args.capability,
                             decision="allow",
                             reason="benchmark completed",
@@ -290,6 +314,7 @@ def main(argv: list[str] | None = None) -> int:
         enforce_request(
             args.capability,
             policy,
+            ctx=ctx,
             audit_sink=_audit_sink if args.audit_json else None,
         )
         if args.audit_json and last_audit_event is not None:
@@ -299,8 +324,8 @@ def main(argv: list[str] | None = None) -> int:
 
     except PolicyViolationError as e:
         if args.audit_json:
-            event = last_audit_event or AuditEvent(
-                timestamp_utc=now_utc_iso(),
+            event = last_audit_event or make_event(
+                ctx=ctx,
                 capability=args.capability,
                 decision="deny",
                 reason=e.__class__.__name__,
@@ -312,14 +337,14 @@ def main(argv: list[str] | None = None) -> int:
 
     except UnknownCapabilityError as e:
         if args.audit_json:
-            event = last_audit_event or from_exception(e, capability=args.capability)
+            event = last_audit_event or from_exception(e, ctx=ctx, capability=args.capability)
             print(to_json(event), file=sys.stderr)
         print(render(e, as_json=args.json), file=sys.stderr)
         return UNKNOWN_CAPABILITY
 
     except InvalidPolicyFormatError as e:
         if args.audit_json:
-            event = last_audit_event or from_exception(e, capability=args.capability)
+            event = last_audit_event or from_exception(e, ctx=ctx, capability=args.capability)
             print(to_json(event), file=sys.stderr)
         print(render(e, as_json=args.json), file=sys.stderr)
         return INVALID_POLICY
@@ -327,14 +352,14 @@ def main(argv: list[str] | None = None) -> int:
     except AgentSentinelError as e:
         # Future-proof: any other sentinel error
         if args.audit_json:
-            event = last_audit_event or from_exception(e, capability=args.capability)
+            event = last_audit_event or from_exception(e, ctx=ctx, capability=args.capability)
             print(to_json(event), file=sys.stderr)
         print(render(e, as_json=args.json), file=sys.stderr)
         return INTERNAL_ERROR
 
     except Exception as e:  # noqa: BLE001
         if args.audit_json:
-            event = last_audit_event or from_exception(e, capability=args.capability)
+            event = last_audit_event or from_exception(e, ctx=ctx, capability=args.capability)
             print(to_json(event), file=sys.stderr)
         print(f"Internal error: {e}", file=sys.stderr)
         return INTERNAL_ERROR

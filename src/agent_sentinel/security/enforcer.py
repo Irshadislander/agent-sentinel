@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from .audit import AuditEvent
+from .context import RequestContext
 from .errors import AgentSentinelError
 from .policy_engine import enforce_request as enforce_policy_request
 
@@ -27,6 +28,7 @@ def enforce_request(
     policy: Any,
     *,
     context: EnforcementContext | None = None,
+    ctx: RequestContext | None = None,
     audit_sink: Callable[[AuditEvent], None] | None = None,
 ) -> None:
     """
@@ -37,7 +39,7 @@ def enforce_request(
     """
 
     _ = context  # reserved for future logging/audit trail
-    enforce_policy_request(capability, policy, audit_sink=audit_sink)
+    enforce_policy_request(capability, policy, ctx=ctx, audit_sink=audit_sink)
 
 
 def is_request_allowed(
@@ -45,6 +47,7 @@ def is_request_allowed(
     policy: Any,
     *,
     context: EnforcementContext | None = None,
+    ctx: RequestContext | None = None,
     audit_sink: Callable[[AuditEvent], None] | None = None,
 ) -> bool:
     """
@@ -52,7 +55,7 @@ def is_request_allowed(
     """
 
     try:
-        enforce_request(capability, policy, context=context, audit_sink=audit_sink)
+        enforce_request(capability, policy, context=context, ctx=ctx, audit_sink=audit_sink)
         return True
     except AgentSentinelError:
         return False
