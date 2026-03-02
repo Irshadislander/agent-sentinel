@@ -29,6 +29,8 @@ build/
 # local/private data
 private/
 runs/
+public/
+workspace/
 private/
 runs/
 dist/
@@ -36,3 +38,11 @@ build/
 *.egg-info/
 .DS_Store
 .venv/
+
+# runtime outputs (generated)
+public/
+workspace/
+
+# benchmark outputs
+bench/results/*
+!bench/results/.gitkeep
