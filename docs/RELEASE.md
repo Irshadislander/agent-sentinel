@@ -2,6 +2,15 @@
 
 This repo uses tags like `v0.1.1`.
 
+## 0) Bump version
+
+Update `pyproject.toml`:
+
+```toml
+[project]
+version = "X.Y.Z"
+```
+
 ## 1) Clean state + tests
 
 ```bash
@@ -40,6 +49,12 @@ deactivate
 ```bash
 git tag -a vX.Y.Z -m "vX.Y.Z: <message>"
 git push origin vX.Y.Z
+```
+
+## 5) GitHub release (optional)
+
+```bash
+gh release create vX.Y.Z --generate-notes
 ```
 
 ## Notes
