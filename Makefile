@@ -1,4 +1,4 @@
-.PHONY: install dev ui lint format type test bench ci run-ui clean
+.PHONY: install dev ui lint format type test bench release-check ci run-ui clean
 
 install:
 	python -m pip install -U pip
@@ -23,7 +23,13 @@ test:
 	python -m pytest -q
 
 bench:
-	PYTHONPATH=src python -m bench.run_bench || python bench/run_bench.py
+	PYTHONPATH=src python3 -m bench.run_bench || python3 bench/run_bench.py
+
+release-check:
+	python3 -m ruff check .
+	python3 -m ruff format --check .
+	python3 -m pytest -q
+	$(MAKE) bench
 
 ci:
 	$(MAKE) lint

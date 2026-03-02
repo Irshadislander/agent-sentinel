@@ -14,6 +14,63 @@ Update `CHANGELOG.md`:
 - keep `Unreleased` at the top
 - add a new section for the target tag (for example `v0.1.5`)
 
+## PR to Release Flow (exact)
+
+1) Open a PR from your current branch:
+
+```bash
+BRANCH="$(git branch --show-current)"
+gh pr create --base main --head "$BRANCH" --fill
+```
+
+2) Squash merge after checks pass:
+
+```bash
+gh pr merge --squash --delete-branch --auto
+```
+
+3) Pull `main`, then tag and push:
+
+```bash
+git switch main
+git pull --ff-only
+TAG="v$(python - <<'PY'
+import pathlib
+import tomllib
+
+data = tomllib.loads(pathlib.Path("pyproject.toml").read_text(encoding="utf-8"))
+print(data["project"]["version"])
+PY
+)"
+git tag -a "$TAG" -m "$TAG: release"
+git push origin "$TAG"
+```
+
+4) Publish release notes from `CHANGELOG.md`:
+
+```bash
+TAG="v$(python - <<'PY'
+import pathlib
+import tomllib
+
+data = tomllib.loads(pathlib.Path("pyproject.toml").read_text(encoding="utf-8"))
+print(data["project"]["version"])
+PY
+)"
+python - <<'PY'
+from pathlib import Path
+import tomllib
+
+version = tomllib.loads(Path("pyproject.toml").read_text(encoding="utf-8"))["project"]["version"]
+lines = Path("CHANGELOG.md").read_text(encoding="utf-8").splitlines()
+start = next(i for i, line in enumerate(lines) if line.startswith(f"## [{version}]"))
+end = next((i for i in range(start + 1, len(lines)) if lines[i].startswith("## [")), len(lines))
+Path(".release-notes.md").write_text("\n".join(lines[start:end]).strip() + "\n", encoding="utf-8")
+PY
+gh release create "$TAG" --notes-file .release-notes.md
+rm -f .release-notes.md
+```
+
 ## 1) Clean state + tests
 
 ```bash

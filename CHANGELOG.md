@@ -6,9 +6,15 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 
 ## Unreleased
 
+## [0.1.5] - 2026-03-02
+
 ### Added
-- Phase 4 test harness and smoke/contract suites for CLI, registry, payload validation, and trace events.
-- Phase 5 documentation updates for architecture boundaries, plugin API, and reproducible release workflow.
+- Capability registry hardening and CLI capability dispatch coverage for list/run flows.
+- Plugin discovery controls for safer loading (allowlist-aware behavior and core-only mode support).
+- Observability and trace benchmarking documentation for repeatable latency checks.
+
+### Changed
+- Benchmark outputs under `bench/results/` are now treated as generated artifacts (ignored in git and published by CI artifact upload).
 
 ## [0.1.4] - 2026-03-02
 
