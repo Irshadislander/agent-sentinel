@@ -8,6 +8,8 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from agent_sentinel.benchmark.core import run_benchmark
+from agent_sentinel.benchmark.render import render_benchmark
 from agent_sentinel.cli_exit_codes import (
     DENIED,
     INTERNAL_ERROR,
@@ -221,6 +223,23 @@ def _build_parser() -> argparse.ArgumentParser:
     p.add_argument("--policy", required=True, help="Path to policy JSON file")
     p.add_argument("--capability", required=True, help="Capability string to request")
     p.add_argument("--json", action="store_true", help="Output errors as JSON")
+    p.add_argument(
+        "--benchmark",
+        action="store_true",
+        help="Run a micro-benchmark for enforcement (prints results, exit 0 on success).",
+    )
+    p.add_argument(
+        "--iterations",
+        type=int,
+        default=10_000,
+        help="Benchmark iterations (default: 10000).",
+    )
+    p.add_argument(
+        "--warmup",
+        type=int,
+        default=200,
+        help="Benchmark warmup iterations (default: 200).",
+    )
     return p
 
 
@@ -235,6 +254,16 @@ def main(argv: list[str] | None = None) -> int:
 
     try:
         policy = _load_policy(args.policy)
+
+        if args.benchmark:
+
+            def _target() -> None:
+                enforce_request(args.capability, policy)
+
+            result = run_benchmark(_target, iterations=args.iterations, warmup=args.warmup)
+            print(render_benchmark(result, as_json=args.json))
+            return OK
+
         enforce_request(args.capability, policy)
         print("ALLOWED")
         return OK
