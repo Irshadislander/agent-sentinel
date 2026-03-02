@@ -87,3 +87,11 @@ See `CHANGELOG.md`.
 ## Release
 
 See `docs/RELEASE.md`.
+
+Workflow check (latest run):
+
+```bash
+RUN_ID=$(gh run list --branch <branch> --limit 1 --json databaseId -q '.[0].databaseId')
+gh run view "$RUN_ID" --log-failed
+gh run view "$RUN_ID" --web
+```

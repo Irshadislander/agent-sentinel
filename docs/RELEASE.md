@@ -117,7 +117,13 @@ Confirm the pushed tag matches `v*` and exists on the remote:
 git ls-remote --tags origin | grep "refs/tags/v"
 ```
 
-Then check GitHub Actions for the `Release` workflow run.
+Then check the latest workflow run with this 2-step flow:
+
+```bash
+RUN_ID=$(gh run list --branch main --limit 1 --json databaseId -q '.[0].databaseId')
+gh run view "$RUN_ID" --log-failed
+gh run view "$RUN_ID" --web
+```
 
 ### GitHub Release created but no assets attached
 

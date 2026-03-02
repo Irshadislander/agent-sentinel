@@ -31,6 +31,40 @@ DEFAULT_POLICY_PATH = "configs/policies/default.yaml"
 ToolFn = Callable[..., Any]
 
 
+def _print_capabilities_table() -> None:
+    entries = registry.entries()
+    headers = ("name", "namespace", "version", "description")
+    rows = [
+        (
+            entry.metadata.name,
+            entry.metadata.namespace,
+            entry.metadata.version,
+            entry.metadata.description,
+        )
+        for entry in entries
+    ]
+
+    widths = [len(header) for header in headers]
+    for row in rows:
+        for index, value in enumerate(row):
+            widths[index] = max(widths[index], len(value))
+
+    def _format_row(values: tuple[str, str, str, str]) -> str:
+        return " | ".join(value.ljust(widths[index]) for index, value in enumerate(values))
+
+    print(_format_row(headers))
+    print("-+-".join("-" * width for width in widths))
+    for row in rows:
+        print(_format_row(row))
+
+
+def _dispatch_command(argv: list[str]) -> int | None:
+    if len(argv) >= 2 and argv[0] == "capabilities" and argv[1] == "list":
+        _print_capabilities_table()
+        return OK
+    return None
+
+
 def _parse_scalar(raw_value: str) -> Any:
     value = raw_value.strip()
     if value.lower() == "true":
@@ -278,8 +312,13 @@ def _load_policy(path: str) -> Any:
 
 
 def main(argv: list[str] | None = None) -> int:
+    raw_args = argv if argv is not None else sys.argv[1:]
+    command_result = _dispatch_command(raw_args)
+    if command_result is not None:
+        return command_result
+
     parser = _build_parser()
-    args = parser.parse_args(argv)
+    args = parser.parse_args(raw_args)
     capability_name = args.capability_name
     payload = json.loads(args.payload) if args.payload else None
     ctx = RequestContext(
