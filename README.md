@@ -16,6 +16,10 @@ It enforces **capability-based permissions** at the tool boundary and records **
 - `configs/` policies and task specs
 - `tests/` unit/integration tests
 
+## Research Paper Artifacts
+- `paper/FORMAL_MODEL.md`
+- `paper/METRICS.md`
+
 ## Status
 Under active development (v1).
 
@@ -69,6 +73,16 @@ pre-commit install
 ruff check .
 ruff format .
 pytest -q
+```
+
+## Matrix Benchmark + Report
+
+```bash
+# Run ablation matrix and write bench/results/matrix.json + matrix.csv
+make bench-matrix
+
+# Generate markdown report from matrix results
+make bench-report
 ```
 
 ## Troubleshooting (macOS + Python 3.14)

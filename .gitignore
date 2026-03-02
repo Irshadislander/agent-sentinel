@@ -14,6 +14,7 @@ __pycache__/
 # benchmark outputs
 bench/results/*
 !bench/results/.gitkeep
+docs/bench_report.md
 
 # OS
 .DS_Store

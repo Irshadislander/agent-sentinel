@@ -107,7 +107,7 @@ def _top_slowest(rows: list[TaskRow], limit: int = 5) -> list[TaskRow]:
 def _render_markdown(
     report: dict[str, Any],
     *,
-    source_path: Path,
+    source_label: str,
     generated_at: str,
     git_sha: str,
     matrix_rows: list[dict[str, Any]] | None = None,
@@ -123,7 +123,7 @@ def _render_markdown(
         "",
         f"- Generated at: `{generated_at}`",
         f"- Git SHA: `{git_sha}`",
-        f"- Source: `{source_path.as_posix()}`",
+        f"- Source: `{source_label}`",
         f"- Benchmark ID: `{benchmark_id}`",
         f"- Tasks total: `{tasks_total}`",
         "",
@@ -253,22 +253,39 @@ def _load_matrix_rows(path: Path) -> list[dict[str, Any]]:
     return rows
 
 
+def _empty_latest_report() -> dict[str, Any]:
+    return {
+        "benchmark_id": "matrix-only",
+        "tasks_total": 0,
+        "baseline": {"metrics": {}, "results": []},
+        "secured": {"metrics": {}, "results": []},
+    }
+
+
 def generate_report(
     *,
-    input_path: Path = DEFAULT_INPUT_PATH,
+    input_path: Path | None = DEFAULT_INPUT_PATH,
     output_path: Path = DEFAULT_OUTPUT_PATH,
     matrix_input_path: Path | None = DEFAULT_MATRIX_INPUT_PATH,
     generated_at: str | None = None,
     git_sha: str | None = None,
 ) -> Path:
-    report = json.loads(input_path.read_text(encoding="utf-8"))
-    if not isinstance(report, dict):
-        raise ValueError("benchmark report JSON must be an object")
+    source_label = "none"
+    report: dict[str, Any]
+    if input_path is not None and input_path.exists():
+        report = json.loads(input_path.read_text(encoding="utf-8"))
+        if not isinstance(report, dict):
+            raise ValueError("benchmark report JSON must be an object")
+        source_label = input_path.as_posix()
+    else:
+        report = _empty_latest_report()
+        if matrix_input_path is not None:
+            source_label = matrix_input_path.as_posix()
 
     matrix_rows = _load_matrix_rows(matrix_input_path) if matrix_input_path else []
     markdown = _render_markdown(
         report,
-        source_path=input_path,
+        source_label=source_label,
         generated_at=generated_at or _utc_now_iso(),
         git_sha=git_sha or _detect_git_sha(),
         matrix_rows=matrix_rows,
@@ -282,8 +299,8 @@ def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Generate markdown benchmark summary.")
     parser.add_argument(
         "--input",
-        default=str(DEFAULT_INPUT_PATH),
-        help=f"Input benchmark JSON path (default: {DEFAULT_INPUT_PATH}).",
+        default="",
+        help=f"Optional input benchmark JSON path (default: {DEFAULT_INPUT_PATH} if present).",
     )
     parser.add_argument(
         "--output",
@@ -301,8 +318,15 @@ def _build_parser() -> argparse.ArgumentParser:
 def main(argv: list[str] | None = None) -> int:
     parser = _build_parser()
     args = parser.parse_args(argv)
+    input_path: Path | None
+    if args.input:
+        input_path = Path(args.input)
+    elif DEFAULT_INPUT_PATH.exists():
+        input_path = DEFAULT_INPUT_PATH
+    else:
+        input_path = None
     output = generate_report(
-        input_path=Path(args.input),
+        input_path=input_path,
         output_path=Path(args.output),
         matrix_input_path=Path(args.matrix_input) if args.matrix_input else None,
     )
