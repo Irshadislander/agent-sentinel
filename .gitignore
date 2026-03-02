@@ -11,6 +11,10 @@ __pycache__/
 # Virtual env
 .venv/
 
+# benchmark outputs
+bench/results/*
+!bench/results/.gitkeep
+
 # OS
 .DS_Store
 
