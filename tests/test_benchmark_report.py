@@ -149,14 +149,29 @@ def test_generate_report_includes_matrix_comparison(tmp_path: Path, monkeypatch)
     }
     matrix_payload = {
         "generated_at_utc": "2026-03-02T00:00:00Z",
-        "runs": [
+        "rows": [
             {
-                "mode_label": "trace=off|validation=on|plugins=on",
-                "avg_runtime_ms": 1.23,
-                "failure_count": 0,
-                "trace_event_count": 0,
-                "exit_code_histogram": {"0": 2},
-            }
+                "baseline": "default",
+                "task_id": "benign_read",
+                "category": "benign",
+                "decision": "allow",
+                "exit_code": 0,
+                "duration_ms": 1.23,
+                "has_trace": True,
+                "error_kind": "none",
+                "raw_error": "",
+            },
+            {
+                "baseline": "no_trace",
+                "task_id": "benign_read",
+                "category": "benign",
+                "decision": "allow",
+                "exit_code": 0,
+                "duration_ms": 0.93,
+                "has_trace": False,
+                "error_kind": "none",
+                "raw_error": "",
+            },
         ],
     }
     input_path.write_text(json.dumps(input_payload), encoding="utf-8")
@@ -170,8 +185,11 @@ def test_generate_report_includes_matrix_comparison(tmp_path: Path, monkeypatch)
         git_sha="abc1234",
     )
     content = output_path.read_text(encoding="utf-8")
-    assert "## Matrix Comparison" in content
-    assert "trace=off\\|validation=on\\|plugins=on" in content
+    assert "## Table 1: Default vs Baselines (Per-Metric)" in content
+    assert "## Table 2: Per-Category Breakdown" in content
+    assert "## Table 3: Latency p50/p95" in content
+    assert "| default |" in content
+    assert "| no_trace |" in content
 
 
 def test_report_command_writes_output_to_tmp_path(tmp_path: Path, monkeypatch) -> None:
@@ -181,13 +199,17 @@ def test_report_command_writes_output_to_tmp_path(tmp_path: Path, monkeypatch) -
     matrix_path.write_text(
         json.dumps(
             {
-                "runs": [
+                "rows": [
                     {
-                        "mode_label": "trace=off|validation=off|plugins=off",
-                        "avg_runtime_ms": 0.1,
-                        "failure_count": 0,
-                        "trace_event_count": 0,
-                        "exit_code_histogram": {"0": 1},
+                        "baseline": "raw_errors",
+                        "task_id": "attack_case",
+                        "category": "malicious",
+                        "decision": "deny",
+                        "exit_code": 13,
+                        "duration_ms": 0.1,
+                        "has_trace": True,
+                        "error_kind": "raw_error",
+                        "raw_error": "permission denied",
                     }
                 ]
             }
@@ -199,4 +221,4 @@ def test_report_command_writes_output_to_tmp_path(tmp_path: Path, monkeypatch) -
     assert rc == 0
     assert output_path.exists()
     content = output_path.read_text(encoding="utf-8")
-    assert "## Matrix Comparison" in content
+    assert "## Table 1: Default vs Baselines (Per-Metric)" in content

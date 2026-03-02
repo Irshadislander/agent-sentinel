@@ -104,6 +104,64 @@ def _top_slowest(rows: list[TaskRow], limit: int = 5) -> list[TaskRow]:
     return ranked[:limit]
 
 
+def _percentile(values: list[float], p: float) -> float:
+    if not values:
+        return 0.0
+    ordered = sorted(values)
+    if len(ordered) == 1:
+        return ordered[0]
+    index = (len(ordered) - 1) * p
+    low = int(index)
+    high = min(low + 1, len(ordered) - 1)
+    weight = index - low
+    return ordered[low] + (ordered[high] - ordered[low]) * weight
+
+
+def _matrix_groups(matrix_rows: list[dict[str, Any]]) -> dict[str, list[dict[str, Any]]]:
+    grouped: dict[str, list[dict[str, Any]]] = {}
+    for row in matrix_rows:
+        baseline = str(row.get("baseline", "")).strip() or "unknown"
+        grouped.setdefault(baseline, []).append(row)
+    return grouped
+
+
+def _table1_metrics(rows: list[dict[str, Any]]) -> dict[str, float]:
+    total = len(rows)
+    if total == 0:
+        return {"UER": 0.0, "FAR": 0.0, "TCR": 0.0, "EDS": 0.0, "PEA": 0.0}
+
+    denied_expected = [row for row in rows if str(row.get("category", "")) != "benign"]
+    denied_but_executed = sum(1 for row in denied_expected if row.get("decision") == "allow")
+    uer = denied_but_executed / len(denied_expected) if denied_expected else 0.0
+
+    failures = [row for row in rows if int(row.get("exit_code", 0)) != OK]
+    ambiguous = sum(
+        1
+        for row in failures
+        if str(row.get("error_kind", "")).lower() in {"", "none", "unknown", "raw_error"}
+    )
+    far = ambiguous / len(failures) if failures else 0.0
+
+    traced = sum(1 for row in rows if bool(row.get("has_trace")))
+    tcr = traced / total
+
+    by_task: dict[str, set[int]] = {}
+    for row in rows:
+        task_id = str(row.get("task_id", ""))
+        by_task.setdefault(task_id, set()).add(int(row.get("exit_code", 0)))
+    consistent = sum(1 for codes in by_task.values() if len(codes) == 1)
+    eds = consistent / len(by_task) if by_task else 0.0
+
+    correct = 0
+    for row in rows:
+        expected = "allow" if str(row.get("category", "")) == "benign" else "deny"
+        if str(row.get("decision", "")) == expected:
+            correct += 1
+    pea = correct / total
+
+    return {"UER": uer, "FAR": far, "TCR": tcr, "EDS": eds, "PEA": pea}
+
+
 def _render_markdown(
     report: dict[str, Any],
     *,
@@ -207,31 +265,92 @@ def _render_markdown(
         )
 
     if matrix_rows:
+        groups = _matrix_groups(matrix_rows)
+
         lines.extend(
             [
                 "",
-                "## Matrix Comparison",
+                "## Table 1: Default vs Baselines (Per-Metric)",
                 "",
-                "| mode_label | avg_runtime_ms | failure_count | trace_event_count | exit_code_histogram |",
-                "|---|---:|---:|---:|---|",
+                "| baseline | UER | FAR | TCR | EDS | PEA |",
+                "|---|---:|---:|---:|---:|---:|",
             ]
         )
-        for row in sorted(matrix_rows, key=lambda item: str(item.get("mode_label", ""))):
-            histogram = row.get("exit_code_histogram", {})
-            histogram_text = json.dumps(histogram, sort_keys=True, separators=(",", ":"))
+        for baseline in sorted(groups):
+            metrics = _table1_metrics(groups[baseline])
             lines.append(
                 "| "
                 + " | ".join(
                     [
-                        _safe_cell(row.get("mode_label", "n/a")),
-                        _safe_cell(row.get("avg_runtime_ms", "n/a")),
-                        _safe_cell(row.get("failure_count", "n/a")),
-                        _safe_cell(row.get("trace_event_count", "n/a")),
-                        _safe_cell(histogram_text),
+                        baseline,
+                        f"{metrics['UER']:.4f}",
+                        f"{metrics['FAR']:.4f}",
+                        f"{metrics['TCR']:.4f}",
+                        f"{metrics['EDS']:.4f}",
+                        f"{metrics['PEA']:.4f}",
                     ]
                 )
                 + " |"
             )
+
+        lines.extend(
+            [
+                "",
+                "## Table 2: Per-Category Breakdown",
+                "",
+                "| baseline | category | count | allow_rate | deny_rate |",
+                "|---|---|---:|---:|---:|",
+            ]
+        )
+        for baseline in sorted(groups):
+            rows_for_baseline = groups[baseline]
+            categories = sorted({str(row.get("category", "")) for row in rows_for_baseline})
+            for category in categories:
+                category_rows = [
+                    row for row in rows_for_baseline if str(row.get("category", "")) == category
+                ]
+                count = len(category_rows)
+                allow_rate = (
+                    sum(1 for row in category_rows if str(row.get("decision", "")) == "allow")
+                    / count
+                    if count
+                    else 0.0
+                )
+                deny_rate = (
+                    sum(1 for row in category_rows if str(row.get("decision", "")) == "deny")
+                    / count
+                    if count
+                    else 0.0
+                )
+                lines.append(
+                    f"| {baseline} | {category} | {count} | {allow_rate:.4f} | {deny_rate:.4f} |"
+                )
+
+        lines.extend(
+            [
+                "",
+                "## Table 3: Latency p50/p95",
+                "",
+                "| baseline | scope | p50_ms | p95_ms |",
+                "|---|---|---:|---:|",
+            ]
+        )
+        for baseline in sorted(groups):
+            rows_for_baseline = groups[baseline]
+            overall = [float(row.get("duration_ms", 0.0)) for row in rows_for_baseline]
+            lines.append(
+                f"| {baseline} | overall | {_percentile(overall, 0.50):.3f} | {_percentile(overall, 0.95):.3f} |"
+            )
+            categories = sorted({str(row.get("category", "")) for row in rows_for_baseline})
+            for category in categories:
+                scoped = [
+                    float(row.get("duration_ms", 0.0))
+                    for row in rows_for_baseline
+                    if str(row.get("category", "")) == category
+                ]
+                lines.append(
+                    f"| {baseline} | {category} | {_percentile(scoped, 0.50):.3f} | {_percentile(scoped, 0.95):.3f} |"
+                )
 
     lines.append("")
     return "\n".join(lines)
@@ -243,6 +362,10 @@ def _load_matrix_rows(path: Path) -> list[dict[str, Any]]:
     payload = json.loads(path.read_text(encoding="utf-8"))
     if not isinstance(payload, dict):
         return []
+    rows_payload = payload.get("rows")
+    if isinstance(rows_payload, list):
+        rows = [row for row in rows_payload if isinstance(row, dict)]
+        return rows
     runs = payload.get("runs", [])
     if not isinstance(runs, list):
         return []
