@@ -21,8 +21,8 @@ dev = [
     "types-requests",
 ]
 ui = [
-    "streamlit>=1.30",
-    "watchdog; platform_system=='Darwin'",
+    "streamlit>=1.32",
+    "watchdog>=3.0; platform_system=='Darwin'",
 ]
 
 [project.scripts]
