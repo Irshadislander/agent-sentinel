@@ -2,14 +2,30 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 from collections.abc import Callable
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from agent_sentinel.cli_exit_codes import (
+    DENIED,
+    INTERNAL_ERROR,
+    INVALID_POLICY,
+    OK,
+    UNKNOWN_CAPABILITY,
+)
+from agent_sentinel.cli_format import render
 from agent_sentinel.forensics.ledger import FlightRecorder
 from agent_sentinel.runtime.demo_planner import DemoPlanner
 from agent_sentinel.security.capabilities import CapabilitySet
+from agent_sentinel.security.enforcer import enforce_request
+from agent_sentinel.security.errors import (
+    AgentSentinelError,
+    InvalidPolicyFormatError,
+    PolicyViolationError,
+    UnknownCapabilityError,
+)
 from agent_sentinel.security.tool_gateway import ToolGateway
 from agent_sentinel.tools.fs_tool import read_text, write_text
 from agent_sentinel.tools.http_tool import http_get, http_post
@@ -200,16 +216,50 @@ def run_demo(policy_path: str = DEFAULT_POLICY_PATH) -> dict[str, Any]:
     return summary
 
 
+def _build_parser() -> argparse.ArgumentParser:
+    p = argparse.ArgumentParser(prog="agent-sentinel")
+    p.add_argument("--policy", required=True, help="Path to policy JSON file")
+    p.add_argument("--capability", required=True, help="Capability string to request")
+    p.add_argument("--json", action="store_true", help="Output errors as JSON")
+    return p
+
+
+def _load_policy(path: str) -> Any:
+    with open(path, encoding="utf-8") as f:
+        return json.load(f)
+
+
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Run a deterministic Agent Sentinel demo.")
-    parser.add_argument("--policy", default=DEFAULT_POLICY_PATH, help="Path to policy file")
+    parser = _build_parser()
     args = parser.parse_args(argv)
 
-    summary = run_demo(policy_path=args.policy)
-    print(f"run_id={summary['run_id']}")
-    print(
-        f"allowed={summary['allowed']} denied={summary['denied']} "
-        f"failed={summary['failed']} root_hash={summary['root_hash']}"
-    )
-    print(f"ledger={summary['ledger_path']} verify={summary['verify_reason']}")
-    return 0 if summary["verify_ok"] else 1
+    try:
+        policy = _load_policy(args.policy)
+        enforce_request(args.capability, policy)
+        print("ALLOWED")
+        return OK
+
+    except PolicyViolationError as e:
+        print(render(e, as_json=args.json), file=sys.stderr)
+        return DENIED
+
+    except UnknownCapabilityError as e:
+        print(render(e, as_json=args.json), file=sys.stderr)
+        return UNKNOWN_CAPABILITY
+
+    except InvalidPolicyFormatError as e:
+        print(render(e, as_json=args.json), file=sys.stderr)
+        return INVALID_POLICY
+
+    except AgentSentinelError as e:
+        # Future-proof: any other sentinel error
+        print(render(e, as_json=args.json), file=sys.stderr)
+        return INTERNAL_ERROR
+
+    except Exception as e:  # noqa: BLE001
+        print(f"Internal error: {e}", file=sys.stderr)
+        return INTERNAL_ERROR
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
