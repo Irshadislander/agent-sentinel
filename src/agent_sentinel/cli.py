@@ -16,6 +16,7 @@ from agent_sentinel.cli_exit_codes import (
 )
 from agent_sentinel.errors import AgentSentinelError, PolicyFileNotFoundError, PolicyParseError
 from agent_sentinel.forensics.ledger import FlightRecorder
+from agent_sentinel.policy_schema import validate_policy_schema
 from agent_sentinel.runtime.demo_planner import DemoPlanner
 from agent_sentinel.security.audit import AuditEvent, from_exception, make_event, to_json
 from agent_sentinel.security.capabilities import CapabilitySet
@@ -264,9 +265,11 @@ def _load_policy(path: str) -> Any:
     if not policy_path.exists():
         raise PolicyFileNotFoundError(str(policy_path))
     try:
-        return json.loads(policy_path.read_text(encoding="utf-8"))
+        policy = json.loads(policy_path.read_text(encoding="utf-8"))
     except json.JSONDecodeError as exc:
         raise PolicyParseError(str(policy_path), reason=str(exc)) from exc
+    validate_policy_schema(policy)
+    return policy
 
 
 def main(argv: list[str] | None = None) -> int:

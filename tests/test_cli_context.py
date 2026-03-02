@@ -16,7 +16,10 @@ def _write_policy(tmp_path: Path, data) -> str:
 
 
 def test_cli_audit_includes_request_context(tmp_path, capsys):
-    policy_path = _write_policy(tmp_path, {"allow": [FS_READ_PUBLIC]})
+    policy_path = _write_policy(
+        tmp_path,
+        {"version": 1, "default": "deny", "allow": [FS_READ_PUBLIC]},
+    )
 
     rc = main(
         [
