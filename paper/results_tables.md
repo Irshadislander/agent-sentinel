@@ -1,7 +1,7 @@
 # Paper Result Tables
 
 - Source: `bench/results/matrix.json`
-- Generated at (UTC): `2026-03-02T23:25:12.474569+00:00`
+- Generated at (UTC): `2026-03-02T23:30:24.633234+00:00`
 
 ## Table 1: Baseline Metrics
 
@@ -17,8 +17,8 @@
 
 | Baseline | p50 (ms) | p95 (ms) |
 |---|---:|---:|
-| default | 0.570 | 1.215 |
-| no_plugin_isolation | 0.394 | 0.909 |
-| no_policy | 0.259 | 1.009 |
-| no_trace | 0.094 | 0.822 |
-| raw_errors | 0.542 | 1.419 |
+| default | 0.307 | 0.826 |
+| no_plugin_isolation | 0.348 | 0.710 |
+| no_policy | 0.269 | 0.350 |
+| no_trace | 0.108 | 0.363 |
+| raw_errors | 0.243 | 0.705 |
