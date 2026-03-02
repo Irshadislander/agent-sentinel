@@ -111,15 +111,14 @@ def run() -> None:
         st.info("Selected ledger has no events.")
 
 
-def main() -> None:
-    try:
-        from streamlit.web import cli as stcli
-    except Exception as exc:  # pragma: no cover - import path depends on optional dependency
-        raise RuntimeError(f"Streamlit is required to run the UI: {exc}") from exc
+def main() -> int:
+    # If you already have Streamlit code in this file, keep it.
+    # This function should start the UI (or call st.run logic you already have).
+    import streamlit.web.cli as stcli
 
-    app_path = Path(__file__).resolve()
-    sys.argv = ["streamlit", "run", str(app_path), *sys.argv[1:]]
-    stcli.main()
+    # Run this module as a streamlit app
+    sys.argv = ["streamlit", "run", __file__]
+    return stcli.main()
 
 
 if __name__ == "__main__":

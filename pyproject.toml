@@ -27,7 +27,7 @@ ui = [
 
 [project.scripts]
 agent-sentinel-benchmark = "agent_sentinel.benchmark.run_benchmark:main"
-agent-sentinel-ui = "agent_sentinel.ui.app:main"
+agent-sentinel-ui = "agent_sentinel.ui:main"
 agent-sentinel = "agent_sentinel.cli:main"
 
 [tool.setuptools]
