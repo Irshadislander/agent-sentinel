@@ -32,3 +32,16 @@ jobs:
       - name: Tests
         run: |
           pytest -q
+
+      - name: Generate benchmark markdown report
+        continue-on-error: true
+        run: |
+          make bench-report
+
+      - name: Upload benchmark markdown report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bench-report
+          path: docs/bench_report.md
+          if-no-files-found: warn
