@@ -86,6 +86,46 @@ git push origin vX.Y.Z
 - GitHub Actions Release workflow is green
 - GitHub Release exists with attached artifacts in `dist/`
 
+## Troubleshooting
+
+### `gh pr create` says "no commits between ..."
+
+Your branch has no changes compared to the base branch. Create at least one commit, push, then retry.
+
+### `git push origin vX.Y.Z` fails because tag already exists
+
+Pick a new version/tag, or delete and recreate the tag if it was created incorrectly:
+
+```bash
+git tag -d vX.Y.Z
+git push origin :refs/tags/vX.Y.Z
+```
+
+### `ModuleNotFoundError: No module named agent_sentinel` after editable install
+
+Reinstall in the active venv and rerun checks. On macOS/Python 3.14, if the hidden-flag issue appears, run:
+
+```bash
+./scripts/macos_unhide_sitepackages.sh
+```
+
+### Release workflow did not run after pushing a tag
+
+Confirm the pushed tag matches `v*` and exists on the remote:
+
+```bash
+git ls-remote --tags origin | grep "refs/tags/v"
+```
+
+Then check GitHub Actions for the `Release` workflow run.
+
+### GitHub Release created but no assets attached
+
+Open the workflow logs and confirm:
+- `python -m build` generated files under `dist/`
+- `python -m twine check dist/*` passed
+- `Create GitHub Release` step used `files: dist/*`
+
 ## Notes
 
 - If `gh pr create` says "no commits between ...", you have not committed anything on that branch yet.
