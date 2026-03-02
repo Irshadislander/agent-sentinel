@@ -27,6 +27,22 @@ def _load_rows(path: Path) -> list[dict[str, Any]]:
     payload = json.loads(path.read_text(encoding="utf-8"))
     if not isinstance(payload, dict):
         raise ValueError("matrix payload must be a JSON object")
+
+    baselines_payload = payload.get("baselines")
+    if isinstance(baselines_payload, dict):
+        rows: list[dict[str, Any]] = []
+        for baseline, items in sorted(baselines_payload.items()):
+            if not isinstance(items, list):
+                continue
+            for item in items:
+                if not isinstance(item, dict):
+                    continue
+                normalized = dict(item)
+                normalized.setdefault("baseline", str(baseline))
+                rows.append(normalized)
+        if rows:
+            return rows
+
     rows = payload.get("rows")
     if not isinstance(rows, list):
         raise ValueError("matrix payload missing list field 'rows'")

@@ -57,6 +57,14 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Benchmark baseline mode (default: default).",
     )
     parser.add_argument(
+        "--baselines",
+        default="",
+        help=(
+            "Comma-separated baseline list for matrix mode "
+            "(e.g. default,no_policy,no_trace,raw_errors,no_plugin_isolation)."
+        ),
+    )
+    parser.add_argument(
         "--matrix",
         action="store_true",
         help="Run matrix mode and write matrix.json / matrix.csv.",
@@ -82,6 +90,24 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Disable plugin discovery (overrides baseline default).",
     )
     return parser
+
+
+def _parse_baselines(raw: str) -> list[str]:
+    if not raw.strip():
+        return []
+
+    parsed: list[str] = []
+    seen: set[str] = set()
+    for value in raw.split(","):
+        name = value.strip()
+        if not name:
+            continue
+        if name not in BASELINES:
+            raise ValueError(f"unknown baseline '{name}'")
+        if name not in seen:
+            parsed.append(name)
+            seen.add(name)
+    return parsed
 
 
 def _baseline_options(baseline: str) -> dict[str, Any]:
@@ -221,9 +247,15 @@ def _rows_for_baseline(report: dict[str, Any], *, baseline: str) -> list[dict[st
 
 
 def _write_matrix_json(path: Path, rows: list[dict[str, Any]]) -> None:
+    sorted_rows = sorted(rows, key=lambda row: (str(row["baseline"]), str(row["task_id"])))
+    grouped_rows: dict[str, list[dict[str, Any]]] = {}
+    for row in sorted_rows:
+        grouped_rows.setdefault(str(row["baseline"]), []).append(row)
+
     payload = {
         "generated_at_utc": datetime.now(UTC).isoformat(),
-        "rows": sorted(rows, key=lambda row: (str(row["baseline"]), str(row["task_id"]))),
+        "baselines": grouped_rows,
+        "rows": sorted_rows,
     }
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
@@ -326,7 +358,16 @@ def main(argv: list[str] | None = None) -> int:
     parser = _build_parser()
     args = parser.parse_args(argv)
     if args.matrix:
-        selected_baselines = list(BASELINES) if args.matrix_all_baselines else [args.baseline]
+        if args.matrix_all_baselines:
+            selected_baselines = list(BASELINES)
+        elif args.baselines:
+            try:
+                selected_baselines = _parse_baselines(args.baselines)
+            except ValueError as exc:
+                parser.error(str(exc))
+        else:
+            selected_baselines = [args.baseline]
+
         matrix_json_path, matrix_csv_path, _ = run_matrix(
             tasks_dir=args.tasks_dir,
             policy_path=args.policy,
