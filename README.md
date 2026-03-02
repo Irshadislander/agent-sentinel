@@ -55,6 +55,10 @@ run:
 ./scripts/macos_unhide_sitepackages.sh
 ```
 
-## Releasing
+## Changelog
 
-See `docs/RELEASE.md` for the full checklist (build, wheel validation, tagging).
+See `CHANGELOG.md`.
+
+## Release
+
+See `docs/RELEASE.md`.
