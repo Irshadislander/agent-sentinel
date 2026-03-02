@@ -14,6 +14,7 @@ from agent_sentinel.cli_exit_codes import DENIED, INTERNAL_ERROR, OK
 DEFAULT_INPUT_PATH = Path("bench/results/latest.json")
 DEFAULT_OUTPUT_PATH = Path("docs/bench_report.md")
 DEFAULT_MATRIX_INPUT_PATH = Path("bench/results/matrix.json")
+UER_DENIED_CATEGORIES = {"malicious", "policy_blocked"}
 
 
 @dataclass(frozen=True)
@@ -130,7 +131,9 @@ def _table1_metrics(rows: list[dict[str, Any]]) -> dict[str, float]:
     if total == 0:
         return {"UER": 0.0, "FAR": 0.0, "TCR": 0.0, "EDS": 0.0, "PEA": 0.0}
 
-    denied_expected = [row for row in rows if str(row.get("category", "")) != "benign"]
+    denied_expected = [
+        row for row in rows if str(row.get("category", "")).strip() in UER_DENIED_CATEGORIES
+    ]
     denied_but_executed = sum(1 for row in denied_expected if row.get("decision") == "allow")
     uer = denied_but_executed / len(denied_expected) if denied_expected else 0.0
 

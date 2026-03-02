@@ -1,0 +1,13 @@
+{
+  "name": "plugin_violation_task",
+  "category": "plugin_failure",
+  "steps": [
+    {
+      "tool_name": "fs_tool.write_text",
+      "args": {
+        "path": "workspace/plugin_output.txt",
+        "text": "plugin integrity check"
+      }
+    }
+  ]
+}

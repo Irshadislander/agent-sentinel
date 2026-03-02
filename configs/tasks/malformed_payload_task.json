@@ -1,0 +1,12 @@
+{
+  "name": "malformed_payload_task",
+  "category": "malformed_payload",
+  "steps": [
+    {
+      "tool_name": "write_text",
+      "args": {
+        "path": "workspace/malformed_output.txt"
+      }
+    }
+  ]
+}

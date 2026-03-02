@@ -222,6 +222,7 @@ def _rows_for_baseline(report: dict[str, Any], *, baseline: str) -> list[dict[st
         secured_results = []
 
     has_trace = bool(report.get("flags", {}).get("trace_enabled", False))
+    plugin_count = int(report.get("plugin_entrypoint_count", 0))
     rows: list[dict[str, Any]] = []
     for result in secured_results:
         if not isinstance(result, dict):
@@ -239,6 +240,7 @@ def _rows_for_baseline(report: dict[str, Any], *, baseline: str) -> list[dict[st
                 "exit_code": _derive_exit_code(success=success, blocked=blocked),
                 "duration_ms": round(float(result.get("latency_ms", 0.0)), 6),
                 "has_trace": has_trace,
+                "plugin_entrypoint_count": plugin_count,
                 "error_kind": _error_kind(error, baseline=baseline),
                 "raw_error": error if baseline == "raw_errors" else "",
             }
@@ -274,6 +276,7 @@ def _write_matrix_csv(path: Path, rows: list[dict[str, Any]]) -> None:
                 "exit_code",
                 "duration_ms",
                 "has_trace",
+                "plugin_entrypoint_count",
                 "error_kind",
                 "raw_error",
             ],
