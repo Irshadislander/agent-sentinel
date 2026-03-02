@@ -10,6 +10,7 @@ from typing import Any
 
 from agent_sentinel.benchmark.core import run_benchmark
 from agent_sentinel.benchmark.render import render_benchmark
+from agent_sentinel.capabilities import registry
 from agent_sentinel.cli_exit_codes import (
     INTERNAL_ERROR,
     OK,
@@ -216,6 +217,10 @@ def _build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="agent-sentinel")
     p.add_argument("--policy", required=True, help="Path to policy JSON file")
     p.add_argument("--capability", required=True, help="Capability string to request")
+    p.add_argument(
+        "--capability-name", default=None, help="Registered capability implementation to run"
+    )
+    p.add_argument("--payload", default=None, help="JSON payload for --capability-name execution")
     p.add_argument("--json", action="store_true", help="Output errors as JSON")
     p.add_argument(
         "--request-id",
@@ -275,6 +280,8 @@ def _load_policy(path: str) -> Any:
 def main(argv: list[str] | None = None) -> int:
     parser = _build_parser()
     args = parser.parse_args(argv)
+    capability_name = args.capability_name
+    payload = json.loads(args.payload) if args.payload else None
     ctx = RequestContext(
         request_id=args.request_id or new_request_id(),
         correlation_id=args.correlation_id,
@@ -287,6 +294,14 @@ def main(argv: list[str] | None = None) -> int:
         last_audit_event = event
 
     try:
+        # Example capability execution wiring
+        if capability_name:
+            capability_cls = registry.get(capability_name)
+            capability = capability_cls()
+            result = capability.execute(payload or {})
+            print(result)
+            return OK
+
         policy = _load_policy(args.policy)
 
         if args.benchmark:
