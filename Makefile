@@ -23,7 +23,7 @@ test:
 	pytest -q
 
 bench:
-	agent-sentinel-benchmark --policy configs/policies/default.yaml
+	PYTHONPATH=src python -m agent_sentinel.benchmark.run_benchmark
 
 run-ui:
 	agent-sentinel-ui
