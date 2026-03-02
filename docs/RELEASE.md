@@ -57,6 +57,30 @@ git push origin vX.Y.Z
 gh release create vX.Y.Z --generate-notes
 ```
 
+## Automated GitHub Release (recommended)
+
+If CI is configured, tagging a version will automatically:
+- build sdist + wheel
+- run `twine check`
+- attach `dist/*` artifacts
+- create a GitHub Release
+
+### Steps
+
+1) Bump version in `pyproject.toml`.
+2) Merge PR to `main`.
+3) Pull latest `main` locally.
+4) Tag and push:
+
+```bash
+git tag -a vX.Y.Z -m "vX.Y.Z: <short notes>"
+git push origin vX.Y.Z
+```
+
+5) Verify:
+- GitHub Actions Release workflow is green
+- GitHub Release exists with attached artifacts in `dist/`
+
 ## Notes
 
 - If `gh pr create` says "no commits between ...", you have not committed anything on that branch yet.
