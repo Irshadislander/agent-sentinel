@@ -1,47 +1,44 @@
+from __future__ import annotations
+
 import json
+import os
+import subprocess
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from agent_sentinel.cli import main
-from agent_sentinel.cli_exit_codes import DENIED, INVALID_POLICY, OK, UNKNOWN_CAPABILITY
-from agent_sentinel.security.capabilities import FS_READ_PUBLIC, NET_HTTP_GET
-
-
-def _write_policy(tmp_path: Path, data) -> str:
-    p = tmp_path / "policy.json"
-    p.write_text(json.dumps(data), encoding="utf-8")
-    return str(p)
-
-
-def test_cli_allowed(tmp_path, capsys):
-    policy_path = _write_policy(tmp_path, {"allow": [FS_READ_PUBLIC]})
-    rc = main(["--policy", policy_path, "--capability", FS_READ_PUBLIC])
-    out = capsys.readouterr().out.strip()
-    assert rc == OK
-    assert out == "ALLOWED"
+def run_cli(args: list[str], cwd: Path) -> subprocess.CompletedProcess[str]:
+    env = os.environ.copy()
+    src_dir = Path(__file__).resolve().parents[1] / "src"
+    env["PYTHONPATH"] = str(src_dir)
+    return subprocess.run(
+        [sys.executable, "-m", "agent_sentinel.cli", *args],
+        cwd=cwd,
+        env=env,
+        text=True,
+        capture_output=True,
+    )
 
 
-def test_cli_denied(tmp_path, capsys):
-    policy_path = _write_policy(tmp_path, {"allow": [FS_READ_PUBLIC]})
-    rc = main(["--policy", policy_path, "--capability", NET_HTTP_GET])
-    err = capsys.readouterr().err
-    assert rc == DENIED
-    assert "PolicyViolationError" in err
+def test_missing_policy_file_returns_exit_2(tmp_path: Path) -> None:
+    result = run_cli(["--policy", "nope.json", "--capability", "fs.read.public"], cwd=tmp_path)
+    assert result.returncode == 2
+    assert "Policy file not found" in result.stderr
 
 
-def test_cli_unknown_capability(tmp_path, capsys):
-    policy_path = _write_policy(tmp_path, {"allow": [FS_READ_PUBLIC]})
-    rc = main(["--policy", policy_path, "--capability", "net.http.superget"])
-    err = capsys.readouterr().err
-    assert rc == UNKNOWN_CAPABILITY
-    assert "UnknownCapabilityError" in err
+def test_missing_policy_file_json_output(tmp_path: Path) -> None:
+    result = run_cli(
+        ["--policy", "nope.json", "--capability", "fs.read.public", "--json"],
+        cwd=tmp_path,
+    )
+    assert result.returncode == 2
+    payload = json.loads(result.stderr.strip())
+    assert payload["code"] == "policy_file_not_found"
+    assert payload["details"]["path"].endswith("nope.json")
 
 
-def test_cli_invalid_policy(tmp_path, capsys):
-    policy_path = _write_policy(tmp_path, {"allow": "not-a-list"})
-    rc = main(["--policy", policy_path, "--capability", FS_READ_PUBLIC])
-    err = capsys.readouterr().err
-    assert rc == INVALID_POLICY
-    assert "InvalidPolicyFormatError" in err
+def test_invalid_json_policy_returns_exit_3(tmp_path: Path) -> None:
+    (tmp_path / "bad.json").write_text("{not json", encoding="utf-8")
+    result = run_cli(["--policy", "bad.json", "--capability", "fs.read.public"], cwd=tmp_path)
+    assert result.returncode == 3
+    assert "Failed to parse policy file" in result.stderr

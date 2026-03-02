@@ -1,6 +1,12 @@
-# Centralized exit codes for CLI behavior (stable contract).
-OK = 0
-DENIED = 10
-UNKNOWN_CAPABILITY = 11
-INVALID_POLICY = 12
-INTERNAL_ERROR = 20
+from __future__ import annotations
+
+from agent_sentinel.exit_codes import (
+    GENERIC_ERROR,
+    POLICY_PARSE_ERROR,
+    POLICY_VIOLATION,
+)
+
+# Backward-compatible aliases used by existing callers/tests.
+DENIED = POLICY_VIOLATION
+INVALID_POLICY = POLICY_PARSE_ERROR
+INTERNAL_ERROR = GENERIC_ERROR
