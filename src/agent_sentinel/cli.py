@@ -104,6 +104,9 @@ def _print_capabilities_table() -> None:
 
 
 def _dispatch_command(argv: list[str]) -> int | None:
+    if argv and argv[0] == "list":
+        _print_capabilities_table()
+        return OK
     if len(argv) >= 2 and argv[0] == "capabilities" and argv[1] == "list":
         _print_capabilities_table()
         return OK

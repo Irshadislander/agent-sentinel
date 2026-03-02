@@ -63,3 +63,6 @@ __all__ = [
     "register",
     "register_capability",
 ]
+
+# Register built-in example capabilities.
+from . import examples as _examples  # noqa: F401,E402

@@ -1,4 +1,4 @@
-.PHONY: install dev ui lint format type test bench run-ui clean
+.PHONY: install dev ui lint format type test bench ci run-ui clean
 
 install:
 	python -m pip install -U pip
@@ -11,7 +11,7 @@ ui:
 	python -m pip install -e ".[ui]"
 
 lint:
-	ruff check .
+	pre-commit run --all-files
 
 format:
 	ruff format .
@@ -20,10 +20,14 @@ type:
 	mypy src/agent_sentinel || true
 
 test:
-	pytest -q
+	python -m pytest -q
 
 bench:
-	agent-sentinel-benchmark --policy configs/policies/default.yaml
+	PYTHONPATH=src python -m bench.run_bench || python bench/run_bench.py
+
+ci:
+	$(MAKE) lint
+	$(MAKE) test
 
 run-ui:
 	agent-sentinel-ui
