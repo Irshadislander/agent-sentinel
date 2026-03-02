@@ -29,3 +29,11 @@ class CapabilitySet:
 
 def minimal_caps() -> CapabilitySet:
     return CapabilitySet(granted={FS_READ_PUBLIC})
+
+
+# Auto-collect all uppercase string constants so registry never goes stale.
+ALL_CAPABILITIES: set[str] = {v for k, v in globals().items() if k.isupper() and isinstance(v, str)}
+
+
+def is_known(capability: str) -> bool:
+    return capability in ALL_CAPABILITIES

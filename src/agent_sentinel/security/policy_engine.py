@@ -14,6 +14,13 @@ from agent_sentinel.security.capabilities import (
     NET_HTTP_GET,
     NET_HTTP_POST,
     NET_INTERNAL,
+    is_known,
+)
+from agent_sentinel.security.errors import (
+    AgentSentinelError,
+    InvalidPolicyFormatError,
+    PolicyViolationError,
+    UnknownCapabilityError,
 )
 
 ALLOW = "ALLOW"
@@ -26,6 +33,51 @@ _HTTP_GET_NAMES = {"http.get", "http_get", "tools.http.get", "http_tool.http_get
 _HTTP_POST_NAMES = {"http.post", "http_post", "tools.http.post", "http_tool.http_post"}
 _FS_READ_NAMES = {"fs.read", "fs.read_text", "read_text", "fs_tool.read_text"}
 _FS_WRITE_NAMES = {"fs.write", "fs.write_text", "write_text", "fs_tool.write_text"}
+
+
+def _extract_allowlist(policy: Any) -> list[str]:
+    if not isinstance(policy, dict):
+        raise InvalidPolicyFormatError("Policy must be a dict.")
+
+    if "allow" not in policy:
+        raise InvalidPolicyFormatError("Missing required key: 'allow'.")
+
+    allow = policy["allow"]
+    if not isinstance(allow, list):
+        raise InvalidPolicyFormatError("'allow' must be a list of strings.")
+
+    if not all(isinstance(x, str) for x in allow):
+        raise InvalidPolicyFormatError("'allow' must contain only strings.")
+
+    return allow
+
+
+def enforce(capability: str, policy: Any) -> None:
+    """
+    Enforce allowlist-only policy.
+    Raises structured errors instead of returning bool.
+    """
+    if not is_known(capability):
+        raise UnknownCapabilityError(capability)
+
+    allow = _extract_allowlist(policy)
+
+    if capability not in allow:
+        raise PolicyViolationError(
+            requested_capability=capability,
+            allowed_capabilities=allow,
+        )
+
+
+def is_allowed(capability: str, policy: Any) -> bool:
+    """
+    Backward-compatible bool API.
+    """
+    try:
+        enforce(capability, policy)
+        return True
+    except AgentSentinelError:
+        return False
 
 
 @dataclass(slots=True)
