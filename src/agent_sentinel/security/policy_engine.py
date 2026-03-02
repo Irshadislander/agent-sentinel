@@ -154,9 +154,7 @@ class PolicyEngine:
         except ValueError:
             return True
 
-        if ip.is_loopback or ip.is_private or ip.is_link_local:
-            return False
-        return True
+        return not (ip.is_loopback or ip.is_private or ip.is_link_local)
 
     def _is_internal_domain(self, host: str) -> bool:
         for domain in self._internal_domains:
@@ -205,7 +203,7 @@ class PolicyEngine:
                     redactions[path] = "***"
                 else:
                     redactions.update(PolicyEngine._collect_redactions(nested, path))
-        elif isinstance(value, list) or isinstance(value, tuple):
+        elif isinstance(value, (list, tuple)):
             for item in value:
                 redactions.update(PolicyEngine._collect_redactions(item, prefix))
         return redactions
