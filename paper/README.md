@@ -10,6 +10,7 @@ This directory contains research artifacts used for the formal write-up and eval
 - `CLAIMS.md`: hypothesis set (H1-H4) with metric-level expected effects.
 - `EXPERIMENTS.md`: setup, reporting protocol, and statistical plan.
 - `THREAT_MODEL.md`: adversary, assumptions, guarantees, and failure modes.
+- `ROBUSTNESS.md`: attack scenario mapping and expected denial/trace signatures.
 - `RELATED_WORK.md`: literature buckets and positioning map.
 - `results_tables.md`: generated markdown result tables from matrix outputs.
 

@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import os
 import re
 import tempfile
 from dataclasses import dataclass
@@ -10,6 +11,10 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from agent_sentinel.benchmark.policy_engine_perf import (
+    run_policy_engine_benchmark,
+    write_policy_engine_benchmark_outputs,
+)
 from agent_sentinel.benchmark.runner import (
     DEFAULT_POLICY_PATH,
     DEFAULT_TASKS_DIR,
@@ -97,7 +102,8 @@ def _build_parser() -> argparse.ArgumentParser:
         default="",
         help=(
             "Comma-separated scenario sweep identifiers "
-            "(e.g. scale_n50,stress_m0.10_p0.05,sens_strict=high_trace=0.5_allow=1)."
+            "(e.g. scale_n50,stress_m0.10_p0.05,sens_strict=high_trace=0.5_allow=1,"
+            "policy_engine_perf)."
         ),
     )
     parser.add_argument(
@@ -293,6 +299,14 @@ def _parse_scenarios(raw: str, base: ScenarioConfig) -> list[ScenarioConfig]:
                     "allowlist_size": int(match.group(3)),
                 }
             )
+        elif value == "policy_engine_perf":
+            scenario = ScenarioConfig(
+                **{
+                    **base.__dict__,
+                    "scenario_id": "policy_engine_perf",
+                    "synthetic_n": 0,
+                }
+            )
         else:
             raise ValueError(f"invalid scenario token: {value}")
 
@@ -472,6 +486,52 @@ def _rows_for_baseline(
     return rows
 
 
+def _rows_for_policy_engine_perf(
+    payload: dict[str, Any],
+    *,
+    baseline: str,
+    scenario: ScenarioConfig,
+) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    raw_cases = payload.get("cases", [])
+    if not isinstance(raw_cases, list):
+        return rows
+
+    for case in raw_cases:
+        if not isinstance(case, dict):
+            continue
+
+        decision = str(case.get("decision", "deny")).lower()
+        rows.append(
+            {
+                "baseline": baseline,
+                "scenario_id": scenario.scenario_id,
+                "task_id": str(case.get("case_id", "")),
+                "category": "policy_engine_perf",
+                "decision": decision,
+                "exit_code": OK if decision == "allow" else DENIED,
+                "duration_ms": round(float(case.get("mean_ms", 0.0)), 6),
+                "has_trace": True,
+                "plugin_entrypoint_count": 0,
+                "error_kind": "none",
+                "raw_error": "",
+                "synthetic_n": scenario.synthetic_n,
+                "noise_malformed_p": scenario.noise_malformed_p,
+                "noise_plugin_p": scenario.noise_plugin_p,
+                "policy_strictness": scenario.policy_strictness,
+                "trace_sample_rate": scenario.trace_sample_rate,
+                "allowlist_size": scenario.allowlist_size,
+                "reason_code": str(case.get("reason_code", "")),
+                "rule_id": str(case.get("rule_id") or ""),
+                "p50_ms": round(float(case.get("p50_ms", 0.0)), 6),
+                "p95_ms": round(float(case.get("p95_ms", 0.0)), 6),
+                "p99_ms": round(float(case.get("p99_ms", 0.0)), 6),
+                "trace_len_mean": round(float(case.get("trace_len_mean", 0.0)), 6),
+            }
+        )
+    return rows
+
+
 def _write_matrix_json(path: Path, rows: list[dict[str, Any]]) -> None:
     sorted_rows = sorted(
         rows,
@@ -522,6 +582,12 @@ def _write_matrix_csv(path: Path, rows: list[dict[str, Any]]) -> None:
                 "policy_strictness",
                 "trace_sample_rate",
                 "allowlist_size",
+                "reason_code",
+                "rule_id",
+                "p50_ms",
+                "p95_ms",
+                "p99_ms",
+                "trace_len_mean",
             ],
         )
         writer.writeheader()
@@ -629,9 +695,31 @@ def run_matrix(
     rows: list[dict[str, Any]] = []
 
     for scenario in selected_scenarios:
-        resolved_tasks_dir = _resolve_tasks_dir(scenario)
         for baseline in selected:
+            if scenario.scenario_id == "policy_engine_perf":
+                perf_iterations = int(os.getenv("AGENT_SENTINEL_POLICY_PERF_ITERATIONS", "5000"))
+                perf_warmup = int(os.getenv("AGENT_SENTINEL_POLICY_PERF_WARMUP", "200"))
+                perf_payload = run_policy_engine_benchmark(
+                    iterations=perf_iterations,
+                    warmup=perf_warmup,
+                )
+                perf_dir = Path(output_dir) / "policy_engine_perf"
+                write_policy_engine_benchmark_outputs(
+                    perf_payload,
+                    json_path=perf_dir / f"{baseline}.json",
+                    markdown_path=perf_dir / f"{baseline}.md",
+                )
+                rows.extend(
+                    _rows_for_policy_engine_perf(
+                        perf_payload,
+                        baseline=baseline,
+                        scenario=scenario,
+                    )
+                )
+                continue
+
             options = _baseline_options(baseline)
+            resolved_tasks_dir = _resolve_tasks_dir(scenario)
             with tempfile.TemporaryDirectory(prefix="agent-sentinel-matrix-") as temp_dir:
                 report = execute_benchmark(
                     tasks_dir=resolved_tasks_dir,
