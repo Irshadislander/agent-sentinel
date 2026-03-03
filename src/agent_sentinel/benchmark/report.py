@@ -165,6 +165,56 @@ def _table1_metrics(rows: list[dict[str, Any]]) -> dict[str, float]:
     return {"UER": uer, "FAR": far, "TCR": tcr, "EDS": eds, "PEA": pea}
 
 
+def _reason_code_for_row(row: dict[str, Any]) -> str:
+    explicit = str(row.get("reason_code", "")).strip()
+    if explicit:
+        return explicit
+
+    error_kind = str(row.get("error_kind", "")).strip()
+    if error_kind and error_kind not in {"none", "unknown"}:
+        return error_kind.upper()
+
+    return "UNKNOWN_REASON"
+
+
+def _denial_reason_counts(rows: list[dict[str, Any]]) -> dict[str, int]:
+    counts: dict[str, int] = {}
+    for row in rows:
+        if str(row.get("decision", "")).strip() != "deny":
+            continue
+        reason_code = _reason_code_for_row(row)
+        counts[reason_code] = counts.get(reason_code, 0) + 1
+    return dict(sorted(counts.items(), key=lambda item: (-item[1], item[0])))
+
+
+def _top_reason_codes_by_category(
+    rows: list[dict[str, Any]],
+    *,
+    limit: int = 3,
+) -> dict[str, list[tuple[str, int]]]:
+    category_counts: dict[str, dict[str, int]] = {}
+    for row in rows:
+        if str(row.get("decision", "")).strip() != "deny":
+            continue
+        category = str(row.get("category", "")).strip() or "unknown"
+        reason_code = _reason_code_for_row(row)
+        reason_counts = category_counts.setdefault(category, {})
+        reason_counts[reason_code] = reason_counts.get(reason_code, 0) + 1
+
+    ranked: dict[str, list[tuple[str, int]]] = {}
+    for category, reason_counts in category_counts.items():
+        top = sorted(reason_counts.items(), key=lambda item: (-item[1], item[0]))[:limit]
+        ranked[category] = top
+    return ranked
+
+
+def _denied_but_executed_count(rows: list[dict[str, Any]]) -> int:
+    denied_expected = [
+        row for row in rows if str(row.get("category", "")).strip() in UER_DENIED_CATEGORIES
+    ]
+    return sum(1 for row in denied_expected if str(row.get("decision", "")).strip() == "allow")
+
+
 def _render_markdown(
     report: dict[str, Any],
     *,
@@ -264,7 +314,17 @@ def _render_markdown(
     )
     for idx, row in enumerate(slowest, start=1):
         lines.append(
-            f"| {idx} | {row.mode} | {_safe_cell(row.task_name)} | {row.latency_ms:.3f} | {row.exit_code} |"
+            "| "
+            + " | ".join(
+                [
+                    str(idx),
+                    row.mode,
+                    _safe_cell(row.task_name),
+                    f"{row.latency_ms:.3f}",
+                    str(row.exit_code),
+                ]
+            )
+            + " |"
         )
 
     if matrix_rows:
@@ -342,7 +402,8 @@ def _render_markdown(
             rows_for_baseline = groups[baseline]
             overall = [float(row.get("duration_ms", 0.0)) for row in rows_for_baseline]
             lines.append(
-                f"| {baseline} | overall | {_percentile(overall, 0.50):.3f} | {_percentile(overall, 0.95):.3f} |"
+                f"| {baseline} | overall | "
+                f"{_percentile(overall, 0.50):.3f} | {_percentile(overall, 0.95):.3f} |"
             )
             categories = sorted({str(row.get("category", "")) for row in rows_for_baseline})
             for category in categories:
@@ -352,8 +413,46 @@ def _render_markdown(
                     if str(row.get("category", "")) == category
                 ]
                 lines.append(
-                    f"| {baseline} | {category} | {_percentile(scoped, 0.50):.3f} | {_percentile(scoped, 0.95):.3f} |"
+                    f"| {baseline} | {category} | "
+                    f"{_percentile(scoped, 0.50):.3f} | {_percentile(scoped, 0.95):.3f} |"
                 )
+
+        denial_counts = _denial_reason_counts(matrix_rows)
+        top_by_category = _top_reason_codes_by_category(matrix_rows)
+        denied_but_executed = _denied_but_executed_count(matrix_rows)
+
+        lines.extend(
+            [
+                "",
+                "## Robustness: Denial Reason Codes",
+                "",
+                f"- Denied-but-executed (critical): `{denied_but_executed}`",
+                "",
+                "| reason_code | denials |",
+                "|---|---:|",
+            ]
+        )
+        if denial_counts:
+            for reason_code, count in denial_counts.items():
+                lines.append(f"| {reason_code} | {count} |")
+        else:
+            lines.append("| - | 0 |")
+
+        lines.extend(
+            [
+                "",
+                "## Robustness: Top Reason Codes by Category",
+                "",
+                "| category | rank | reason_code | denials |",
+                "|---|---:|---|---:|",
+            ]
+        )
+        if top_by_category:
+            for category in sorted(top_by_category):
+                for rank, (reason_code, count) in enumerate(top_by_category[category], start=1):
+                    lines.append(f"| {category} | {rank} | {reason_code} | {count} |")
+        else:
+            lines.append("| - | 1 | - | 0 |")
 
     lines.append("")
     return "\n".join(lines)
