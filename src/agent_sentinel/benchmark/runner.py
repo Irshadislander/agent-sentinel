@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import copy
 import hashlib
 import json
 import os
@@ -14,7 +15,14 @@ from typing import Any
 from agent_sentinel.benchmark.metrics import TaskResult, compute_metrics, serialize_results
 from agent_sentinel.cli import load_policy
 from agent_sentinel.forensics.ledger import FlightRecorder
-from agent_sentinel.security.capabilities import CapabilitySet
+from agent_sentinel.security.capabilities import (
+    FS_READ_PRIVATE,
+    FS_READ_PUBLIC,
+    NET_EXTERNAL,
+    NET_HTTP_POST,
+    NET_INTERNAL,
+    CapabilitySet,
+)
 from agent_sentinel.security.tool_gateway import ToolGateway
 from agent_sentinel.tools.fs_tool import read_text, write_text
 
@@ -180,12 +188,95 @@ def _count_trace_events(run_root: Path) -> int:
     return total
 
 
+def _deterministic_roll(*, seed: int, labels: tuple[str, ...]) -> float:
+    material = f"{seed}:{'|'.join(labels)}"
+    digest = hashlib.sha256(material.encode("utf-8")).hexdigest()
+    return int(digest[:8], 16) / 0xFFFFFFFF
+
+
+def _should_trace_task(*, seed: int, mode: str, task_name: str, sample_rate: float) -> bool:
+    if sample_rate <= 0.0:
+        return False
+    if sample_rate >= 1.0:
+        return True
+    roll = _deterministic_roll(seed=seed, labels=("trace", mode, task_name))
+    return roll < sample_rate
+
+
+def _should_apply_noise(
+    *, seed: int, mode: str, task_name: str, kind: str, probability: float
+) -> bool:
+    if probability <= 0.0:
+        return False
+    if probability >= 1.0:
+        return True
+    roll = _deterministic_roll(seed=seed, labels=("noise", kind, mode, task_name))
+    return roll < probability
+
+
+def _mutate_task(
+    *,
+    task: dict[str, Any],
+    malformed: bool,
+    plugin_violation: bool,
+) -> dict[str, Any]:
+    mutated = copy.deepcopy(task)
+    steps = mutated.get("steps")
+    if not isinstance(steps, list) or not steps:
+        return mutated
+
+    first_step = steps[0]
+    if not isinstance(first_step, dict):
+        return mutated
+
+    if plugin_violation:
+        steps[0] = {
+            "tool_name": "fs_tool.write_text",
+            "args": {
+                "path": f"workspace/{mutated.get('name', 'plugin_noise')}_plugin_noise.txt",
+                "text": "plugin-noise",
+            },
+        }
+        first_step = steps[0]
+
+    if malformed:
+        tool_name = str(first_step.get("tool_name", ""))
+        args = first_step.get("args")
+        if not isinstance(args, dict):
+            first_step["args"] = {"__invalid__": True}
+            return mutated
+
+        if tool_name in {"write_text", "fs_tool.write_text"}:
+            args.pop("text", None)
+        elif tool_name in {"read_text", "fs_tool.read_text"}:
+            args.pop("path", None)
+        elif tool_name in {"http_post", "http_tool.http_post"}:
+            args.pop("url", None)
+        else:
+            args["__invalid__"] = True
+
+    return mutated
+
+
+def _apply_policy_strictness(granted_caps: set[str], strictness: str) -> set[str]:
+    if strictness == "medium":
+        return set(granted_caps)
+    if strictness == "low":
+        permissive = set(granted_caps)
+        permissive.update({FS_READ_PRIVATE, NET_HTTP_POST, NET_EXTERNAL, NET_INTERNAL})
+        return permissive
+    if strictness == "high":
+        return {cap for cap in granted_caps if cap in {FS_READ_PUBLIC}}
+    raise ValueError("policy_strictness must be one of: low, medium, high")
+
+
 def _execute_task(
     *,
     task: dict[str, Any],
     executor: Any,
     mode: str,
     structured_errors: bool,
+    traced: bool,
 ) -> TaskResult:
     start = time.perf_counter()
     blocked = False
@@ -226,6 +317,7 @@ def _execute_task(
         success=success,
         blocked=blocked,
         latency_ms=duration_ms,
+        traced=traced,
         error=error,
     )
 
@@ -243,7 +335,20 @@ def run_benchmark(
     structured_errors: bool = True,
     plugin_allowlist_enforced: bool = True,
     working_dir: str | None = None,
+    noise_malformed_p: float = 0.0,
+    noise_plugin_p: float = 0.0,
+    random_seed: int = 0,
+    policy_strictness: str = "medium",
+    trace_sample_rate: float = 1.0,
+    allowlist_size: int = -1,
 ) -> dict[str, Any]:
+    if noise_malformed_p < 0.0 or noise_malformed_p > 1.0:
+        raise ValueError("noise_malformed_p must be in [0,1]")
+    if noise_plugin_p < 0.0 or noise_plugin_p > 1.0:
+        raise ValueError("noise_plugin_p must be in [0,1]")
+    if trace_sample_rate < 0.0 or trace_sample_rate > 1.0:
+        raise ValueError("trace_sample_rate must be in [0,1]")
+
     tasks_path = Path(tasks_dir).resolve()
     policy_path_resolved = str(Path(policy_path).resolve())
     output_path_resolved = Path(output_path).resolve() if output_path else None
@@ -257,6 +362,10 @@ def run_benchmark(
         granted_caps = [
             str(capability) for capability, enabled in capabilities_map.items() if bool(enabled)
         ]
+
+    effective_caps = _apply_policy_strictness(
+        set(str(cap) for cap in granted_caps), policy_strictness
+    )
 
     tool_map: dict[str, ToolFn] = dict(
         tools
@@ -275,30 +384,42 @@ def run_benchmark(
     plugin_entrypoint_count = 0
 
     with _working_directory(work_root):
-        if enable_trace:
+        should_create_trace_root = enable_trace and trace_sample_rate > 0.0
+        if should_create_trace_root:
             run_root.mkdir(parents=True, exist_ok=True)
+
         _prepare_fixture_data(Path("."))
         if enable_plugins:
             discovered_plugins = _discover_plugin_entrypoints()
             plugin_entrypoint_count = 0 if plugin_allowlist_enforced else max(discovered_plugins, 1)
-            if not plugin_allowlist_enforced:
+            if allowlist_size >= 0:
+                plugin_entrypoint_count = min(plugin_entrypoint_count, allowlist_size)
+            if not plugin_allowlist_enforced and plugin_entrypoint_count > 0:
                 # Simulate unsafe plugin override when isolation is disabled.
                 tool_map["fs_tool.write_text"] = _unsafe_plugin_write_text
 
         for mode in ("baseline", "secured"):
             for task in tasks:
+                task_name = str(task.get("name", ""))
+                task_trace_enabled = enable_trace and _should_trace_task(
+                    seed=random_seed,
+                    mode=mode,
+                    task_name=task_name,
+                    sample_rate=trace_sample_rate,
+                )
+
                 recorder: Any
-                if enable_trace:
-                    ledger_path = run_root / mode / f"{task['name']}.jsonl"
+                if task_trace_enabled:
+                    ledger_path = run_root / mode / f"{task_name}.jsonl"
                     recorder = FlightRecorder(
-                        str(ledger_path), run_id=f"{benchmark_id}_{mode}_{task['name']}"
+                        str(ledger_path), run_id=f"{benchmark_id}_{mode}_{task_name}"
                     )
                 else:
                     recorder = _NoopRecorder()
 
                 if mode == "secured":
                     if enforce_policy:
-                        caps = CapabilitySet(set(str(cap) for cap in granted_caps))
+                        caps = CapabilitySet(set(effective_caps))
                         executor = ToolGateway(
                             policy=policy,
                             recorder=recorder,
@@ -311,26 +432,52 @@ def run_benchmark(
                 else:
                     executor = _BaselineGateway(tool_map, recorder)
 
-                result = _execute_task(
+                plugin_noise = enable_plugins and _should_apply_noise(
+                    seed=random_seed,
+                    mode=mode,
+                    task_name=task_name,
+                    kind="plugin",
+                    probability=noise_plugin_p,
+                )
+                malformed_noise = _should_apply_noise(
+                    seed=random_seed,
+                    mode=mode,
+                    task_name=task_name,
+                    kind="malformed",
+                    probability=noise_malformed_p,
+                )
+                effective_task = _mutate_task(
                     task=task,
+                    malformed=malformed_noise,
+                    plugin_violation=plugin_noise,
+                )
+
+                result = _execute_task(
+                    task=effective_task,
                     executor=executor,
                     mode=mode,
                     structured_errors=structured_errors,
+                    traced=task_trace_enabled,
                 )
                 mode_results[mode].append(result)
 
-        trace_event_count = _count_trace_events(run_root) if enable_trace else 0
+        trace_event_count = _count_trace_events(run_root) if should_create_trace_root else 0
 
     report = {
         "benchmark_id": benchmark_id,
         "tasks_total": len(tasks),
         "flags": {
             "trace_enabled": enable_trace,
+            "trace_sample_rate": trace_sample_rate,
             "validation_enabled": enable_validation,
             "plugins_enabled": enable_plugins,
             "policy_enforced": enforce_policy,
             "structured_errors": structured_errors,
             "plugin_allowlist_enforced": plugin_allowlist_enforced,
+            "policy_strictness": policy_strictness,
+            "noise_malformed_p": noise_malformed_p,
+            "noise_plugin_p": noise_plugin_p,
+            "allowlist_size": allowlist_size,
         },
         "plugin_entrypoint_count": plugin_entrypoint_count,
         "trace_event_count": trace_event_count,

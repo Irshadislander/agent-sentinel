@@ -1,0 +1,12 @@
+{
+  "category": "trace_stress",
+  "name": "synthetic_0151",
+  "steps": [
+    {
+      "args": {
+        "path": "public/reference.txt"
+      },
+      "tool_name": "read_text"
+    }
+  ]
+}

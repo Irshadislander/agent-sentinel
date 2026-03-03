@@ -58,9 +58,10 @@ def test_matrix_output_contains_all_baseline_keys(tmp_path, monkeypatch) -> None
 
     payload = json.loads(matrix_json.read_text(encoding="utf-8"))
     assert isinstance(payload.get("rows"), list)
-    assert isinstance(payload.get("baselines"), dict)
-    assert set(payload["baselines"].keys()) == set(BASELINES)
+    assert isinstance(payload.get("grouped"), dict)
+    assert set(payload["grouped"].keys()) == set(BASELINES)
     assert {row["baseline"] for row in payload["rows"]} == set(BASELINES)
+    assert {row["scenario_id"] for row in payload["rows"]} == {"default"}
 
 
 def test_matrix_has_expected_metric_differences_vs_default(tmp_path, monkeypatch) -> None:
@@ -123,7 +124,7 @@ def test_cli_matrix_baselines_option_selects_subset(tmp_path, monkeypatch) -> No
 
     assert rc == 0
     payload = json.loads((output_dir / "matrix.json").read_text(encoding="utf-8"))
-    assert set(payload["baselines"].keys()) == {"default", "no_trace"}
+    assert set(payload["grouped"].keys()) == {"default", "no_trace"}
 
 
 def test_matrix_mode_does_not_write_public_or_workspace(tmp_path, monkeypatch) -> None:

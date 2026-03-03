@@ -11,6 +11,7 @@ class TaskResult:
     success: bool
     blocked: bool
     latency_ms: float
+    traced: bool = False
     error: str = ""
 
 

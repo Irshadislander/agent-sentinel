@@ -366,6 +366,25 @@ def _load_matrix_rows(path: Path) -> list[dict[str, Any]]:
     if not isinstance(payload, dict):
         return []
 
+    grouped_payload = payload.get("grouped")
+    if isinstance(grouped_payload, dict):
+        rows: list[dict[str, Any]] = []
+        for baseline, scenario_map in sorted(grouped_payload.items()):
+            if not isinstance(scenario_map, dict):
+                continue
+            for scenario_id, items in sorted(scenario_map.items()):
+                if not isinstance(items, list):
+                    continue
+                for item in items:
+                    if not isinstance(item, dict):
+                        continue
+                    normalized = dict(item)
+                    normalized.setdefault("baseline", str(baseline))
+                    normalized.setdefault("scenario_id", str(scenario_id))
+                    rows.append(normalized)
+        if rows:
+            return rows
+
     baselines_payload = payload.get("baselines")
     if isinstance(baselines_payload, dict):
         rows: list[dict[str, Any]] = []
