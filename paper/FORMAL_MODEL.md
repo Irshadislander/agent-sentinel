@@ -5,137 +5,70 @@ Tool-using agents request capabilities at runtime. The enforcement objective is 
 allow/deny before execution, emit a traceable decision path, and preserve deterministic
 outcomes for fixed inputs.
 
-## 2. Formal Objects
+## Formal Objects
 
-- Capability space: \( C \), with capability identifier \( c \in C \).
-- Policy: \( P = (R, \delta) \), where \( R = [r_1, r_2, \dots, r_n] \) is an ordered rule list and
-  \( \delta = \text{deny} \) is the default fallback.
-- Rule: \( r_i = (\text{rule\_id}_i, a_i, \text{caps}_i) \), where
-  \( a_i \in \{\text{allow}, \text{deny}\} \) and \( \text{caps}_i \subseteq C \).
-- DecisionResult tuple:
+- Capability: a string identifier \(c \in \mathcal{C}\) describing an action (e.g., "fs.read", "http.request").
+- Policy: a structured document \(P\) that defines a finite rule set \(R(P) = \{r_1,\dots,r_n\}\).
+- Rule: \(r = (\text{id}, \text{action}, \text{capabilities}, \text{predicate})\) where:
+  - id is a stable identifier
+  - action ∈ {allow, deny, require_approval, allow_with_redaction}
+  - capabilities is a set of capability identifiers
+  - predicate is an optional match function over request context
+- Request context: \(x\) is metadata about the request (tool name, arguments, caller identity, environment).
+- Decision function:
   \[
-  D(c, P) \rightarrow (\text{decision}, \text{rule\_id}, \text{reason\_code}, \text{trace})
+    D(c, P, x) \to (\text{verdict}, \text{rule\_id}, \text{reason\_code}, \text{trace})
   \]
-  where:
-  - \(\text{decision} \in \{\text{allow}, \text{deny}\}\),
-  - \(\text{rule\_id}\) is matched rule identifier or \(\bot\),
-  - \(\text{reason\_code}\) is from a fixed reason-code set,
-  - \(\text{trace}\) is an ordered list of evaluation steps.
 
-## 3. Decision Semantics
+## Matching and Precedence
 
-Given \((c, P)\), evaluation is:
+A rule r matches (c, x) if:
+1) c ∈ r.capabilities, and
+2) r.predicate(x) is true (or predicate is absent).
 
-1. Validate policy structure.
-2. If policy missing, return:
-   \[
-   (\text{deny}, \bot, \text{POLICY\_MISSING}, \text{trace})
-   \]
-3. If policy invalid, return:
-   \[
-   (\text{deny}, \bot, \text{POLICY\_INVALID}, \text{trace})
-   \]
-4. Iterate rules in list order \(r_1 \rightarrow r_n\).
-5. First rule with \(c \in \text{caps}_i\) resolves decision:
-   - if \(a_i=\text{allow}\): \((\text{allow}, \text{rule\_id}_i, \text{RULE\_ALLOW\_MATCH}, \text{trace})\)
-   - if \(a_i=\text{deny}\): \((\text{deny}, \text{rule\_id}_i, \text{RULE\_DENY\_MATCH}, \text{trace})\)
-6. If no rule matches, apply fallback:
-   \[
-   (\text{deny}, \bot, \text{DEFAULT\_DENY\_NO\_MATCH}, \text{trace})
-   \]
+Let M be the ordered list of matching rules in policy order.
+Precedence is:
+1) If any matching deny exists → verdict = deny (choose first deny in policy order)
+2) Else if any matching require_approval exists → verdict = require_approval
+3) Else if any matching allow_with_redaction exists → verdict = allow_with_redaction
+4) Else if any matching allow exists → verdict = allow
+5) Else → default deny
 
-This is first-match precedence over a total order on \(R\).
+## 4. Decision Semantics
 
-## 4. Outcome-to-Reason Mapping
+Given \((c, P, x)\), evaluation is:
 
-| Outcome class | decision | rule_id | reason_code |
+1. Parse and validate policy document.
+2. If policy is missing/invalid, return deny with stable reason code.
+3. Evaluate rules in policy order to produce the matching set \(M\).
+4. Apply precedence over \(M\) to select a unique verdict and rule identifier.
+5. Emit an ordered trace ending with a terminal resolution marker.
+
+## 5. Outcome-to-Reason Mapping
+
+| Outcome class | verdict | rule_id | reason_code |
 |---|---|---|---|
 | Policy missing | deny | None | `POLICY_MISSING` |
 | Policy invalid | deny | None | `POLICY_INVALID` |
-| First matching allow rule | allow | matched id | `RULE_ALLOW_MATCH` |
-| First matching deny rule | deny | matched id | `RULE_DENY_MATCH` |
+| Matching deny rule | deny | matched id | `RULE_DENY_MATCH` |
+| Matching require_approval rule | require_approval | matched id | `RULE_REQUIRE_APPROVAL_MATCH` |
+| Matching allow_with_redaction rule | allow_with_redaction | matched id | `RULE_ALLOW_WITH_REDACTION_MATCH` |
+| Matching allow rule | allow | matched id | `RULE_ALLOW_MATCH` |
 | No rule match | deny | None | `DEFAULT_DENY_NO_MATCH` |
 
-## 5. Invariants
+## Invariants
 
-### Invariant A (Policy Precedence)
-Capability execution is reachable only after decision evaluation completes.
+### I1 — Determinism
+For fixed inputs (c, P, x), D returns the same verdict, rule_id, reason_code, and trace.
 
-### Invariant B (Default-Deny Safety)
-Missing or invalid policy implies deny.
+**Proof sketch.** (i) R(P) extraction is deterministic or fails with a deterministic error code. (ii) Matching iterates in policy order only. (iii) Precedence is a total order with deterministic first-match selection. (iv) Trace is appended in a fixed sequence. Therefore outputs are identical for identical inputs.
 
-### Invariant C (Non-Bypassability)
-A deny result cannot transition to capability invocation in the enforced path.
+### I2 — Default-Deny Safety
+If policy is missing or invalid, verdict = deny with a stable reason_code.
 
-### Invariant D (Deterministic Resolution)
-For fixed \((c, P)\), the tuple
-\[
-(\text{decision}, \text{rule\_id}, \text{reason\_code}, \text{trace})
-\]
-is identical across repeated evaluations.
+**Proof sketch.** The resolver catches policy parse/validation failures and returns a deny decision with reason_code VALIDATION_DENY (or equivalent) without evaluating any allow branch. Therefore no capability is permitted on invalid input.
 
-## 6. Proof Sketches
+### I3 — Isolation Boundary (Non-Bypass)
+Tools/plugins cannot bypass policy enforcement: any tool execution must pass through the tool gateway which invokes D.
 
-### 6.1 First-Match Semantics Implies Determinism
-Rules are evaluated over a total order \(R=[r_1,\dots,r_n]\). Predicate membership
-\(c \in \text{caps}_i\) is deterministic for fixed \(c\) and fixed \(P\). The minimum matching
-index is unique if any match exists. Therefore either one unique matched rule determines
-the result, or no match leads to the unique fallback branch. Hence output tuple fields
-(\(\text{decision}\), \(\text{rule\_id}\), \(\text{reason\_code}\), \(\text{trace}\)) are deterministic.
-
-### 6.2 Trace Monotonicity
-Trace construction is append-only along control flow: each step appends evaluation markers
-for policy state, rule checks, and final resolution. No operation removes or mutates prior
-trace entries. Therefore trace is monotonic with respect to evaluation progress, and terminal
-trace is a prefix-extended sequence generated by the executed path.
-
-### 6.3 Default-Deny Safety Preservation
-When policy is missing or invalid, evaluation terminates before rule matching and returns
-deny with policy-specific reason code. When policy is valid but no rule matches, fallback is
-deny by definition of \(\delta=\text{deny}\). Thus every non-matching or malformed policy state
-maps to deny, preserving default-deny safety under all evaluation branches.
-
-## 7. Theorems
-
-### 7.1 Determinism Theorem
-Let \(c \in C\) and let policy parsing be deterministic for a fixed policy representation \(P\).
-Then \(D(c, P)\) is unique; i.e., repeated evaluations produce the same
-\[
-(\text{decision}, \text{rule\_id}, \text{reason\_code}, \text{trace}).
-\]
-
-Proof sketch:
-deterministic parsing yields a unique ordered rule list \(R\). Rule membership checks
-\(c \in \text{caps}_i\) are deterministic, and first-match precedence chooses a unique branch
-(allow-match, deny-match, or fallback). Each branch appends a fixed terminal marker.
-Therefore the resulting `DecisionResult` components are unique for fixed \((c, P)\).
-
-### 7.2 Audit Consistency Theorem
-For any evaluation with terminal decision \(\text{deny}\), let \(\tau\) be the emitted trace and
-\(\rho\) the emitted reason code. Then:
-
-1. Denial cause is in the finite set
-   \[
-   \mathcal{R}_{deny} = \{\text{POLICY\_MISSING},\ \text{POLICY\_INVALID},\ \text{DEFAULT\_DENY\_NO\_MATCH},\ \text{RULE\_DENY\_MATCH}\}.
-   \]
-2. The denial branch is one of: policy missing/invalid, no match fallback, or deny rule match.
-3. The trace terminates with a final marker of the form `final:*:*`.
-
-Proof sketch:
-the semantics define only four deny exits, each mapped to one reason code in
-\(\mathcal{R}_{deny}\). No other deny exit exists in the evaluation function. Each deny exit
-appends one terminal `final` marker before return. Hence deny audits are closed over
-\(\mathcal{R}_{deny}\) and trace-terminal form is invariant.
-
-### 7.3 Soundness of Default-Deny Under No Match
-Assume policy \(P\) parses to an ordered rule list \(R\), and for capability \(c\),
-\(\forall r_i \in R: c \notin \text{caps}_i\). Then
-\[
-D(c, P) = (\text{deny}, \bot, \text{DEFAULT\_DENY\_NO\_MATCH}, \tau)
-\]
-for some trace \(\tau\) ending with `final:deny:DEFAULT_DENY_NO_MATCH`.
-
-Proof sketch:
-if no rule predicate matches, first-match branches are unreachable. By definition of the
-fallback \(\delta=\text{deny}\), control reaches only the no-match deny return. Therefore no-match
-states cannot produce allow, which establishes default-deny soundness.
+**Proof sketch.** The only tool execution path is via the tool gateway entrypoint. The gateway requires a policy decision before tool invocation and enforces deny/approval/redaction outcomes. Under this control-flow constraint, a plugin cannot directly invoke tools without gateway mediation.
