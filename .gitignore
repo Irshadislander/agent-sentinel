@@ -55,6 +55,9 @@ bench/results/*
 /bench/results/*.json
 /bench/results/*.csv
 
-# Local benchmark outputs
-artifacts/bench/*.json
-artifacts/bench/*.csv
+# Local bench outputs (do not commit)
+artifacts/bench/latest.csv
+artifacts/bench/latest.json
+artifacts/bench/matrix.csv
+artifacts/bench/matrix.json
+artifacts/bench/robustness_report.json
