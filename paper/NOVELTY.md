@@ -1,22 +1,14 @@
 # Novelty
 
-## Falsifiable Novelty Claim
+## One-sentence novelty claim
+We provide a **deterministic, auditable runtime policy engine** for tool-augmented agents and a **reproducible causal ablation harness** that quantifies safety, observability, robustness, and latency trade-offs.
 
-This work contributes a runtime capability-governance framework whose policy gating, structured errors, plugin isolation, and trace completeness produce measurable and reproducible safety-observability deltas against ablated baselines on adversarial tasks.
+## What existing papers/systems do NOT provide
+- Deterministic decision semantics with stable **reason codes + trace semantics** tied to a formal model.
+- A reproducible harness that isolates the causal impact of runtime controls via explicit ablations.
+- Attack-scenario robustness tests linked to metrics and paper tables.
 
-## What Prior Work Lacks
-
-- Runtime safety controls are often described qualitatively, without a deterministic decision taxonomy tied to explicit exit semantics.
-- Reported evaluations frequently omit controlled ablation baselines (`no_policy`, `no_trace`, `raw_errors`, `no_plugin_isolation`) needed for causal attribution.
-- Failure handling is commonly untyped or ad hoc, reducing error disambiguation and limiting reproducible auditability across runs.
-
-## What We Provide
-
-- A capability registry and policy gating boundary with explicit allow/deny semantics and non-bypassable execution ordering.
-- A baseline-aware matrix benchmark with adversarial tasks and metrics (UER, FAR, TCR, EDS, plus latency/trace/plugin hooks) for falsifiable comparisons.
-- A reproducible pipeline (scripts + CI artifacts + paper tables) that keeps implementation outputs aligned with evaluation claims.
-
-## What Would Disprove Us
-
-- If default mode fails to outperform at least one expected baseline direction (e.g., UER vs `no_policy`, TCR vs `no_trace`, FAR/EDS vs `raw_errors`) on controlled tasks.
-- If repeated runs under fixed seeds and fixed configuration cannot reproduce stable metric trends within reported multi-seed variability bounds.
+## What we uniquely provide
+- Open implementation: deterministic resolver (decision, rule_id, reason_code, trace, duration).
+- Benchmarks: latency distribution + stress axis; robustness axis via attack scenario tests.
+- Canonical report generator that produces paper-ready tables from artifacts.
