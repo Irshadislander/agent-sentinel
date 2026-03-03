@@ -1,18 +1,22 @@
 # Novelty
 
-## Scientific Novelty Claims
+## Falsifiable Novelty Claim
 
-1. **Formalized runtime capability semantics for tool-using agents**
-   - The system models execution as an explicit enforcement function over policy, capability, and request context, with deterministic outputs (decision, exit class, trace artifact).
+This work contributes a runtime capability-governance framework whose policy gating, structured errors, plugin isolation, and trace completeness produce measurable and reproducible safety-observability deltas against ablated baselines on adversarial tasks.
 
-2. **Operationalized security claims with measurable invariants**
-   - Safety is evaluated through explicit metrics (UER, FAR, TCR, EDS, PEA), enabling falsifiable claims rather than narrative-only evaluation.
+## What Prior Work Lacks
 
-3. **Baseline-oriented ablation design for causal interpretation**
-   - Controlled baselines (`no_policy`, `no_trace`, `raw_errors`, `no_plugin_isolation`) isolate which control layer contributes to safety and observability.
+- Runtime safety controls are often described qualitatively, without a deterministic decision taxonomy tied to explicit exit semantics.
+- Reported evaluations frequently omit controlled ablation baselines (`no_policy`, `no_trace`, `raw_errors`, `no_plugin_isolation`) needed for causal attribution.
+- Failure handling is commonly untyped or ad hoc, reducing error disambiguation and limiting reproducible auditability across runs.
 
-4. **Traceability as a first-class runtime guarantee**
-   - Each request path is designed to produce structured, machine-parseable evidence that can be aggregated into reproducible benchmark and paper tables.
+## What We Provide
 
-5. **Research-to-engineering bridge**
-   - The same artifacts drive both CI-grade regression checks and paper-grade reporting, reducing drift between implementation and evaluation claims.
+- A capability registry and policy gating boundary with explicit allow/deny semantics and non-bypassable execution ordering.
+- A baseline-aware matrix benchmark with adversarial tasks and metrics (UER, FAR, TCR, EDS, plus latency/trace/plugin hooks) for falsifiable comparisons.
+- A reproducible pipeline (scripts + CI artifacts + paper tables) that keeps implementation outputs aligned with evaluation claims.
+
+## What Would Disprove Us
+
+- If default mode fails to outperform at least one expected baseline direction (e.g., UER vs `no_policy`, TCR vs `no_trace`, FAR/EDS vs `raw_errors`) on controlled tasks.
+- If repeated runs under fixed seeds and fixed configuration cannot reproduce stable metric trends within reported multi-seed variability bounds.
