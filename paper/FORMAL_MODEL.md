@@ -1,58 +1,80 @@
 # Formal Capability Execution Model
 
-## 1. Problem Setting
-Tool-using AI agents issue runtime requests to perform capability-bound actions (filesystem, network, or other external effects). The system objective is to enforce an allowlist-only policy with deterministic decision semantics and traceable outcomes for every request.
-
-We model execution as a guarded transition in which enforcement must precede capability execution. The desired properties are:
-- strict allow/deny enforcement,
-- deterministic failure classes,
-- auditable traces for post-hoc analysis.
-
-## 2. Notation
-- Capability identifier: \( c \in C \), where \( C \) is the set of canonical capability strings.
-- Policy: \( P \), an allowlist policy definition.
-- Request context: \( x \), containing `request_id`, `correlation_id`, `source`, and `timestamp`.
-- Decision: \( d \in \{\text{allow}, \text{deny}\} \).
-- Trace event: \( \tau \), a structured audit record emitted per request.
-- Exit code: \( e \), a deterministic code class indicating outcome type.
-
-## 3. Definitions
-### Definition 1 (Capability)
-A capability is a canonical identifier \( c \) with optional metadata (e.g., namespace, version, description, tags). Canonical IDs are the enforcement keys.
-
-### Definition 2 (Policy)
-A policy \( P \) is an allowlist-only mapping from request context class to decision. If no allow rule applies, decision is deny.
-
-### Definition 3 (Enforcement Function)
+## 1. Formal Objects
+Let \(C\) be the capability space, where each \(c \in C\) is a canonical capability identifier.
+Let \(X\) be the request-context space, where \(x \in X\) contains request metadata.
+A policy is \(P = (R, \delta)\), where \(R = \langle r_1, \dots, r_n \rangle\) is a finite ordered rule sequence and \(\delta\) is the fallback action.
+Each rule is a tuple \(r_i = (\varphi_i, a_i, \mathrm{id}_i)\), where \(\varphi_i: C \times X \to \{0,1\}\), \(a_i \in \{\mathrm{allow}, \mathrm{deny}\}\), and \(\mathrm{id}_i\) is a unique rule identifier.
+Define rule matching set \(M(c, x, P) = \{i \in \{1,\dots,n\} \mid \varphi_i(c, x) = 1\}\).
+Define first-match index \(i^*(c, x, P) = \min M(c, x, P)\) when \(M\neq\varnothing\).
+Define deterministic decision function
 \[
-\mathrm{Enforce}(P, c, x) \rightarrow (d, e, \tau)
+D(c, P, x) \to (d, \rho, \kappa),
 \]
-where:
-- \( d \) is the allow/deny decision,
-- \( e \) is the associated exit-code class,
-- \( \tau \) is the emitted trace event.
+where \(d \in \{\mathrm{allow},\mathrm{deny}\}\), \(\rho \in \{\mathrm{id}_1,\dots,\mathrm{id}_n,\bot\}\), and \(\kappa\) is a reason code.
+If \(P\) is invalid (including \(R=\varnothing\)), then \(D(c,P,x)=(\mathrm{deny},\bot,\mathrm{POLICY\_INVALID})\).
+If \(P\) is valid and \(M=\varnothing\), then \(D(c,P,x)=(\mathrm{deny},\bot,\mathrm{NO\_RULE\_MATCH})\) (default-deny fallback).
+If \(P\) is valid and \(M\neq\varnothing\), then \(D(c,P,x)=(a_{i^*},\mathrm{id}_{i^*},\mathrm{RULE\_MATCH})\).
 
-### Definition 4 (Violation)
-A violation occurs when enforcement returns deny due to one of:
-- unknown capability,
-- invalid policy format,
-- policy violation (capability not permitted under \( P \)).
+## 2. Decision Semantics
+Given \((c,P,x)\), evaluate \(D\) as follows:
+1. Validate policy structure and rule ordering constraints.
+2. If validation fails, return \((\mathrm{deny},\bot,\mathrm{POLICY\_INVALID})\).
+3. For \(i=1\) to \(n\), evaluate \(\varphi_i(c,x)\).
+4. At the first index with value \(1\), return \((a_i,\mathrm{id}_i,\mathrm{RULE\_MATCH})\).
+5. If no rule matches, return \((\mathrm{deny},\bot,\mathrm{NO\_RULE\_MATCH})\).
+The ordering over rules is total because \(R\) is a sequence.
+The procedure is deterministic because each branch is selected by total-order iteration and predicate outcomes over fixed inputs.
 
-## 4. Invariants and Guarantees
-### G1. Policy Precedence
-Enforcement is evaluated before any capability body executes.
+## 3. Invariants
+### Invariant 1 (Determinism)
+For fixed \((c,P,x)\), \(D\) returns a unique tuple.
+Formally,
+\[
+\forall c,P,x:\; D(c,P,x)=y_1 \land D(c,P,x)=y_2 \implies y_1=y_2.
+\]
 
-### G2. Default Deny
-If policy is missing, malformed, or non-applicable, the decision is deny with a specific structured error class.
+### Invariant 2 (Default-Deny Safety)
+If policy is empty or invalid, denial is mandatory with policy-invalid reason code.
+Formally,
+\[
+\forall c,x:\; \mathrm{Invalid}(P) \implies D(c,P,x)=(\mathrm{deny},\bot,\mathrm{POLICY\_INVALID}).
+\]
 
-### G3. Trace Completeness
-Each request emits exactly one terminal trace event representing its effective outcome class.
+### Invariant 3 (Plugin Isolation Boundary)
+Capability invocation is reachable only through an allow outcome from \(D\).
+Formally, for any plugin-mediated execution event \(\mathrm{Invoke}(c,x)\),
+\[
+\mathrm{Invoke}(c,x) \implies \exists \rho,\kappa:\; D(c,P,x)=(\mathrm{allow},\rho,\kappa).
+\]
 
-### G4. Deterministic Exit Semantics
-For the same \((P, c, x)\) class, enforcement produces the same exit-code category.
+## 4. Proof Sketches
+### Proof Sketch for Invariant 1 (Determinism)
+1. Fix arbitrary \((c,P,x)\).
+2. If \(P\) is invalid, the algorithm returns a constant terminal tuple by Step 2.
+3. Otherwise, \(R\) is a finite ordered sequence with fixed index order.
+4. Each predicate \(\varphi_i(c,x)\) is evaluated on fixed inputs, so each truth value is fixed.
+5. If at least one predicate is true, the minimum true index \(i^*\) is unique by total order.
+6. The returned tuple is uniquely determined by \(a_{i^*}\), \(\mathrm{id}_{i^*}\), and \(\mathrm{RULE\_MATCH}\).
+7. If no predicate is true, the algorithm returns the unique default tuple \((\mathrm{deny},\bot,\mathrm{NO\_RULE\_MATCH})\).
+8. Therefore the output tuple is unique for fixed \((c,P,x)\).
 
-### G5. Non-Bypassability
-A denied request cannot invoke capability execution through the standard runtime path.
+### Proof Sketch for Invariant 2 (Default-Deny Safety)
+1. Assume \(\mathrm{Invalid}(P)\), including empty rule set.
+2. Decision semantics Step 1 performs policy validation before rule evaluation.
+3. Under the assumption, validation fails deterministically.
+4. Step 2 is therefore the only reachable terminal branch.
+5. Step 2 returns \((\mathrm{deny},\bot,\mathrm{POLICY\_INVALID})\) by definition.
+6. No rule-evaluation branch is reachable under invalid policy.
+7. No allow output can be produced in this execution path.
+8. Hence invalid or empty policy implies mandatory deny with \(\mathrm{POLICY\_INVALID}\).
 
-## 5. What Is Novel
-The contribution is not a command-line wrapper; it is an explicit execution semantics with measurable security invariants. The system defines a formal enforcement function, attaches deterministic error/exit behavior, and provides benchmark-compatible observability outputs suitable for controlled baseline comparisons.
+### Proof Sketch for Invariant 3 (Plugin Isolation Boundary)
+1. Define execution relation with states: request-received, decision-resolved, capability-invoked.
+2. Transition to decision-resolved is defined as evaluation of \(D(c,P,x)\).
+3. Transition to capability-invoked is enabled only when decision component equals \(\mathrm{allow}\).
+4. If decision is \(\mathrm{deny}\), the transition system terminates without invocation.
+5. Plugin-mediated invocation is a subset of capability-invoked transitions.
+6. Therefore any invocation implies existence of a prior decision-resolved state.
+7. The enabling condition enforces decision \(=\mathrm{allow}\) for that prior state.
+8. Hence plugin invocation cannot bypass \(D\); invocation implies an allow output from \(D\).
