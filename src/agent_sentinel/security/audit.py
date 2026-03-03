@@ -20,6 +20,7 @@ class AuditEvent:
     reason_code: str = ""
     duration_ms: float = 0.0
     trace_len: int | None = None
+    trace_commitment: str | None = None
     allowed_capabilities: list[str] | None = None
 
 
@@ -41,6 +42,7 @@ def make_event(
     reason_code: str = "",
     duration_ms: float = 0.0,
     trace_len: int | None = None,
+    trace_commitment: str | None = None,
     allowed_capabilities: list[str] | None = None,
 ) -> AuditEvent:
     return AuditEvent(
@@ -55,6 +57,7 @@ def make_event(
         reason_code=reason_code,
         duration_ms=duration_ms,
         trace_len=trace_len,
+        trace_commitment=trace_commitment,
         allowed_capabilities=allowed_capabilities,
     )
 

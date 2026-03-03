@@ -137,6 +137,7 @@ class ToolGateway:
                 "reason_code": decision_result.reason_code if decision_result else "",
                 "duration_ms": decision_result.duration_ms if decision_result else 0.0,
                 "trace_len": len(decision_result.evaluation_trace) if decision_result else 0,
+                "trace_commitment": (decision_result.trace_commitment if decision_result else None),
                 "args_hash": args_hash,
                 "output_hash": "",
             },
@@ -151,6 +152,9 @@ class ToolGateway:
                     "reason": decision.reason,
                     "rule_id": decision_result.rule_id if decision_result else None,
                     "reason_code": decision_result.reason_code if decision_result else "",
+                    "trace_commitment": (
+                        decision_result.trace_commitment if decision_result else None
+                    ),
                     "args_hash": args_hash,
                     "output_hash": "",
                 },
@@ -166,6 +170,9 @@ class ToolGateway:
                     "reason": decision.reason,
                     "rule_id": decision_result.rule_id if decision_result else None,
                     "reason_code": decision_result.reason_code if decision_result else "",
+                    "trace_commitment": (
+                        decision_result.trace_commitment if decision_result else None
+                    ),
                     "args_hash": args_hash,
                     "output_hash": "",
                 },
@@ -300,7 +307,8 @@ class ToolGateway:
         if capability is None:
             return None
         synthetic_policy = {
-            "allow": sorted(str(capability_name) for capability_name in self._caps.granted)
+            "allow": sorted(str(capability_name) for capability_name in self._caps.granted),
+            "trace_integrity": bool(self._policy.get("trace_integrity", False)),
         }
         return resolve_decision(capability, synthetic_policy)
 
