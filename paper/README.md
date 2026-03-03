@@ -74,3 +74,10 @@ python scripts/generate_canonical_report.py --matrix-input artifacts/bench/matri
 ```bash
 python scripts/generate_canonical_report.py --matrix-input artifacts/bench/matrix.json --results-output paper/results_tables.md --policy-perf-json artifacts/bench/policy_engine_bench.json --policy-perf-markdown paper/PERF_DAYXX.md --robustness-output artifacts/bench/robustness_report.json
 ```
+
+## Quick reproduce
+
+From repo root:
+
+- `make repro` — runs fmt + tests + policy-engine microbench + canonical report + paper tables
+- `make clean` — removes local generated bench artifacts

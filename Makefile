@@ -1,39 +1,37 @@
-.PHONY: install dev ui lint format type test bench bench-matrix bench-report run-ui clean
+.PHONY: fmt test bench report paper repro clean
 
-install:
-	python -m pip install -U pip
-	python -m pip install -e .
-
-dev:
-	python -m pip install -e ".[dev]"
-
-ui:
-	python -m pip install -e ".[ui]"
-
-lint:
-	ruff check .
-
-format:
+# Format + lint
+fmt:
 	ruff format .
+	ruff check . --fix
 
-type:
-	mypy src/agent_sentinel || true
-
+# Unit tests
 test:
 	pytest -q
 
+# Policy engine microbenchmark (writes JSON + markdown outputs)
 bench:
-	PYTHONPATH=src python -m agent_sentinel.benchmark.run_benchmark
+	python scripts/bench_policy_engine.py
 
-bench-matrix:
-	PYTHONPATH=src python -m agent_sentinel.benchmark.run_benchmark --matrix --matrix-all-baselines --output-dir bench/results
+# Canonical report generation (writes results_tables + perf md + robustness json)
+report:
+	python scripts/generate_canonical_report.py \
+	  --matrix-input artifacts/bench/matrix.json \
+	  --results-output paper/results_tables.md \
+	  --policy-perf-json artifacts/bench/policy_engine_bench.json \
+	  --policy-perf-markdown paper/PERF_DAYXX.md \
+	  --robustness-output artifacts/bench/robustness_report.json
 
-bench-report: bench-matrix
-	PYTHONPATH=src python -m agent_sentinel.benchmark.report --matrix-input bench/results/matrix.json --output docs/bench_report.md
+# (Optional) Regenerate paper tables/appendix/summary if your script exists on main
+paper:
+	python -u scripts/generate_paper_tables.py
 
-run-ui:
-	agent-sentinel-ui
+# One command to reproduce the key evaluation artifacts
+repro: fmt test bench report paper
 
+# Clean local generated artifacts (safe to delete)
 clean:
-	rm -rf build dist .pytest_cache
-	rm -rf *.egg-info src/*.egg-info
+	rm -f artifacts/bench/latest.csv artifacts/bench/latest.json
+	rm -f artifacts/bench/matrix.csv artifacts/bench/matrix.json
+	rm -f artifacts/bench/robustness_report.json
+	rm -f artifacts/bench/policy_engine_bench.json
