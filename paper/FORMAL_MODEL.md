@@ -94,3 +94,48 @@ When policy is missing or invalid, evaluation terminates before rule matching an
 deny with policy-specific reason code. When policy is valid but no rule matches, fallback is
 deny by definition of \(\delta=\text{deny}\). Thus every non-matching or malformed policy state
 maps to deny, preserving default-deny safety under all evaluation branches.
+
+## 7. Theorems
+
+### 7.1 Determinism Theorem
+Let \(c \in C\) and let policy parsing be deterministic for a fixed policy representation \(P\).
+Then \(D(c, P)\) is unique; i.e., repeated evaluations produce the same
+\[
+(\text{decision}, \text{rule\_id}, \text{reason\_code}, \text{trace}).
+\]
+
+Proof sketch:
+deterministic parsing yields a unique ordered rule list \(R\). Rule membership checks
+\(c \in \text{caps}_i\) are deterministic, and first-match precedence chooses a unique branch
+(allow-match, deny-match, or fallback). Each branch appends a fixed terminal marker.
+Therefore the resulting `DecisionResult` components are unique for fixed \((c, P)\).
+
+### 7.2 Audit Consistency Theorem
+For any evaluation with terminal decision \(\text{deny}\), let \(\tau\) be the emitted trace and
+\(\rho\) the emitted reason code. Then:
+
+1. Denial cause is in the finite set
+   \[
+   \mathcal{R}_{deny} = \{\text{POLICY\_MISSING},\ \text{POLICY\_INVALID},\ \text{DEFAULT\_DENY\_NO\_MATCH},\ \text{RULE\_DENY\_MATCH}\}.
+   \]
+2. The denial branch is one of: policy missing/invalid, no match fallback, or deny rule match.
+3. The trace terminates with a final marker of the form `final:*:*`.
+
+Proof sketch:
+the semantics define only four deny exits, each mapped to one reason code in
+\(\mathcal{R}_{deny}\). No other deny exit exists in the evaluation function. Each deny exit
+appends one terminal `final` marker before return. Hence deny audits are closed over
+\(\mathcal{R}_{deny}\) and trace-terminal form is invariant.
+
+### 7.3 Soundness of Default-Deny Under No Match
+Assume policy \(P\) parses to an ordered rule list \(R\), and for capability \(c\),
+\(\forall r_i \in R: c \notin \text{caps}_i\). Then
+\[
+D(c, P) = (\text{deny}, \bot, \text{DEFAULT\_DENY\_NO\_MATCH}, \tau)
+\]
+for some trace \(\tau\) ending with `final:deny:DEFAULT_DENY_NO_MATCH`.
+
+Proof sketch:
+if no rule predicate matches, first-match branches are unreachable. By definition of the
+fallback \(\delta=\text{deny}\), control reaches only the no-match deny return. Therefore no-match
+states cannot produce allow, which establishes default-deny soundness.
