@@ -1,0 +1,13 @@
+{
+  "category": "plugin_failure",
+  "name": "synthetic_0192",
+  "steps": [
+    {
+      "args": {
+        "path": "workspace/synthetic_0192.txt",
+        "text": "plugin-check"
+      },
+      "tool_name": "fs_tool.write_text"
+    }
+  ]
+}

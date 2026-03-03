@@ -1,0 +1,12 @@
+{
+  "category": "malformed_payload",
+  "name": "synthetic_0158",
+  "steps": [
+    {
+      "args": {
+        "path": "workspace/synthetic_0158.txt"
+      },
+      "tool_name": "write_text"
+    }
+  ]
+}

