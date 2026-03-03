@@ -15,6 +15,7 @@ DEFAULT_RESULTS_DAY12_PATH = Path("paper/RESULTS_DAY12.md")
 DEFAULT_APPENDIX_DAY12_PATH = Path("paper/APPENDIX_DAY12.md")
 DEFAULT_OUTPUT_DAY11_PATH = Path("paper/results_tables.md")
 DEFAULT_OUTPUT_DAY12_PATH = Path("paper/results_tables_day12.md")
+DEFAULT_INPUT_PATH = Path("bench/results/matrix.json")
 UER_DENIED_CATEGORIES = {"malicious", "policy_blocked"}
 
 

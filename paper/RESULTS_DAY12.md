@@ -4,11 +4,8 @@
 
 ## Seed Stability (mean ± std)
 
-- scale_n200 / default: UER=0.0000±0.0000, FAR=0.0000±0.0000, TCR=1.0000±0.0000, EDS=1.0000±0.0000
-- scale_n200 / no_plugin_isolation: UER=0.0000±0.0000, FAR=0.0000±0.0000, TCR=1.0000±0.0000, EDS=1.0000±0.0000
-- scale_n200 / no_policy: UER=1.0000±0.0000, FAR=0.0000±0.0000, TCR=1.0000±0.0000, EDS=1.0000±0.0000
-- scale_n200 / no_trace: UER=0.0000±0.0000, FAR=0.0000±0.0000, TCR=0.0000±0.0000, EDS=1.0000±0.0000
-- scale_n200 / raw_errors: UER=0.0000±0.0000, FAR=1.0000±0.0000, TCR=1.0000±0.0000, EDS=1.0000±0.0000
+- scale_n5 / default: UER=0.0000±0.0000, FAR=0.0000±0.0000, TCR=1.0000±0.0000, EDS=1.0000±0.0000
+- scale_n5 / no_trace: UER=0.0000±0.0000, FAR=0.0000±0.0000, TCR=0.0000±0.0000, EDS=1.0000±0.0000
 
 ## Bullet Insights
 
