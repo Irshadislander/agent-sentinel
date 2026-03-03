@@ -1,26 +1,25 @@
-# Related Work (Structured Buckets)
+# Related Work
 
-## 1. Capability and Access-Control Models
+## Comparative Table
 
-- Capability-based security and least-privilege models motivate explicit permission boundaries.
-- This project adapts those ideas to tool-using agent runtimes with request-level enforcement and baseline ablations.
+| System / Work | Runtime Gating | Plugin Isolation | Trace Completeness Metric | Causal Ablations | Reproducible Harness |
+|---|---|---|---|---|---|
+| OPA (Open Policy Agent) | partial | ✗ | ✗ | ✗ | partial |
+| Traditional RBAC systems | partial | ✗ | ✗ | ✗ | ✗ |
+| API Gateway enforcement | ✓ | ✗ | partial | ✗ | partial |
+| WASM sandboxing | partial | ✓ | ✗ | ✗ | partial |
+| Capability-based OS models | ✓ | partial | ✗ | ✗ | ✗ |
+| Agent wrapper systems (generic) | partial | partial | partial | ✗ | partial |
+| Agent-Sentinel | ✓ | ✓ | ✓ | ✓ | ✓ |
 
-## 2. Policy Enforcement and Runtime Sandboxing
+Notes on conservative labeling:
+- `partial` denotes support that exists but is not the primary abstraction for tool-level agent-runtime safety evaluation.
+- Table entries reflect general system classes, not claims about every implementation variant.
 
-- Existing systems focus on static policy checks, container isolation, or API gateways.
-- The presented approach emphasizes per-tool call enforcement with measurable decision outcomes and policy-sensitive error taxonomy.
+## Gap Analysis
 
-## 3. Audit Logging and Forensic Traceability
+Existing approaches provide important building blocks: OPA and RBAC provide policy expression and authorization structure; API gateways provide operational request mediation; sandboxing provides strong isolation boundaries; capability-based models provide principled least-privilege semantics; and agent wrappers provide practical orchestration hooks. However, these lines of work typically do not provide a unified method to causally evaluate runtime safety controls for tool-augmented agents under controlled ablations with explicit safety and observability metrics. The missing niche is not only enforcement, but measurement of enforcement effects: whether policy gating changes unsafe execution, whether trace controls change completeness, and whether error typing changes ambiguity under adversarial tasks. This is why the contribution is not merely an access-control wrapper: the evaluation methodology (baseline matrix, adversarial task design, and reproducible harness outputs) is a first-class research object alongside the control mechanism.
 
-- Traditional audit systems prioritize event collection and retention.
-- Here, trace completeness is elevated to a measurable invariant (TCR), directly tied to baseline controls.
+## Positioning
 
-## 4. Agent Safety and Prompt-Injection Defenses
-
-- Prior defenses often focus on prompt filtering or model-side heuristics.
-- This work centers runtime control at the execution boundary, where policy, trace, and deterministic error semantics can be evaluated empirically.
-
-## 5. Benchmarking and Reproducibility Practices
-
-- Many evaluations provide aggregate metrics without mechanism-level ablations.
-- The matrix baseline design plus reproducibility script connects implementation controls to paper-ready quantitative claims.
+We differ from prior work in that we formalize deterministic decision semantics at the capability boundary, quantify safety-observability-latency tradeoffs with explicit metrics, evaluate control layers through controlled ablations, and release a reproducible harness that ties runtime behavior to paper-level claims.
