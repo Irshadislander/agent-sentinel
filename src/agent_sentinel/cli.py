@@ -21,6 +21,7 @@ from agent_sentinel.security.audit import AuditEvent, from_exception, make_event
 from agent_sentinel.security.capabilities import CapabilitySet
 from agent_sentinel.security.context import RequestContext, new_request_id
 from agent_sentinel.security.enforcer import enforce_request
+from agent_sentinel.security.policy_engine import resolve_decision
 from agent_sentinel.security.tool_gateway import ToolGateway
 from agent_sentinel.tools.fs_tool import read_text, write_text
 from agent_sentinel.tools.http_tool import http_get, http_post
@@ -217,6 +218,11 @@ def _build_parser() -> argparse.ArgumentParser:
     p.add_argument("--capability", required=True, help="Capability string to request")
     p.add_argument("--json", action="store_true", help="Output errors as JSON")
     p.add_argument(
+        "--explain",
+        action="store_true",
+        help="Print deny explanation with rule_id, reason_code, and trace.",
+    )
+    p.add_argument(
         "--request-id",
         type=str,
         default=None,
@@ -269,6 +275,17 @@ def _load_policy(path: str) -> Any:
         raise PolicyParseError(str(policy_path), reason=str(exc)) from exc
 
 
+def _format_deny_explanation(capability: str, policy: Any) -> str:
+    result = resolve_decision(capability, policy)
+    rule_id = result.rule_id or "none"
+    lines = [
+        f"DENY: capability={capability} rule_id={rule_id} reason_code={result.reason_code}",
+        "trace:",
+    ]
+    lines.extend(f"  - {entry}" for entry in result.evaluation_trace)
+    return "\n".join(lines)
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = _build_parser()
     args = parser.parse_args(argv)
@@ -277,6 +294,7 @@ def main(argv: list[str] | None = None) -> int:
         correlation_id=args.correlation_id,
         source=args.source,
     )
+    policy: Any = None
     last_audit_event: AuditEvent | None = None
 
     def _audit_sink(event: AuditEvent) -> None:
@@ -326,6 +344,8 @@ def main(argv: list[str] | None = None) -> int:
             print(json.dumps(e.to_payload().to_dict(), sort_keys=True), file=sys.stderr)
         else:
             print(f"Error: {e}", file=sys.stderr)
+        if args.explain and policy is not None:
+            print(_format_deny_explanation(args.capability, policy), file=sys.stderr)
         return e.exit_code
 
     except Exception as e:  # noqa: BLE001
