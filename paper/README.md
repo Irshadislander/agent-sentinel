@@ -79,5 +79,19 @@ python scripts/generate_canonical_report.py --matrix-input artifacts/bench/matri
 
 From repo root:
 
-- `make repro` — runs fmt + tests + policy-engine microbench + canonical report + paper tables
+- `make repro` — runs fmt + tests + matrix benchmark + canonical report + paper tables
 - `make clean` — removes local generated bench artifacts
+
+## How to reproduce results
+
+Run:
+
+- `make repro`
+
+Expected outputs:
+
+- `paper/results_tables.md`
+- `paper/PERF_DAYXX.md`
+- `artifacts/bench/policy_engine_bench.json`
+- `artifacts/bench/robustness_report.json`
+- `artifacts/bench/matrix.json`

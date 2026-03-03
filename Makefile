@@ -1,41 +1,30 @@
 .PHONY: fmt test bench matrix report paper repro clean
 
-# Format + lint
 fmt:
 	ruff format .
 	ruff check . --fix
 
-# Unit tests
 test:
 	pytest -q
 
-# Policy engine microbenchmark (writes JSON + markdown outputs)
 bench:
-	python scripts/bench_policy_engine.py
+	python3 scripts/bench_policy_engine.py
 
-# Benchmark matrix (inputs for robustness + canonical tables)
 matrix:
-	python scripts/bench_policy_engine.py --iterations 5000 --warmup 200
+	python3 -m agent_sentinel.benchmark.run_benchmark --matrix --output-dir artifacts/bench
 
-# Canonical report generation (writes results_tables + perf md + robustness json)
-report: matrix
-	python scripts/generate_canonical_report.py \
+report:
+	python3 scripts/generate_canonical_report.py \
 	  --matrix-input artifacts/bench/matrix.json \
 	  --results-output paper/results_tables.md \
 	  --policy-perf-json artifacts/bench/policy_engine_bench.json \
 	  --policy-perf-markdown paper/PERF_DAYXX.md \
 	  --robustness-output artifacts/bench/robustness_report.json
 
-# (Optional) Regenerate paper tables/appendix/summary if your script exists on main
 paper:
-	python -u scripts/generate_paper_tables.py
+	python3 scripts/generate_paper_tables.py
 
-# One command to reproduce the key evaluation artifacts
-repro: fmt test report paper
+repro: fmt test bench matrix report paper
 
-# Clean local generated artifacts (safe to delete)
 clean:
-	rm -f artifacts/bench/latest.csv artifacts/bench/latest.json
-	rm -f artifacts/bench/matrix.csv artifacts/bench/matrix.json
-	rm -f artifacts/bench/robustness_report.json
-	rm -f artifacts/bench/policy_engine_bench.json
+	rm -f artifacts/bench/latest.* artifacts/bench/matrix.* artifacts/bench/robustness_report.json artifacts/bench/policy_engine_bench.json
