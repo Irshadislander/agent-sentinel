@@ -16,6 +16,10 @@ class AuditEvent:
     capability: str
     decision: str  # "allow" | "deny"
     reason: str
+    rule_id: str | None = None
+    reason_code: str = ""
+    duration_ms: float = 0.0
+    trace_len: int | None = None
     allowed_capabilities: list[str] | None = None
 
 
@@ -33,6 +37,10 @@ def make_event(
     capability: str,
     decision: str,
     reason: str,
+    rule_id: str | None = None,
+    reason_code: str = "",
+    duration_ms: float = 0.0,
+    trace_len: int | None = None,
     allowed_capabilities: list[str] | None = None,
 ) -> AuditEvent:
     return AuditEvent(
@@ -43,6 +51,10 @@ def make_event(
         capability=capability,
         decision=decision,
         reason=reason,
+        rule_id=rule_id,
+        reason_code=reason_code,
+        duration_ms=duration_ms,
+        trace_len=trace_len,
         allowed_capabilities=allowed_capabilities,
     )
 
@@ -54,4 +66,5 @@ def from_exception(exc: Exception, *, ctx: RequestContext, capability: str) -> A
         capability=capability,
         decision="deny",
         reason=exc.__class__.__name__,
+        reason_code=exc.__class__.__name__,
     )

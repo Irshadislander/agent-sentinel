@@ -4,15 +4,19 @@ import copy
 import hashlib
 import json
 from collections.abc import Callable
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import Any
 
 from agent_sentinel.forensics.ledger import FlightRecorder
 from agent_sentinel.security import validators
 from agent_sentinel.security.capabilities import (
     FS_READ_PRIVATE,
+    FS_READ_PUBLIC,
+    FS_WRITE_WORKSPACE,
+    NET_EXTERNAL,
     NET_HTTP_GET,
     NET_HTTP_POST,
+    NET_INTERNAL,
     CapabilitySet,
 )
 from agent_sentinel.security.policy_engine import (
@@ -20,11 +24,16 @@ from agent_sentinel.security.policy_engine import (
     ALLOW_WITH_REDACTION,
     DENY,
     REQUIRE_APPROVAL,
+    DecisionResult,
     PolicyEngine,
+    resolve_decision,
 )
 
 _FS_READ_TOOL_NAMES = {"read_text", "fs.read", "fs_read", "fs_tool.read_text"}
+_FS_WRITE_TOOL_NAMES = {"write_text", "fs.write", "fs_write", "fs_tool.write_text"}
 _HTTP_REQUEST_TOOL_NAMES = {"http_request", "http.request", "tools.http.request"}
+_HTTP_GET_TOOL_NAMES = {"http_get", "http.get", "tools.http.get", "http_tool.http_get"}
+_HTTP_POST_TOOL_NAMES = {"http_post", "http.post", "tools.http.post", "http_tool.http_post"}
 ToolFn = Callable[..., Any]
 
 
@@ -103,9 +112,11 @@ class ToolGateway:
                     reason=validator_decision.reason,
                     args_hash=args_hash,
                     redacted_args=validator_decision.redacted_args,
+                    reason_code="VALIDATION_DENY",
                 )
 
         normalized_tool = tool_name.strip().lower()
+        decision_result = self._resolve_decision_result(tool_name=tool_name, args=args)
         if normalized_tool in _HTTP_REQUEST_TOOL_NAMES:
             decision = type(
                 "InlineDecision", (), {"verdict": ALLOW, "reason": "ok", "redactions": None}
@@ -122,6 +133,10 @@ class ToolGateway:
                 "tool_name": tool_name,
                 "decision": decision.verdict,
                 "reason": decision.reason,
+                "rule_id": decision_result.rule_id if decision_result else None,
+                "reason_code": decision_result.reason_code if decision_result else "",
+                "duration_ms": decision_result.duration_ms if decision_result else 0.0,
+                "trace_len": len(decision_result.evaluation_trace) if decision_result else 0,
                 "args_hash": args_hash,
                 "output_hash": "",
             },
@@ -134,6 +149,8 @@ class ToolGateway:
                     "tool_name": tool_name,
                     "decision": DENY,
                     "reason": decision.reason,
+                    "rule_id": decision_result.rule_id if decision_result else None,
+                    "reason_code": decision_result.reason_code if decision_result else "",
                     "args_hash": args_hash,
                     "output_hash": "",
                 },
@@ -147,6 +164,8 @@ class ToolGateway:
                     "tool_name": tool_name,
                     "decision": REQUIRE_APPROVAL,
                     "reason": decision.reason,
+                    "rule_id": decision_result.rule_id if decision_result else None,
+                    "reason_code": decision_result.reason_code if decision_result else "",
                     "args_hash": args_hash,
                     "output_hash": "",
                 },
@@ -233,6 +252,10 @@ class ToolGateway:
         reason: str,
         args_hash: str,
         redacted_args: dict | None,
+        reason_code: str,
+        rule_id: str | None = None,
+        duration_ms: float = 0.0,
+        trace_len: int = 0,
     ) -> dict[str, Any]:
         self._recorder.append(
             "policy.decision",
@@ -240,6 +263,10 @@ class ToolGateway:
                 "tool_name": tool_name,
                 "decision": DENY,
                 "reason": reason,
+                "rule_id": rule_id,
+                "reason_code": reason_code,
+                "duration_ms": duration_ms,
+                "trace_len": trace_len,
                 "args_hash": args_hash,
                 "output_hash": "",
             },
@@ -250,6 +277,8 @@ class ToolGateway:
                 "tool_name": tool_name,
                 "decision": DENY,
                 "reason": reason,
+                "rule_id": rule_id,
+                "reason_code": reason_code,
                 "args_hash": args_hash,
                 "output_hash": "",
             },
@@ -259,8 +288,61 @@ class ToolGateway:
             "tool_name": tool_name,
             "decision": DENY,
             "reason": reason,
+            "reason_code": reason_code,
+            "rule_id": rule_id,
             "redacted_args": redacted_args,
         }
+
+    def _resolve_decision_result(
+        self, *, tool_name: str, args: dict[str, Any]
+    ) -> DecisionResult | None:
+        capability = self._required_capability_for_call(tool_name=tool_name, args=args)
+        if capability is None:
+            return None
+        synthetic_policy = {
+            "allow": sorted(str(capability_name) for capability_name in self._caps.granted)
+        }
+        return resolve_decision(capability, synthetic_policy)
+
+    def _required_capability_for_call(self, *, tool_name: str, args: dict[str, Any]) -> str | None:
+        normalized = tool_name.strip().lower()
+
+        if normalized in _HTTP_REQUEST_TOOL_NAMES:
+            method = str(args.get("method", "GET")).upper()
+            if method == "POST":
+                return NET_HTTP_POST
+            return NET_HTTP_GET
+
+        if normalized in _HTTP_GET_TOOL_NAMES:
+            url = args.get("url")
+            if isinstance(url, str) and url:
+                if self._policy_engine._is_external_destination(url):  # noqa: SLF001
+                    if not self._caps.has(NET_EXTERNAL):
+                        return NET_EXTERNAL
+                elif not self._caps.has(NET_INTERNAL):
+                    return NET_INTERNAL
+            return NET_HTTP_GET
+
+        if normalized in _HTTP_POST_TOOL_NAMES:
+            url = args.get("url")
+            if isinstance(url, str) and url:
+                if self._policy_engine._is_external_destination(url):  # noqa: SLF001
+                    if not self._caps.has(NET_EXTERNAL):
+                        return NET_EXTERNAL
+                elif not self._caps.has(NET_INTERNAL):
+                    return NET_INTERNAL
+            return NET_HTTP_POST
+
+        if normalized in _FS_READ_TOOL_NAMES:
+            scope = self._path_scope(str(args.get("path", "")))
+            if scope == "private":
+                return FS_READ_PRIVATE
+            return FS_READ_PUBLIC
+
+        if normalized in _FS_WRITE_TOOL_NAMES:
+            return FS_WRITE_WORKSPACE
+
+        return None
 
     def _validate_tool_call(
         self, *, tool_name: str, args: dict[str, Any]
@@ -295,3 +377,16 @@ class ToolGateway:
             )
 
         return validators.ValidationResult(True, "ok")
+
+    @staticmethod
+    def _path_scope(path_value: str) -> str:
+        candidate = path_value.replace("\\", "/")
+        posix = PurePosixPath(candidate)
+        if posix.is_absolute():
+            return "invalid"
+        parts = [part for part in posix.parts if part not in ("", ".")]
+        if not parts:
+            return "invalid"
+        if any(part == ".." for part in parts):
+            return "invalid"
+        return parts[0]

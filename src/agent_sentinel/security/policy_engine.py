@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 import ipaddress
+import time
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import PurePosixPath
-from time import perf_counter
 from typing import Any, Literal
 from urllib.parse import urlparse
 
@@ -45,7 +45,7 @@ _FS_READ_NAMES = {"fs.read", "fs.read_text", "read_text", "fs_tool.read_text"}
 _FS_WRITE_NAMES = {"fs.write", "fs.write_text", "write_text", "fs_tool.write_text"}
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class DecisionResult:
     decision: Literal["allow", "deny"]
     rule_id: str | None
@@ -165,7 +165,7 @@ def _build_result(
         rule_id=rule_id,
         reason_code=reason_code,
         evaluation_trace=evaluation_trace,
-        duration_ms=(perf_counter() - start_time) * 1000.0,
+        duration_ms=(time.perf_counter() - start_time) * 1000.0,
     )
 
 
@@ -177,7 +177,7 @@ def resolve_decision(
 ) -> DecisionResult:
     del context  # Reserved for future predicate context expansion.
 
-    start = perf_counter()
+    start = time.perf_counter()
     trace: list[str] = []
 
     if policy is None:
@@ -231,6 +231,22 @@ def resolve_decision(
     )
 
 
+def _raise_for_denied_result(capability: str, policy: Any, result: DecisionResult) -> None:
+    reason_with_rule = result.reason_code
+    if result.rule_id is not None:
+        reason_with_rule = f"{result.reason_code} (rule_id={result.rule_id})"
+
+    if result.reason_code in {POLICY_INVALID, POLICY_MISSING}:
+        raise InvalidPolicyFormatError(reason_with_rule)
+
+    allowed_capabilities = _allowed_capabilities_from_policy(policy)
+    raise PolicyViolationError(
+        requested_capability=capability,
+        allowed_capabilities=allowed_capabilities,
+        reason=reason_with_rule,
+    )
+
+
 def enforce(capability: str, policy: Any) -> None:
     """
     Enforce allowlist-only policy.
@@ -243,15 +259,7 @@ def enforce(capability: str, policy: Any) -> None:
     if result.decision == "allow":
         return
 
-    if result.reason_code in {POLICY_INVALID, POLICY_MISSING}:
-        raise InvalidPolicyFormatError(result.reason_code)
-
-    allowed_capabilities = _allowed_capabilities_from_policy(policy)
-    raise PolicyViolationError(
-        requested_capability=capability,
-        allowed_capabilities=allowed_capabilities,
-        reason=result.reason_code,
-    )
+    _raise_for_denied_result(capability, policy, result)
 
 
 def enforce_request(
@@ -267,8 +275,14 @@ def enforce_request(
         source="cli",
     )
 
-    try:
-        enforce(capability, policy)
+    if not is_known(capability):
+        exc = UnknownCapabilityError(capability)
+        if audit_sink is not None:
+            audit_sink(from_exception(exc, ctx=effective_ctx, capability=capability))
+        raise exc
+
+    result = resolve_decision(capability, policy)
+    if result.decision == "allow":
         if audit_sink is not None:
             audit_sink(
                 make_event(
@@ -276,24 +290,35 @@ def enforce_request(
                     capability=capability,
                     decision="allow",
                     reason="capability allowed by policy",
+                    rule_id=result.rule_id,
+                    reason_code=result.reason_code,
+                    duration_ms=result.duration_ms,
+                    trace_len=len(result.evaluation_trace),
                 )
             )
-    except PolicyViolationError as exc:
-        if audit_sink is not None:
-            audit_sink(
-                make_event(
-                    ctx=effective_ctx,
-                    capability=capability,
-                    decision="deny",
-                    reason=exc.__class__.__name__,
-                    allowed_capabilities=exc.allowed_capabilities,
-                )
+        return
+
+    if audit_sink is not None:
+        reason = "InvalidPolicyFormatError"
+        allowed_capabilities: list[str] | None = None
+        if result.reason_code not in {POLICY_INVALID, POLICY_MISSING}:
+            reason = "PolicyViolationError"
+            allowed_capabilities = _allowed_capabilities_from_policy(policy)
+        audit_sink(
+            make_event(
+                ctx=effective_ctx,
+                capability=capability,
+                decision="deny",
+                reason=reason,
+                allowed_capabilities=allowed_capabilities,
+                rule_id=result.rule_id,
+                reason_code=result.reason_code,
+                duration_ms=result.duration_ms,
+                trace_len=len(result.evaluation_trace),
             )
-        raise
-    except AgentSentinelError as exc:
-        if audit_sink is not None:
-            audit_sink(from_exception(exc, ctx=effective_ctx, capability=capability))
-        raise
+        )
+
+    _raise_for_denied_result(capability, policy, result)
 
 
 def is_allowed(capability: str, policy: Any) -> bool:
