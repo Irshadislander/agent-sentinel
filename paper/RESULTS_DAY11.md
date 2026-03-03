@@ -2,13 +2,13 @@
 
 ## Key Findings
 
-- UER shift (no_policy - default): +0.7342
-- TCR shift (no_trace - default): -0.8741
+- UER shift (no_policy - default): +1.0000
+- TCR shift (no_trace - default): -1.0000
 - FAR shift (raw_errors - default): +1.0000
 
 ## Bullet Insights
 
-- Policy bypass remains the dominant unsafe-execution failure mode in this harness.
-- Trace suppression is immediately visible in completeness metrics and forensic utility.
-- Raw exception paths materially increase ambiguity relative to structured error mapping.
-- Sensitivity sweeps should be interpreted jointly with latency percentiles, not in isolation.
+- Policy bypass drives the largest unsafe-execution increase in this harness.
+- Trace suppression directly reduces forensic completeness.
+- Raw exception pathways increase ambiguity relative to structured errors.
+- Seed-level aggregation is required for stable comparison claims.

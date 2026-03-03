@@ -46,6 +46,16 @@ def test_deny_emits_deny_audit_event() -> None:
     assert event.correlation_id is None
 
 
+def test_allow_audit_includes_trace_commitment_when_enabled() -> None:
+    policy = {"allow": [FS_READ_PUBLIC], "trace_integrity": True}
+    events = []
+
+    enforce_request(FS_READ_PUBLIC, policy, audit_sink=events.append)
+
+    assert len(events) == 1
+    assert events[0].trace_commitment
+
+
 def test_audit_json_serialization_is_valid() -> None:
     policy = {"allow": [FS_READ_PUBLIC]}
     events = []

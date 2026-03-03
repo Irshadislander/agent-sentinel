@@ -31,6 +31,14 @@ def test_run_policy_engine_benchmark_has_required_cases() -> None:
         assert float(case["p99_ms"]) >= 0.0
         assert float(case["trace_len_mean"]) >= 0.0
 
+    scaling_curve = payload["scaling_curve"]
+    assert isinstance(scaling_curve, list)
+    assert scaling_curve
+    for point in scaling_curve:
+        assert int(point["n_rules"]) > 0
+        assert float(point["p95_ms"]) >= 0.0
+        assert float(point["trace_len_mean"]) >= 0.0
+
 
 def test_write_policy_engine_benchmark_outputs(tmp_path: Path) -> None:
     payload = run_policy_engine_benchmark(iterations=10, warmup=2)
@@ -50,3 +58,4 @@ def test_write_policy_engine_benchmark_outputs(tmp_path: Path) -> None:
     markdown = written_markdown.read_text(encoding="utf-8")
     assert "# Policy Engine Performance" in markdown
     assert "| case | decision | reason_code | rule_id |" in markdown
+    assert "## Stress Scaling Curve (n rules)" in markdown

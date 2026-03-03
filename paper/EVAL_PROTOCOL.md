@@ -34,7 +34,7 @@ Primary metrics are defined in `paper/METRICS.md`:
 - EDS
 - PEA
 
-Mapping to `bench/results/matrix.json` fields:
+Mapping to `artifacts/bench/matrix.json` fields:
 - `baseline`, `task_id`, `category`, `decision`
 - `exit_code`, `duration_ms`
 - `has_trace`
@@ -50,8 +50,8 @@ Mapping to `bench/results/matrix.json` fields:
 ## 5. Reproducibility Checklist
 - Record exact commands and argument values.
 - Capture CI artifacts:
-  - `bench/results/matrix.json`
-  - `bench/results/matrix.csv`
+  - `artifacts/bench/matrix.json`
+  - `artifacts/bench/matrix.csv`
   - `docs/bench_report.md`
 - Record commit SHA and timestamp.
 - If randomness is introduced, pin seeds and report them explicitly.

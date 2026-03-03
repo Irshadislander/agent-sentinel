@@ -11,11 +11,12 @@ from agent_sentinel.security.policy_engine import (
     RULE_ALLOW_MATCH,
     RULE_DENY_MATCH,
     resolve_decision,
+    verify_trace_commitment,
 )
 
 
 def test_resolve_decision_is_deterministic_for_same_input() -> None:
-    policy = {"allow": [FS_READ_PUBLIC]}
+    policy = {"allow": [FS_READ_PUBLIC], "trace_integrity": True}
 
     first = resolve_decision(FS_READ_PUBLIC, policy)
     second = resolve_decision(FS_READ_PUBLIC, policy)
@@ -24,7 +25,10 @@ def test_resolve_decision_is_deterministic_for_same_input() -> None:
     assert first.rule_id == second.rule_id
     assert first.reason_code == second.reason_code
     assert first.evaluation_trace == second.evaluation_trace
+    assert first.trace_commitment == second.trace_commitment
     assert first.reason_code == RULE_ALLOW_MATCH
+    assert first.trace_commitment is not None
+    assert verify_trace_commitment(first.evaluation_trace, first.trace_commitment)
     assert first.duration_ms >= 0.0
     assert second.duration_ms >= 0.0
 

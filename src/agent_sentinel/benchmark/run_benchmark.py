@@ -23,7 +23,7 @@ from agent_sentinel.benchmark.runner import run_benchmark as execute_benchmark
 from agent_sentinel.benchmark.synthetic import DEFAULT_MIX, generate_synthetic_tasks
 from agent_sentinel.cli_exit_codes import DENIED, INTERNAL_ERROR, OK
 
-DEFAULT_OUTPUT_DIR = Path("bench") / "results"
+DEFAULT_OUTPUT_DIR = Path("artifacts") / "bench"
 DEFAULT_JSON_NAME = "latest.json"
 DEFAULT_CSV_NAME = "latest.csv"
 DEFAULT_MATRIX_JSON_NAME = "matrix.json"

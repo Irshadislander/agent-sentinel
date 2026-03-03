@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import ipaddress
 import time
 from collections.abc import Callable
@@ -52,6 +53,7 @@ class DecisionResult:
     reason_code: str
     evaluation_trace: list[str]
     duration_ms: float
+    trace_commitment: str | None = None
 
 
 @dataclass(frozen=True)
@@ -159,6 +161,7 @@ def _build_result(
     rule_id: str | None,
     reason_code: str,
     evaluation_trace: list[str],
+    trace_commitment: str | None,
 ) -> DecisionResult:
     return DecisionResult(
         decision=decision,
@@ -166,7 +169,42 @@ def _build_result(
         reason_code=reason_code,
         evaluation_trace=evaluation_trace,
         duration_ms=(time.perf_counter() - start_time) * 1000.0,
+        trace_commitment=trace_commitment,
     )
+
+
+def _trace_integrity_enabled(policy: Any) -> bool:
+    return isinstance(policy, dict) and bool(policy.get("trace_integrity", False))
+
+
+def compute_trace_commitment(evaluation_trace: list[str]) -> str:
+    """
+    Compute a deterministic hash-chain commitment for an evaluation trace.
+
+    trace_hash[i] = H(trace_hash[i-1] || trace_entry[i]), with a fixed zero seed.
+    """
+
+    previous = "0" * 64
+    for entry in evaluation_trace:
+        payload = f"{previous}|{entry}".encode()
+        previous = hashlib.sha256(payload).hexdigest()
+    return previous
+
+
+def verify_trace_commitment(evaluation_trace: list[str], commitment: str | None) -> bool:
+    if not commitment:
+        return False
+    return compute_trace_commitment(evaluation_trace) == commitment
+
+
+def _trace_commitment(
+    evaluation_trace: list[str],
+    *,
+    enabled: bool,
+) -> str | None:
+    if not enabled:
+        return None
+    return compute_trace_commitment(evaluation_trace)
 
 
 def resolve_decision(
@@ -179,6 +217,7 @@ def resolve_decision(
 
     start = time.perf_counter()
     trace: list[str] = []
+    integrity_enabled = _trace_integrity_enabled(policy)
 
     if policy is None:
         trace.append("policy:missing")
@@ -189,6 +228,7 @@ def resolve_decision(
             rule_id=None,
             reason_code=POLICY_MISSING,
             evaluation_trace=trace,
+            trace_commitment=_trace_commitment(trace, enabled=integrity_enabled),
         )
 
     try:
@@ -202,6 +242,7 @@ def resolve_decision(
             rule_id=None,
             reason_code=POLICY_INVALID,
             evaluation_trace=trace,
+            trace_commitment=_trace_commitment(trace, enabled=integrity_enabled),
         )
 
     for rule in rules:
@@ -218,6 +259,7 @@ def resolve_decision(
             rule_id=rule.rule_id,
             reason_code=reason_code,
             evaluation_trace=trace,
+            trace_commitment=_trace_commitment(trace, enabled=integrity_enabled),
         )
 
     trace.append("no_match")
@@ -228,6 +270,7 @@ def resolve_decision(
         rule_id=None,
         reason_code=DEFAULT_DENY_NO_MATCH,
         evaluation_trace=trace,
+        trace_commitment=_trace_commitment(trace, enabled=integrity_enabled),
     )
 
 
@@ -294,6 +337,7 @@ def enforce_request(
                     reason_code=result.reason_code,
                     duration_ms=result.duration_ms,
                     trace_len=len(result.evaluation_trace),
+                    trace_commitment=result.trace_commitment,
                 )
             )
         return
@@ -315,6 +359,7 @@ def enforce_request(
                 reason_code=result.reason_code,
                 duration_ms=result.duration_ms,
                 trace_len=len(result.evaluation_trace),
+                trace_commitment=result.trace_commitment,
             )
         )
 

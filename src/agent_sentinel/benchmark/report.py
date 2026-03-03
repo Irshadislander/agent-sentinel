@@ -11,9 +11,9 @@ from typing import Any
 
 from agent_sentinel.cli_exit_codes import DENIED, INTERNAL_ERROR, OK
 
-DEFAULT_INPUT_PATH = Path("bench/results/latest.json")
+DEFAULT_INPUT_PATH = Path("artifacts/bench/latest.json")
 DEFAULT_OUTPUT_PATH = Path("docs/bench_report.md")
-DEFAULT_MATRIX_INPUT_PATH = Path("bench/results/matrix.json")
+DEFAULT_MATRIX_INPUT_PATH = Path("artifacts/bench/matrix.json")
 UER_DENIED_CATEGORIES = {"malicious", "policy_blocked"}
 
 

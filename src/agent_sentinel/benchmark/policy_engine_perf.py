@@ -74,6 +74,46 @@ def _policy_cases() -> list[dict[str, Any]]:
     ]
 
 
+def _scaling_policy(rule_count: int) -> dict[str, Any]:
+    rules: list[dict[str, Any]] = []
+    for idx in range(rule_count):
+        rules.append(
+            {
+                "rule_id": f"scale_rule_{idx:04d}",
+                "action": "allow",
+                "capabilities": [NET_HTTP_GET],
+            }
+        )
+    return {"rules": rules}
+
+
+def _scaling_curve(*, iterations: int, warmup: int) -> list[dict[str, Any]]:
+    points: list[dict[str, Any]] = []
+    for rule_count in (1, 4, 8, 16, 32, 64, 128):
+        policy = _scaling_policy(rule_count)
+        for _ in range(warmup):
+            resolve_decision(FS_READ_PUBLIC, policy)
+
+        durations_ms: list[float] = []
+        trace_lengths: list[int] = []
+        for _ in range(iterations):
+            result = resolve_decision(FS_READ_PUBLIC, policy)
+            durations_ms.append(float(result.duration_ms))
+            trace_lengths.append(len(result.evaluation_trace))
+
+        points.append(
+            {
+                "n_rules": rule_count,
+                "mean_ms": statistics.fmean(durations_ms),
+                "p50_ms": _percentile(durations_ms, 0.50),
+                "p95_ms": _percentile(durations_ms, 0.95),
+                "p99_ms": _percentile(durations_ms, 0.99),
+                "trace_len_mean": statistics.fmean(trace_lengths),
+            }
+        )
+    return points
+
+
 def run_policy_engine_benchmark(*, iterations: int = 5000, warmup: int = 200) -> dict[str, Any]:
     if iterations <= 0:
         raise ValueError("iterations must be > 0")
@@ -122,12 +162,15 @@ def run_policy_engine_benchmark(*, iterations: int = 5000, warmup: int = 200) ->
         )
 
     case_results = sorted(case_results, key=lambda case: str(case["case_id"]))
+    scaling_iterations = max(100, iterations // 5)
+    scaling_warmup = min(warmup, max(0, scaling_iterations // 5))
     payload = {
         "benchmark": "policy_engine_perf",
         "generated_at_utc": datetime.now(UTC).isoformat(),
         "iterations": iterations,
         "warmup": warmup,
         "cases": case_results,
+        "scaling_curve": _scaling_curve(iterations=scaling_iterations, warmup=scaling_warmup),
     }
     return payload
 
@@ -159,6 +202,26 @@ def render_policy_engine_markdown(payload: dict[str, Any], *, source_path: Path)
             f"{float(case.get('p99_ms', 0.0)):.6f} | "
             f"{float(case.get('trace_len_mean', 0.0)):.2f} |"
         )
+    scaling_raw = payload.get("scaling_curve", [])
+    scaling_curve = [point for point in scaling_raw if isinstance(point, dict)]
+    if scaling_curve:
+        lines.extend(
+            [
+                "",
+                "## Stress Scaling Curve (n rules)",
+                "",
+                "| n_rules | p50_ms | p95_ms | p99_ms | trace_len_mean |",
+                "|---:|---:|---:|---:|---:|",
+            ]
+        )
+        for point in sorted(scaling_curve, key=lambda row: int(row.get("n_rules", 0))):
+            lines.append(
+                f"| {int(point.get('n_rules', 0))} | "
+                f"{float(point.get('p50_ms', 0.0)):.6f} | "
+                f"{float(point.get('p95_ms', 0.0)):.6f} | "
+                f"{float(point.get('p99_ms', 0.0)):.6f} | "
+                f"{float(point.get('trace_len_mean', 0.0)):.2f} |"
+            )
     lines.append("")
     return "\n".join(lines)
 
