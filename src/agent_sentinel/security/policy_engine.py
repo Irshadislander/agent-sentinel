@@ -4,7 +4,8 @@ import ipaddress
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import PurePosixPath
-from typing import Any
+from time import perf_counter
+from typing import Any, Literal
 from urllib.parse import urlparse
 
 from agent_sentinel.security.audit import AuditEvent, from_exception, make_event
@@ -31,11 +32,33 @@ DENY = "DENY"
 REQUIRE_APPROVAL = "REQUIRE_APPROVAL"
 ALLOW_WITH_REDACTION = "ALLOW_WITH_REDACTION"
 
+RULE_ALLOW_MATCH = "RULE_ALLOW_MATCH"
+RULE_DENY_MATCH = "RULE_DENY_MATCH"
+DEFAULT_DENY_NO_MATCH = "DEFAULT_DENY_NO_MATCH"
+POLICY_INVALID = "POLICY_INVALID"
+POLICY_MISSING = "POLICY_MISSING"
+
 _SENSITIVE_TOKENS = ("email", "token", "secret", "password")
 _HTTP_GET_NAMES = {"http.get", "http_get", "tools.http.get", "http_tool.http_get"}
 _HTTP_POST_NAMES = {"http.post", "http_post", "tools.http.post", "http_tool.http_post"}
 _FS_READ_NAMES = {"fs.read", "fs.read_text", "read_text", "fs_tool.read_text"}
 _FS_WRITE_NAMES = {"fs.write", "fs.write_text", "write_text", "fs_tool.write_text"}
+
+
+@dataclass(frozen=True)
+class DecisionResult:
+    decision: Literal["allow", "deny"]
+    rule_id: str | None
+    reason_code: str
+    evaluation_trace: list[str]
+    duration_ms: float
+
+
+@dataclass(frozen=True)
+class _CapabilityRule:
+    rule_id: str
+    action: Literal["allow", "deny"]
+    capabilities: tuple[str, ...]
 
 
 def _extract_allowlist(policy: Any) -> list[str]:
@@ -55,6 +78,159 @@ def _extract_allowlist(policy: Any) -> list[str]:
     return allow
 
 
+def _extract_rules(policy: Any) -> tuple[_CapabilityRule, ...]:
+    if not isinstance(policy, dict):
+        raise InvalidPolicyFormatError("Policy must be a dict.")
+
+    if "rules" in policy:
+        raw_rules = policy["rules"]
+        if not isinstance(raw_rules, list):
+            raise InvalidPolicyFormatError("'rules' must be a list.")
+
+        rules: list[_CapabilityRule] = []
+        seen_rule_ids: set[str] = set()
+        for index, raw_rule in enumerate(raw_rules):
+            if not isinstance(raw_rule, dict):
+                raise InvalidPolicyFormatError(f"'rules[{index}]' must be an object.")
+
+            rule_id_value = raw_rule.get("rule_id")
+            if not isinstance(rule_id_value, str) or not rule_id_value:
+                raise InvalidPolicyFormatError(
+                    f"'rules[{index}].rule_id' must be a non-empty string."
+                )
+            if rule_id_value in seen_rule_ids:
+                raise InvalidPolicyFormatError(f"duplicate rule_id: {rule_id_value}")
+            seen_rule_ids.add(rule_id_value)
+
+            action_value = raw_rule.get("action")
+            if action_value not in {"allow", "deny"}:
+                raise InvalidPolicyFormatError(
+                    f"'rules[{index}].action' must be 'allow' or 'deny'."
+                )
+
+            capabilities_value = raw_rule.get("capabilities")
+            if not isinstance(capabilities_value, list) or not all(
+                isinstance(capability, str) for capability in capabilities_value
+            ):
+                raise InvalidPolicyFormatError(
+                    f"'rules[{index}].capabilities' must be a list of strings."
+                )
+
+            rules.append(
+                _CapabilityRule(
+                    rule_id=rule_id_value,
+                    action=action_value,
+                    capabilities=tuple(capabilities_value),
+                )
+            )
+        return tuple(rules)
+
+    allow = _extract_allowlist(policy)
+    return tuple(
+        _CapabilityRule(
+            rule_id=f"allow_{index:03d}",
+            action="allow",
+            capabilities=(capability,),
+        )
+        for index, capability in enumerate(allow)
+    )
+
+
+def _allowed_capabilities_from_policy(policy: Any) -> list[str]:
+    try:
+        rules = _extract_rules(policy)
+    except InvalidPolicyFormatError:
+        return []
+
+    allowed_caps: list[str] = []
+    for rule in rules:
+        if rule.action != "allow":
+            continue
+        for capability in rule.capabilities:
+            if capability not in allowed_caps:
+                allowed_caps.append(capability)
+    return allowed_caps
+
+
+def _build_result(
+    *,
+    start_time: float,
+    decision: Literal["allow", "deny"],
+    rule_id: str | None,
+    reason_code: str,
+    evaluation_trace: list[str],
+) -> DecisionResult:
+    return DecisionResult(
+        decision=decision,
+        rule_id=rule_id,
+        reason_code=reason_code,
+        evaluation_trace=evaluation_trace,
+        duration_ms=(perf_counter() - start_time) * 1000.0,
+    )
+
+
+def resolve_decision(
+    capability: str,
+    policy: Any,
+    *,
+    context: dict[str, Any] | None = None,
+) -> DecisionResult:
+    del context  # Reserved for future predicate context expansion.
+
+    start = perf_counter()
+    trace: list[str] = []
+
+    if policy is None:
+        trace.append("policy:missing")
+        trace.append(f"final:deny:{POLICY_MISSING}")
+        return _build_result(
+            start_time=start,
+            decision="deny",
+            rule_id=None,
+            reason_code=POLICY_MISSING,
+            evaluation_trace=trace,
+        )
+
+    try:
+        rules = _extract_rules(policy)
+    except InvalidPolicyFormatError:
+        trace.append("policy:invalid")
+        trace.append(f"final:deny:{POLICY_INVALID}")
+        return _build_result(
+            start_time=start,
+            decision="deny",
+            rule_id=None,
+            reason_code=POLICY_INVALID,
+            evaluation_trace=trace,
+        )
+
+    for rule in rules:
+        trace.append(f"eval:{rule.rule_id}")
+        if capability not in rule.capabilities:
+            continue
+
+        trace.append(f"match:{rule.rule_id}:{rule.action}")
+        reason_code = RULE_ALLOW_MATCH if rule.action == "allow" else RULE_DENY_MATCH
+        trace.append(f"final:{rule.action}:{reason_code}")
+        return _build_result(
+            start_time=start,
+            decision=rule.action,
+            rule_id=rule.rule_id,
+            reason_code=reason_code,
+            evaluation_trace=trace,
+        )
+
+    trace.append("no_match")
+    trace.append(f"final:deny:{DEFAULT_DENY_NO_MATCH}")
+    return _build_result(
+        start_time=start,
+        decision="deny",
+        rule_id=None,
+        reason_code=DEFAULT_DENY_NO_MATCH,
+        evaluation_trace=trace,
+    )
+
+
 def enforce(capability: str, policy: Any) -> None:
     """
     Enforce allowlist-only policy.
@@ -63,13 +239,19 @@ def enforce(capability: str, policy: Any) -> None:
     if not is_known(capability):
         raise UnknownCapabilityError(capability)
 
-    allow = _extract_allowlist(policy)
+    result = resolve_decision(capability, policy)
+    if result.decision == "allow":
+        return
 
-    if capability not in allow:
-        raise PolicyViolationError(
-            requested_capability=capability,
-            allowed_capabilities=allow,
-        )
+    if result.reason_code in {POLICY_INVALID, POLICY_MISSING}:
+        raise InvalidPolicyFormatError(result.reason_code)
+
+    allowed_capabilities = _allowed_capabilities_from_policy(policy)
+    raise PolicyViolationError(
+        requested_capability=capability,
+        allowed_capabilities=allowed_capabilities,
+        reason=result.reason_code,
+    )
 
 
 def enforce_request(
