@@ -11,11 +11,11 @@ test:
 
 # Policy engine microbenchmark (writes JSON + markdown outputs)
 bench:
-	python scripts/bench_policy_engine.py
+	python3 scripts/bench_policy_engine.py
 
 # Canonical report generation (writes results_tables + perf md + robustness json)
 report:
-	python scripts/generate_canonical_report.py \
+	python3 scripts/generate_canonical_report.py \
 	  --matrix-input artifacts/bench/matrix.json \
 	  --results-output paper/results_tables.md \
 	  --policy-perf-json artifacts/bench/policy_engine_bench.json \
