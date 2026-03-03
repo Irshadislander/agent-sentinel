@@ -54,3 +54,7 @@ bench/results/*
 # generated bench outputs
 /bench/results/*.json
 /bench/results/*.csv
+
+# Local benchmark outputs
+artifacts/bench/*.json
+artifacts/bench/*.csv
