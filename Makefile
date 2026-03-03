@@ -1,4 +1,4 @@
-.PHONY: fmt test bench report paper repro clean
+.PHONY: fmt test bench matrix report paper repro clean
 
 # Format + lint
 fmt:
@@ -13,8 +13,12 @@ test:
 bench:
 	python scripts/bench_policy_engine.py
 
+# Benchmark matrix (inputs for robustness + canonical tables)
+matrix:
+	python scripts/bench_policy_engine.py --iterations 5000 --warmup 200
+
 # Canonical report generation (writes results_tables + perf md + robustness json)
-report:
+report: matrix
 	python scripts/generate_canonical_report.py \
 	  --matrix-input artifacts/bench/matrix.json \
 	  --results-output paper/results_tables.md \
@@ -27,7 +31,7 @@ paper:
 	python -u scripts/generate_paper_tables.py
 
 # One command to reproduce the key evaluation artifacts
-repro: fmt test bench report paper
+repro: fmt test report paper
 
 # Clean local generated artifacts (safe to delete)
 clean:
