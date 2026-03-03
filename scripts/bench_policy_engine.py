@@ -1,17 +1,36 @@
 from __future__ import annotations
 
 import argparse
+import sys
 from pathlib import Path
-
-from agent_sentinel.benchmark.policy_engine_perf import (
-    DEFAULT_JSON_OUTPUT,
-    DEFAULT_MARKDOWN_OUTPUT,
-    run_policy_engine_benchmark,
-    write_policy_engine_benchmark_outputs,
-)
+from typing import Any
 
 
-def _build_parser() -> argparse.ArgumentParser:
+def _import_bench() -> tuple[Any, Any, Any, Any]:
+    """Import benchmark helpers with repo-local src on sys.path."""
+    repo_root = Path(__file__).resolve().parents[1]
+    src_dir = repo_root / "src"
+    if str(src_dir) not in sys.path:
+        sys.path.insert(0, str(src_dir))
+
+    from agent_sentinel.benchmark.policy_engine_perf import (
+        DEFAULT_JSON_OUTPUT,
+        DEFAULT_MARKDOWN_OUTPUT,
+        run_policy_engine_benchmark,
+        write_policy_engine_benchmark_outputs,
+    )
+
+    return (
+        DEFAULT_JSON_OUTPUT,
+        DEFAULT_MARKDOWN_OUTPUT,
+        run_policy_engine_benchmark,
+        write_policy_engine_benchmark_outputs,
+    )
+
+
+def _build_parser(
+    *, default_json_output: Any, default_markdown_output: Any
+) -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description="Microbenchmark policy-engine decision resolution."
     )
@@ -29,19 +48,29 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--json-output",
-        default=str(DEFAULT_JSON_OUTPUT),
-        help=f"JSON output path (default: {DEFAULT_JSON_OUTPUT}).",
+        default=str(default_json_output),
+        help=f"JSON output path (default: {default_json_output}).",
     )
     parser.add_argument(
         "--markdown-output",
-        default=str(DEFAULT_MARKDOWN_OUTPUT),
-        help=f"Markdown output path (default: {DEFAULT_MARKDOWN_OUTPUT}).",
+        default=str(default_markdown_output),
+        help=f"Markdown output path (default: {default_markdown_output}).",
     )
     return parser
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = _build_parser()
+    (
+        default_json_output,
+        default_markdown_output,
+        run_policy_engine_benchmark,
+        write_policy_engine_benchmark_outputs,
+    ) = _import_bench()
+
+    parser = _build_parser(
+        default_json_output=default_json_output,
+        default_markdown_output=default_markdown_output,
+    )
     args = parser.parse_args(argv)
 
     payload = run_policy_engine_benchmark(iterations=args.iterations, warmup=args.warmup)

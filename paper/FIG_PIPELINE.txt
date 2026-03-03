@@ -1,0 +1,9 @@
+Figure 1: Deterministic Enforcement + Audit Pipeline
+
++---------+    +-----------+    +------------------------+    +--------------------+    +-----------+
+| Request | -> | Validator | -> | Deterministic Resolver | -> | DecisionResult     | -> | Audit Sink|
++---------+    +-----------+    +------------------------+    +--------------------+    +-----------+
+                                  first-match + default deny      decision, rule_id,
+                                                                    reason_code, trace,
+                                                                    trace_commitment
+
