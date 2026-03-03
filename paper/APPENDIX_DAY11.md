@@ -1,7 +1,7 @@
 # Paper Result Tables
 
 - Source: `bench/results/matrix.json`
-- Generated at (UTC): `2026-03-03T20:19:45.960086+00:00`
+- Generated at (UTC): `2026-03-03T20:46:17.746824+00:00`
 
 ## Table 1: Baseline Metrics
 
