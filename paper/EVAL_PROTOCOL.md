@@ -1,57 +1,21 @@
 # Evaluation Protocol
 
-## 1. Task Set
-Tasks are sourced from `configs/tasks/` and grouped by evaluation category:
-- `benign`
-- `policy_blocked`
-- `malformed_payload`
-- `plugin_failure`
-- `trace_stress`
+## Axes
+1) Correctness: decision matches expected outcome for each test case.
+2) Observability: trace completeness and presence of rule_id/reason_code.
+3) Robustness: attack scenario success rate and trace integrity under attack.
+4) Performance: latency p50/p95/p99 under stress settings.
 
-The category labels define expected behavioral classes for policy and error analysis.
+## Ablations (causal)
+- A0: full system (baseline)
+- A1: no_policy (missing policy) → expect deny + validation reason code
+- A2: raw_errors (no structured reason codes) → expect lower explainability score
+- A3: no_trace (trace suppressed) → expect trace completeness drop
+- A4: allowlist_only → expect higher attack success for escalation attempts
+- A5: no_gateway_enforcement (simulated) → expect safety collapse (if modeled)
 
-## 2. Baselines
-### B0 (default)
-Full system enabled: policy enforcement, tracing, and structured errors.
-
-### B1 (no_policy)
-Policy gate bypassed; capability requests are allowed by the benchmark execution path while tracing remains enabled.
-
-### B2 (no_trace)
-Tracing disabled; execution still uses policy and structured errors.
-
-### B3 (raw_errors)
-Structured error taxonomy disabled at benchmark boundary; failures are represented as raw exception strings.
-
-### B4 (no_plugin_isolation)
-Plugin isolation disabled; discovered plugins are treated as unrestricted (no allowlist enforcement).
-
-## 3. Metrics
-Primary metrics are defined in `paper/METRICS.md`:
-- UER
-- FAR
-- TCR
-- EDS
-- PEA
-
-Mapping to `artifacts/bench/matrix.json` fields:
-- `baseline`, `task_id`, `category`, `decision`
-- `exit_code`, `duration_ms`
-- `has_trace`
-- `error_kind`, `raw_error`
-
-## 4. Experimental Procedure
-1. Fix task set from `configs/tasks/`.
-2. Run matrix with baseline controls:
-   - `python -m agent_sentinel.benchmark.run_benchmark --matrix --matrix-all-baselines`
-3. Repeat matrix runs \(N\) times (default \(N=10\)) for determinism-sensitive statistics.
-4. Report mean and standard deviation across runs.
-
-## 5. Reproducibility Checklist
-- Record exact commands and argument values.
-- Capture CI artifacts:
-  - `artifacts/bench/matrix.json`
-  - `artifacts/bench/matrix.csv`
-  - `docs/bench_report.md`
-- Record commit SHA and timestamp.
-- If randomness is introduced, pin seeds and report them explicitly.
+## Hypotheses
+- H1: Deterministic engine yields 100% determinism and stable reason codes.
+- H2: Trace-enabled configuration increases auditability with bounded overhead.
+- H3: Gateway enforcement prevents tool escalation in attack scenarios.
+- H4: Stress axis shows bounded p95/p99 latency under typical policy sizes.
