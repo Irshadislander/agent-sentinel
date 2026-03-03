@@ -1,58 +1,96 @@
 # Formal Capability Execution Model
 
 ## 1. Problem Setting
-Tool-using AI agents issue runtime requests to perform capability-bound actions (filesystem, network, or other external effects). The system objective is to enforce an allowlist-only policy with deterministic decision semantics and traceable outcomes for every request.
+Tool-using agents request capabilities at runtime. The enforcement objective is to decide
+allow/deny before execution, emit a traceable decision path, and preserve deterministic
+outcomes for fixed inputs.
 
-We model execution as a guarded transition in which enforcement must precede capability execution. The desired properties are:
-- strict allow/deny enforcement,
-- deterministic failure classes,
-- auditable traces for post-hoc analysis.
+## 2. Formal Objects
 
-## 2. Notation
-- Capability identifier: \( c \in C \), where \( C \) is the set of canonical capability strings.
-- Policy: \( P \), an allowlist policy definition.
-- Request context: \( x \), containing `request_id`, `correlation_id`, `source`, and `timestamp`.
-- Decision: \( d \in \{\text{allow}, \text{deny}\} \).
-- Trace event: \( \tau \), a structured audit record emitted per request.
-- Exit code: \( e \), a deterministic code class indicating outcome type.
+- Capability space: \( C \), with capability identifier \( c \in C \).
+- Policy: \( P = (R, \delta) \), where \( R = [r_1, r_2, \dots, r_n] \) is an ordered rule list and
+  \( \delta = \text{deny} \) is the default fallback.
+- Rule: \( r_i = (\text{rule\_id}_i, a_i, \text{caps}_i) \), where
+  \( a_i \in \{\text{allow}, \text{deny}\} \) and \( \text{caps}_i \subseteq C \).
+- DecisionResult tuple:
+  \[
+  D(c, P) \rightarrow (\text{decision}, \text{rule\_id}, \text{reason\_code}, \text{trace})
+  \]
+  where:
+  - \(\text{decision} \in \{\text{allow}, \text{deny}\}\),
+  - \(\text{rule\_id}\) is matched rule identifier or \(\bot\),
+  - \(\text{reason\_code}\) is from a fixed reason-code set,
+  - \(\text{trace}\) is an ordered list of evaluation steps.
 
-## 3. Definitions
-### Definition 1 (Capability)
-A capability is a canonical identifier \( c \) with optional metadata (e.g., namespace, version, description, tags). Canonical IDs are the enforcement keys.
+## 3. Decision Semantics
 
-### Definition 2 (Policy)
-A policy \( P \) is an allowlist-only mapping from request context class to decision. If no allow rule applies, decision is deny.
+Given \((c, P)\), evaluation is:
 
-### Definition 3 (Enforcement Function)
+1. Validate policy structure.
+2. If policy missing, return:
+   \[
+   (\text{deny}, \bot, \text{POLICY\_MISSING}, \text{trace})
+   \]
+3. If policy invalid, return:
+   \[
+   (\text{deny}, \bot, \text{POLICY\_INVALID}, \text{trace})
+   \]
+4. Iterate rules in list order \(r_1 \rightarrow r_n\).
+5. First rule with \(c \in \text{caps}_i\) resolves decision:
+   - if \(a_i=\text{allow}\): \((\text{allow}, \text{rule\_id}_i, \text{RULE\_ALLOW\_MATCH}, \text{trace})\)
+   - if \(a_i=\text{deny}\): \((\text{deny}, \text{rule\_id}_i, \text{RULE\_DENY\_MATCH}, \text{trace})\)
+6. If no rule matches, apply fallback:
+   \[
+   (\text{deny}, \bot, \text{DEFAULT\_DENY\_NO\_MATCH}, \text{trace})
+   \]
+
+This is first-match precedence over a total order on \(R\).
+
+## 4. Outcome-to-Reason Mapping
+
+| Outcome class | decision | rule_id | reason_code |
+|---|---|---|---|
+| Policy missing | deny | None | `POLICY_MISSING` |
+| Policy invalid | deny | None | `POLICY_INVALID` |
+| First matching allow rule | allow | matched id | `RULE_ALLOW_MATCH` |
+| First matching deny rule | deny | matched id | `RULE_DENY_MATCH` |
+| No rule match | deny | None | `DEFAULT_DENY_NO_MATCH` |
+
+## 5. Invariants
+
+### Invariant A (Policy Precedence)
+Capability execution is reachable only after decision evaluation completes.
+
+### Invariant B (Default-Deny Safety)
+Missing or invalid policy implies deny.
+
+### Invariant C (Non-Bypassability)
+A deny result cannot transition to capability invocation in the enforced path.
+
+### Invariant D (Deterministic Resolution)
+For fixed \((c, P)\), the tuple
 \[
-\mathrm{Enforce}(P, c, x) \rightarrow (d, e, \tau)
+(\text{decision}, \text{rule\_id}, \text{reason\_code}, \text{trace})
 \]
-where:
-- \( d \) is the allow/deny decision,
-- \( e \) is the associated exit-code class,
-- \( \tau \) is the emitted trace event.
+is identical across repeated evaluations.
 
-### Definition 4 (Violation)
-A violation occurs when enforcement returns deny due to one of:
-- unknown capability,
-- invalid policy format,
-- policy violation (capability not permitted under \( P \)).
+## 6. Proof Sketches
 
-## 4. Invariants and Guarantees
-### G1. Policy Precedence
-Enforcement is evaluated before any capability body executes.
+### 6.1 First-Match Semantics Implies Determinism
+Rules are evaluated over a total order \(R=[r_1,\dots,r_n]\). Predicate membership
+\(c \in \text{caps}_i\) is deterministic for fixed \(c\) and fixed \(P\). The minimum matching
+index is unique if any match exists. Therefore either one unique matched rule determines
+the result, or no match leads to the unique fallback branch. Hence output tuple fields
+(\(\text{decision}\), \(\text{rule\_id}\), \(\text{reason\_code}\), \(\text{trace}\)) are deterministic.
 
-### G2. Default Deny
-If policy is missing, malformed, or non-applicable, the decision is deny with a specific structured error class.
+### 6.2 Trace Monotonicity
+Trace construction is append-only along control flow: each step appends evaluation markers
+for policy state, rule checks, and final resolution. No operation removes or mutates prior
+trace entries. Therefore trace is monotonic with respect to evaluation progress, and terminal
+trace is a prefix-extended sequence generated by the executed path.
 
-### G3. Trace Completeness
-Each request emits exactly one terminal trace event representing its effective outcome class.
-
-### G4. Deterministic Exit Semantics
-For the same \((P, c, x)\) class, enforcement produces the same exit-code category.
-
-### G5. Non-Bypassability
-A denied request cannot invoke capability execution through the standard runtime path.
-
-## 5. What Is Novel
-The contribution is not a command-line wrapper; it is an explicit execution semantics with measurable security invariants. The system defines a formal enforcement function, attaches deterministic error/exit behavior, and provides benchmark-compatible observability outputs suitable for controlled baseline comparisons.
+### 6.3 Default-Deny Safety Preservation
+When policy is missing or invalid, evaluation terminates before rule matching and returns
+deny with policy-specific reason code. When policy is valid but no rule matches, fallback is
+deny by definition of \(\delta=\text{deny}\). Thus every non-matching or malformed policy state
+maps to deny, preserving default-deny safety under all evaluation branches.
