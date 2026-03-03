@@ -26,6 +26,11 @@ ATTACK_CATEGORIES = {
     "plugin_failure",
     "trace_stress",
 }
+DEFAULT_MATRIX_INPUT = Path("artifacts/bench/matrix.json")
+DEFAULT_RESULTS_OUTPUT = Path("paper/results_tables.md")
+DEFAULT_POLICY_PERF_JSON = Path("artifacts/bench/policy_engine_bench.json")
+DEFAULT_POLICY_PERF_MARKDOWN = Path("paper/PERF_DAYXX.md")
+DEFAULT_ROBUSTNESS_OUTPUT = Path("artifacts/bench/robustness_report.json")
 
 
 def _write_text(path: Path, text: str) -> None:
@@ -270,11 +275,11 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         description="Generate canonical paper artifacts from benchmark matrix."
     )
-    parser.add_argument("--matrix-input", required=True)
-    parser.add_argument("--results-output", required=True)
-    parser.add_argument("--policy-perf-json", required=True)
-    parser.add_argument("--policy-perf-markdown", required=True)
-    parser.add_argument("--robustness-output", required=True)
+    parser.add_argument("--matrix-input", default=str(DEFAULT_MATRIX_INPUT))
+    parser.add_argument("--results-output", default=str(DEFAULT_RESULTS_OUTPUT))
+    parser.add_argument("--policy-perf-json", default=str(DEFAULT_POLICY_PERF_JSON))
+    parser.add_argument("--policy-perf-markdown", default=str(DEFAULT_POLICY_PERF_MARKDOWN))
+    parser.add_argument("--robustness-output", default=str(DEFAULT_ROBUSTNESS_OUTPUT))
     parser.add_argument("--perf-iterations", type=int, default=5000)
     parser.add_argument("--perf-warmup", type=int, default=200)
 
