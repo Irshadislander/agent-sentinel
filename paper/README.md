@@ -2,6 +2,19 @@
 
 This directory contains research artifacts used for the formal write-up and evaluation framing.
 
+## Reproduce paper tables (one command)
+
+Prereqs:
+- `python3` is available (`python` is not used in this pipeline).
+- Virtual environment is activated from repo root (for example: `source .venv/bin/activate`).
+
+Run:
+```bash
+make repro
+```
+
+This runs the full pipeline end-to-end via Makefile targets: `fmt`, `test`, `bench`, `matrix`, `report`, and `paper`.
+
 - `NICHE.md`: precise problem niche, scope, and non-goals.
 - `FORMAL_MODEL.md`: formal capability execution model, notation, definitions, and guarantees.
 - `METRICS.md`: security/evaluation metric definitions and experimental protocol.
