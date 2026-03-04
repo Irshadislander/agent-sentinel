@@ -219,27 +219,29 @@ def main() -> int:
             capability = "filesystem"
             tool_args = {"path": "./out.txt", "op": "write"}
 
-        ctx = {"prompt": c.prompt, "case": c.name}
-
-        if hasattr(gw, "resolve_decision"):
-            try:
-                decision = gw.resolve_decision(
-                    tool_name=tool_name,
-                    capability=capability,
-                    tool_args=tool_args,
-                    context=ctx,
-                )
-            except TypeError:
-                # fallback: older signature
-                decision = gw.resolve_decision(tool_name, capability, tool_args, ctx)
-        elif hasattr(gw, "decide"):
-            decision = gw.decide(
-                tool_name=tool_name, capability=capability, tool_args=tool_args, context=ctx
-            )
-        else:
-            raise RuntimeError(
-                "ToolGateway has no resolve_decision/decide method; update integration harness."
-            )
+        try:
+            gw.execute(tool_name=tool_name, args=tool_args)
+            decision = type(
+                "Decision",
+                (),
+                {
+                    "decision": "allow",
+                    "request_id": None,
+                    "matched_rule_id": None,
+                    "reason": "ok",
+                },
+            )()
+        except PermissionError as exc:
+            decision = type(
+                "Decision",
+                (),
+                {
+                    "decision": "deny",
+                    "request_id": None,
+                    "matched_rule_id": None,
+                    "reason": str(exc),
+                },
+            )()
 
         t1 = _now_ms()
         blocked = decision.decision == "deny"
