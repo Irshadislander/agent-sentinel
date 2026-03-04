@@ -1,16 +1,19 @@
 # Abstract
 
-## Problem
-Tool-augmented agents can invoke filesystem, network, and plugin capabilities, but runtime safety behavior is often evaluated qualitatively rather than with deterministic, auditable outcomes.
+## What
+We study runtime capability gating for tool-augmented agents as a deterministic systems problem.
 
-## Approach
-Agent-Sentinel implements deterministic policy resolution at the tool gateway and emits structured decision artifacts (`decision`, `rule_id`, `reason_code`, trace metadata) for each request.
+## Why
+Safety mechanisms for tool use are commonly evaluated qualitatively, making it difficult to isolate causal effects of policy enforcement, tracing, and isolation controls.
 
-## Evaluation
-We evaluate safety, observability, robustness, and latency with controlled ablations (`no_policy`, `no_trace`, `raw_errors`, `no_plugin_isolation`) and adversarial task scenarios.
+## How
+Agent-Sentinel enforces deterministic rule resolution at runtime and emits structured decision artifacts (`decision`, `rule_id`, `reason_code`, trace metadata). We evaluate controlled ablations (`no_policy`, `no_trace`, `raw_errors`, `no_plugin_isolation`) under benign and adversarial workloads.
 
-## Outcome
-The framework provides reproducible evidence for tradeoffs between enforcement strength and runtime overhead while preserving stable deny semantics and auditability.
+## Results
+The evaluation quantifies safety-observability-extensibility tradeoffs and shows measurable degradation when key controls are removed, while preserving stable deny semantics in full mode.
+
+## Artifacts
+We provide formal specifications, adversarial protocols, benchmark matrix outputs, and canonical report-generation scripts for reproducible analysis.
 
 ## Links
 - [FORMAL_MODEL](FORMAL_MODEL.md)
