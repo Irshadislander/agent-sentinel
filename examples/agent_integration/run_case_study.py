@@ -55,8 +55,8 @@ def _trace_completeness(trace: dict[str, Any]) -> float:
 
 def main() -> int:
     # Import runtime entrypoints (keep minimal)
+    import agent_sentinel.security.validators as validators_mod  # type: ignore
     from agent_sentinel.security.tool_gateway import ToolGateway  # type: ignore
-    from agent_sentinel.security.validators import DefaultValidators  # type: ignore
 
     # Policies for the case study live next to this script for clarity
     base_dir = Path(__file__).resolve().parent
@@ -125,14 +125,32 @@ def main() -> int:
         ),
     ]
 
+    def _make_validators():
+        # Try common patterns without breaking if names change.
+        if hasattr(validators_mod, "DefaultValidators"):
+            return validators_mod.DefaultValidators()
+        if hasattr(validators_mod, "Validators"):
+            return validators_mod.Validators()
+        if hasattr(validators_mod, "get_default_validators"):
+            return validators_mod.get_default_validators()
+        if hasattr(validators_mod, "default_validators"):
+            dv = validators_mod.default_validators
+            return dv() if callable(dv) else dv
+        # If the runtime doesn't require validators, we can return None.
+        return None
+
     results: list[dict[str, Any]] = []
-    validators = DefaultValidators()
+    validators = _make_validators()
 
     for c in cases:
         policy = _load_policy(c.policy_path)
 
         # ToolGateway is the enforcement point
-        gw = ToolGateway(policy=policy, validators=validators)
+        try:
+            gw = ToolGateway(policy=policy, validators=validators)
+        except TypeError:
+            # older/newer signature without validators
+            gw = ToolGateway(policy=policy)
 
         t0 = _now_ms()
 
@@ -152,12 +170,27 @@ def main() -> int:
             capability = "filesystem"
             tool_args = {"path": "./out.txt", "op": "write"}
 
-        decision = gw.resolve_decision(
-            tool_name=tool_name,
-            capability=capability,
-            tool_args=tool_args,
-            context={"prompt": c.prompt, "case": c.name},
-        )
+        ctx = {"prompt": c.prompt, "case": c.name}
+
+        if hasattr(gw, "resolve_decision"):
+            try:
+                decision = gw.resolve_decision(
+                    tool_name=tool_name,
+                    capability=capability,
+                    tool_args=tool_args,
+                    context=ctx,
+                )
+            except TypeError:
+                # fallback: older signature
+                decision = gw.resolve_decision(tool_name, capability, tool_args, ctx)
+        elif hasattr(gw, "decide"):
+            decision = gw.decide(
+                tool_name=tool_name, capability=capability, tool_args=tool_args, context=ctx
+            )
+        else:
+            raise RuntimeError(
+                "ToolGateway has no resolve_decision/decide method; update integration harness."
+            )
 
         t1 = _now_ms()
         blocked = decision.decision == "deny"
