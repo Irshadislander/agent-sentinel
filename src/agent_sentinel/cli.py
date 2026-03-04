@@ -21,12 +21,31 @@ from agent_sentinel.security.audit import AuditEvent, from_exception, make_event
 from agent_sentinel.security.capabilities import CapabilitySet
 from agent_sentinel.security.context import RequestContext, new_request_id
 from agent_sentinel.security.enforcer import enforce_request
+from agent_sentinel.security.policy_engine import resolve_decision
 from agent_sentinel.security.tool_gateway import ToolGateway
 from agent_sentinel.tools.fs_tool import read_text, write_text
 from agent_sentinel.tools.http_tool import http_get, http_post
 
 DEFAULT_POLICY_PATH = "configs/policies/default.yaml"
 ToolFn = Callable[..., Any]
+MAX_POLICY_BYTES = 1_048_576
+MAX_NESTING_DEPTH = 32
+STRICT_POLICY_KEYS_MODE = True
+ALLOWED_POLICY_KEYS = frozenset(
+    {
+        "allow",
+        "rules",
+        "trace_integrity",
+        "default",
+        "version",
+        "capabilities",
+        "allowlist_domains",
+        "internal_domains",
+        "auto_redact_args",
+        "default_allow",
+        "granted_caps",
+    }
+)
 
 
 def _parse_scalar(raw_value: str) -> Any:
@@ -217,6 +236,11 @@ def _build_parser() -> argparse.ArgumentParser:
     p.add_argument("--capability", required=True, help="Capability string to request")
     p.add_argument("--json", action="store_true", help="Output errors as JSON")
     p.add_argument(
+        "--explain",
+        action="store_true",
+        help="Print deny explanation with reason_code and rule_id.",
+    )
+    p.add_argument(
         "--request-id",
         type=str,
         default=None,
@@ -259,14 +283,70 @@ def _build_parser() -> argparse.ArgumentParser:
     return p
 
 
+def _validate_nesting_depth(value: Any, *, max_depth: int) -> None:
+    stack: list[tuple[Any, int]] = [(value, 0)]
+    while stack:
+        current, depth = stack.pop()
+        if depth > max_depth:
+            raise ValueError(f"policy nesting depth exceeds MAX_NESTING_DEPTH={max_depth}")
+
+        if isinstance(current, dict):
+            for nested_value in current.values():
+                stack.append((nested_value, depth + 1))
+        elif isinstance(current, list):
+            for nested_value in current:
+                stack.append((nested_value, depth + 1))
+
+
+def _validate_policy_keys(policy: dict[str, Any]) -> None:
+    if not STRICT_POLICY_KEYS_MODE:
+        return
+
+    unknown_keys = sorted(set(policy) - ALLOWED_POLICY_KEYS)
+    if unknown_keys:
+        raise ValueError(f"unknown policy keys in strict mode: {unknown_keys}")
+
+
+def _format_deny_explanation(capability: str, policy: Any) -> str:
+    result = resolve_decision(capability, policy)
+    rule_id = result.rule_id or "none"
+    lines = [
+        f"DENY: capability={capability} rule_id={rule_id} reason_code={result.reason_code}",
+        "trace:",
+    ]
+    lines.extend(f"  - {entry}" for entry in result.evaluation_trace)
+    return "\n".join(lines)
+
+
 def _load_policy(path: str) -> Any:
     policy_path = Path(path)
     if not policy_path.exists():
         raise PolicyFileNotFoundError(str(policy_path))
+
+    raw_bytes = policy_path.read_bytes()
+    if len(raw_bytes) > MAX_POLICY_BYTES:
+        raise PolicyParseError(
+            str(policy_path),
+            reason=f"policy size exceeds MAX_POLICY_BYTES={MAX_POLICY_BYTES}",
+        )
+
     try:
-        return json.loads(policy_path.read_text(encoding="utf-8"))
+        policy = json.loads(raw_bytes.decode("utf-8"))
     except json.JSONDecodeError as exc:
         raise PolicyParseError(str(policy_path), reason=str(exc)) from exc
+    except UnicodeDecodeError as exc:
+        raise PolicyParseError(str(policy_path), reason=str(exc)) from exc
+
+    if not isinstance(policy, dict):
+        raise PolicyParseError(str(policy_path), reason="policy must be a JSON object")
+
+    try:
+        _validate_nesting_depth(policy, max_depth=MAX_NESTING_DEPTH)
+        _validate_policy_keys(policy)
+    except ValueError as exc:
+        raise PolicyParseError(str(policy_path), reason=str(exc)) from exc
+
+    return policy
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -277,6 +357,7 @@ def main(argv: list[str] | None = None) -> int:
         correlation_id=args.correlation_id,
         source=args.source,
     )
+    policy: Any = None
     last_audit_event: AuditEvent | None = None
 
     def _audit_sink(event: AuditEvent) -> None:
@@ -326,6 +407,8 @@ def main(argv: list[str] | None = None) -> int:
             print(json.dumps(e.to_payload().to_dict(), sort_keys=True), file=sys.stderr)
         else:
             print(f"Error: {e}", file=sys.stderr)
+        if args.explain and policy is not None:
+            print(_format_deny_explanation(args.capability, policy), file=sys.stderr)
         return e.exit_code
 
     except Exception as e:  # noqa: BLE001
