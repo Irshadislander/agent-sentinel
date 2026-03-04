@@ -1,21 +1,41 @@
 # Evaluation Protocol
 
+## Scenario Set
+We evaluate mixed task categories from `configs/tasks/` and matrix outputs from `artifacts/bench/matrix.json`.
+
+Scenario categories:
+- `benign`: expected allow.
+- `policy_blocked` / `malicious`: expected deny.
+- `malformed_payload`: error-path and explainability stress.
+- `plugin_failure`: plugin boundary robustness stress.
+- `trace_stress`: observability stress.
+
 ## Axes
-1) Correctness: decision matches expected outcome for each test case.
-2) Observability: trace completeness and presence of rule_id/reason_code.
-3) Robustness: attack scenario success rate and trace integrity under attack.
-4) Performance: latency p50/p95/p99 under stress settings.
+1) **Correctness**: observed decision vs expected decision.
+2) **Observability**: trace completeness and presence of `rule_id`/`reason_code`.
+3) **Robustness**: attack success and denial-reason distribution.
+4) **Performance**: latency p50/p95/p99 and stress scaling.
 
-## Ablations (causal)
-- A0: full system (baseline)
-- A1: no_policy (missing policy) → expect deny + validation reason code
-- A2: raw_errors (no structured reason codes) → expect lower explainability score
-- A3: no_trace (trace suppressed) → expect trace completeness drop
-- A4: allowlist_only → expect higher attack success for escalation attempts
-- A5: no_gateway_enforcement (simulated) → expect safety collapse (if modeled)
+## Ablations
+- `default`: full system (policy + gateway + structured errors + tracing).
+- `no_policy`: bypass/disable policy enforcement.
+  Expected direction: UER increases, attack success increases.
+- `no_trace`: disable trace emission.
+  Expected direction: TCR decreases.
+- `raw_errors`: replace structured error mapping with raw exception style.
+  Expected direction: reason-code coverage and explainability decrease.
+- `no_plugin_isolation`: relaxed plugin allowlist isolation.
+  Expected direction: plugin-related attack success increases.
+- `allowlist_only` / `no_gateway_enforcement` (if enabled in run config): stress unsafe-path behavior.
 
-## Hypotheses
-- H1: Deterministic engine yields 100% determinism and stable reason codes.
-- H2: Trace-enabled configuration increases auditability with bounded overhead.
-- H3: Gateway enforcement prevents tool escalation in attack scenarios.
-- H4: Stress axis shows bounded p95/p99 latency under typical policy sizes.
+## Hypotheses by Ablation
+- **H1 (Determinism)**: `default` has stable decision/reason outcomes across repeated runs.
+- **H2 (Trace Tradeoff)**: `no_trace` lowers TCR while reducing trace overhead.
+- **H3 (Safety Enforcement)**: `no_policy` and `no_gateway_enforcement` degrade safety metrics vs `default`.
+- **H4 (Explainability)**: `raw_errors` lowers reason-code and rule-id coverage vs structured mode.
+- **H5 (Isolation)**: `no_plugin_isolation` increases plugin attack success vs `default`.
+
+## Repetitions
+- Matrix runs are repeated across multiple seeds and/or repetitions (minimum 10 when available).
+- Aggregation reports mean, delta vs baseline, and bootstrap 95% CI.
+- All output tables are generated deterministically from artifact JSON.
