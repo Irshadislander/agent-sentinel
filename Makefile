@@ -11,7 +11,7 @@ bench:
 	python3 scripts/bench_policy_engine.py
 
 matrix:
-	python3 -m agent_sentinel.benchmark.run_benchmark --matrix --output-dir artifacts/bench
+	PYTHONPATH=src python3 -m agent_sentinel.benchmark.run_benchmark --matrix --output-dir artifacts/bench
 
 report:
 	python3 scripts/generate_canonical_report.py \
