@@ -1,26 +1,26 @@
 # Policy Engine Performance
 
 - Source JSON: `artifacts/bench/policy_engine_bench.json`
-- Generated at (UTC): `2026-03-03T20:46:17.482820+00:00`
+- Generated at (UTC): `2026-03-04T03:03:13.309367+00:00`
 - Iterations: `5000`
 - Warmup: `200`
 
 | case | decision | reason_code | rule_id | mean_ms | p50_ms | p95_ms | p99_ms | trace_len_mean |
 |---|---|---|---|---:|---:|---:|---:|---:|
-| allow_match_early | allow | RULE_ALLOW_MATCH | allow_early | 0.001671 | 0.001625 | 0.002000 | 0.002125 | 3.00 |
-| deny_match_early | deny | RULE_DENY_MATCH | deny_early | 0.001695 | 0.001667 | 0.002083 | 0.002125 | 3.00 |
-| invalid_policy | deny | POLICY_INVALID | - | 0.002725 | 0.000959 | 0.002250 | 0.003626 | 2.00 |
-| missing_policy | deny | POLICY_MISSING | - | 0.000550 | 0.000375 | 0.000417 | 0.001167 | 2.00 |
-| no_match_default_deny | deny | DEFAULT_DENY_NO_MATCH | - | 0.001034 | 0.001000 | 0.001250 | 0.001333 | 3.00 |
+| allow_match_early | allow | RULE_ALLOW_MATCH | allow_early | 0.001540 | 0.001500 | 0.001667 | 0.001792 | 3.00 |
+| deny_match_early | deny | RULE_DENY_MATCH | deny_early | 0.001521 | 0.001500 | 0.001666 | 0.002042 | 3.00 |
+| invalid_policy | deny | POLICY_INVALID | - | 0.000929 | 0.000917 | 0.001041 | 0.001125 | 2.00 |
+| missing_policy | deny | POLICY_MISSING | - | 0.000190 | 0.000208 | 0.000209 | 0.000250 | 2.00 |
+| no_match_default_deny | deny | DEFAULT_DENY_NO_MATCH | - | 0.001003 | 0.001000 | 0.001084 | 0.001292 | 3.00 |
 
 ## Stress Scaling Curve (n rules)
 
 | n_rules | p50_ms | p95_ms | p99_ms | trace_len_mean |
 |---:|---:|---:|---:|---:|
-| 1 | 0.001083 | 0.001416 | 0.024598 | 3.00 |
-| 4 | 0.003042 | 0.010601 | 0.043853 | 6.00 |
-| 8 | 0.005333 | 0.005583 | 0.005875 | 10.00 |
-| 16 | 0.010167 | 0.010500 | 0.012292 | 18.00 |
-| 32 | 0.019750 | 0.022794 | 0.024543 | 34.00 |
-| 64 | 0.038208 | 0.039586 | 0.044291 | 66.00 |
-| 128 | 0.076666 | 0.083545 | 0.105699 | 130.00 |
+| 1 | 0.000958 | 0.001250 | 0.001375 | 3.00 |
+| 4 | 0.002542 | 0.002833 | 0.003208 | 6.00 |
+| 8 | 0.004708 | 0.005209 | 0.005423 | 10.00 |
+| 16 | 0.009542 | 0.009791 | 0.011709 | 18.00 |
+| 32 | 0.018541 | 0.019044 | 0.023169 | 34.00 |
+| 64 | 0.034334 | 0.038044 | 0.042985 | 66.00 |
+| 128 | 0.072875 | 0.076500 | 0.081210 | 130.00 |

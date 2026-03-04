@@ -238,7 +238,7 @@ def _build_parser() -> argparse.ArgumentParser:
     p.add_argument(
         "--explain",
         action="store_true",
-        help="Print deny explanation with reason_code and rule_id.",
+        help="Print deny explanation with rule_id, reason_code, and trace.",
     )
     p.add_argument(
         "--request-id",
