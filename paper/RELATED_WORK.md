@@ -1,16 +1,16 @@
 # Related Work
 
-## Comparison Table
+## Security-Angle Mini-Table
 
-| Work/System | Runtime gating | Plugin isolation | Trace completeness metric | Causal ablations | Reproducible harness |
-|---|---:|---:|---:|---:|---:|
-| Prior Work A (Tool safety) | ✓ | ✗ | ✗ | ✗ | △ |
-| Prior Work B (Policy guardrails) | △ | ✗ | ✗ | ✗ | ✗ |
-| Prior Work C (Audit/logging) | ✗ | ✗ | △ | ✗ | △ |
-| **Agent-Sentinel (this work)** | **✓** | **✓** | **✓** | **✓** | **✓** |
+| Work/System | Runtime tool gating | Explainable decisions (`rule_id`/`reason_code`) | Reproducible causal ablations | Trace completeness metric |
+|---|---:|---:|---:|---:|
+| OPA-style policy engines | △ | ✗ | ✗ | ✗ |
+| Sandbox systems (container/WASM) | △ | ✗ | ✗ | ✗ |
+| Prompt-injection defense papers | ✗ | ✗ | △ | ✗ |
+| **Agent-Sentinel (this work)** | **✓** | **✓** | **✓** | **✓** |
 
-Legend: ✓ supported, △ partial/indirect, ✗ not provided.
+Legend: ✓ direct support, △ partial/adjacent support, ✗ not a core feature.
 
 ## Gap Paragraph (non-negotiable)
 
-The strongest prior systems demonstrate tool-use safety via prompt constraints, heuristic guardrails, or access control primitives, but they do not provide a unified, deterministic policy resolution model with stable reason codes and measurable trace completeness, nor do they isolate the causal effect of runtime safety controls via reproducible ablations. Agent-Sentinel fills this gap by formalizing deterministic semantics, enforcing tool gateway isolation, and releasing a canonical evaluation pipeline with explicit ablation axes for robustness, observability, and latency.
+Prior systems provide useful components (policy evaluation, sandbox isolation, or prompt-side mitigations), but typically not a single runtime framework that jointly provides deterministic tool gating, explainable decision outputs, causal ablations, and explicit trace-completeness measurement. Agent-Sentinel targets this intersection with formal semantics and artifact-backed evaluation under controlled adversarial workloads.

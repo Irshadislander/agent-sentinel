@@ -1,11 +1,11 @@
 # Contributions (Camera-ready)
 
-**C1. Deterministic Safety Resolution.** We introduce a deterministic rule-resolution policy engine that returns (decision, rule_id, reason_code, evaluation_trace, duration_ms) under well-defined precedence.
+**C1. Deterministic runtime capability-gating model for tool-augmented agents.** We define and implement a runtime capability-gating model that resolves requests before tool execution.
 
-**C2. Formal Semantics + Verifiable Invariants.** We formalize decision semantics and provide invariants (determinism, default-deny safety, isolation boundary) with proof sketches aligned with implementation.
+**C2. Formal safety properties and deterministic enforcement semantics.** We formalize rule matching, resolution order, and default-deny behavior with explicit invariants and proof sketches.
 
-**C3. Robustness Evaluation Axis.** We demonstrate robustness under concrete attack-scenario tests (bypass/override/trace suppression) and report attack success and trace integrity metrics.
+**C3. Causal ablation framework isolating gating, isolation, and trace completeness.** We evaluate controlled ablations (`no_policy`, `no_trace`, `raw_errors`, `no_plugin_isolation`) and attribute metric deltas to specific controls.
 
-**C4. Performance + Stress Axis.** We provide a microbenchmark suite producing p50/p95/p99 latency under stress configurations, with reproducible artifact outputs.
+**C4. Reproducible benchmark harness with statistical reporting.** We provide matrix benchmarking, canonical artifact generation, and confidence-interval/effect-size reporting.
 
-**C5. Reproducible Evaluation Pipeline.** We release a one-command pipeline that regenerates canonical reports and paper tables from benchmark artifacts.
+**C5. Empirical evaluation plus case-study integration.** We demonstrate behavior on benign and adversarial workloads and report safety-observability-extensibility tradeoffs.

@@ -1,14 +1,14 @@
 # Novelty
 
 ## One-sentence novelty claim
-We provide a **deterministic, auditable runtime policy engine** for tool-augmented agents and a **reproducible causal ablation harness** that quantifies safety, observability, robustness, and latency trade-offs.
+We introduce a deterministic runtime capability-gating model for tool-augmented agents and provide a causal evaluation of safety-observability-extensibility tradeoffs under controlled adversarial workloads.
 
-## What existing papers/systems do NOT provide
-- Deterministic decision semantics with stable **reason codes + trace semantics** tied to a formal model.
-- A reproducible harness that isolates the causal impact of runtime controls via explicit ablations.
-- Attack-scenario robustness tests linked to metrics and paper tables.
+## What prior work lacks
+- Deterministic enforcement semantics, causal ablations, and a trace-completeness metric in one unified harness.
+- Explainable deny outcomes (`rule_id`, `reason_code`) tied to formal runtime resolution semantics.
+- Reproducible matrix execution that isolates control-level effects under adversarial workloads.
 
-## What we uniquely provide
-- Open implementation: deterministic resolver (decision, rule_id, reason_code, trace, duration).
-- Benchmarks: latency distribution + stress axis; robustness axis via attack scenario tests.
-- Canonical report generator that produces paper-ready tables from artifacts.
+## What we provide
+- Formal model plus invariants for deterministic runtime capability gating and default deny.
+- Causal ablation framework isolating policy gating, plugin/tool isolation, and trace completeness.
+- Reproducible benchmark matrix and explainable decision artifacts suitable for paper-grade reporting.
