@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import argparse
 import json
 import math
 import random
@@ -18,11 +19,17 @@ ATTACK_CATEGORIES = {
 BASELINE_ORDER = [
     "default",
     "no_policy",
-    "raw_errors",
     "no_trace",
+    "raw_errors",
+    "no_plugin_isolation",
     "allowlist_only",
     "no_gateway_enforcement",
 ]
+DEFAULT_BENCH_DIR = Path("artifacts/bench")
+DEFAULT_RESULTS_OUT = Path("paper/results_tables.md")
+DEFAULT_STATS_OUT = Path("paper/STATS_TABLES.md")
+DEFAULT_BASELINE = "default"
+DEFAULT_RESAMPLES = 10_000
 
 
 def _load_json(path: Path) -> dict[str, Any]:
@@ -72,7 +79,7 @@ def _percentile(values: list[float], p: float) -> float:
 
 
 def bootstrap_ci(
-    values: list[float], iters: int = 2000, alpha: float = 0.05
+    values: list[float], iters: int = DEFAULT_RESAMPLES, alpha: float = 0.05
 ) -> tuple[float, float]:
     if not values:
         return (0.0, 0.0)
@@ -83,13 +90,19 @@ def bootstrap_ci(
         draw = [values[rng.randrange(n)] for _ in range(n)]
         samples.append(sum(draw) / n)
     samples.sort()
-    lo = samples[int((alpha / 2) * iters)]
-    hi = samples[int((1 - alpha / 2) * iters)]
+    lo_index = max(0, min(iters - 1, int((alpha / 2) * iters)))
+    hi_index = max(0, min(iters - 1, int((1 - alpha / 2) * iters)))
+    lo = samples[lo_index]
+    hi = samples[hi_index]
     return lo, hi
 
 
 def _bootstrap_percentile_ci(
-    values: list[float], percentile: float, *, iters: int = 2000, alpha: float = 0.05
+    values: list[float],
+    percentile: float,
+    *,
+    iters: int = DEFAULT_RESAMPLES,
+    alpha: float = 0.05,
 ) -> tuple[float, float]:
     if not values:
         return (0.0, 0.0)
@@ -100,13 +113,19 @@ def _bootstrap_percentile_ci(
         draw = [values[rng.randrange(n)] for _ in range(n)]
         samples.append(_percentile(draw, percentile))
     samples.sort()
-    lo = samples[int((alpha / 2) * iters)]
-    hi = samples[int((1 - alpha / 2) * iters)]
+    lo_index = max(0, min(iters - 1, int((alpha / 2) * iters)))
+    hi_index = max(0, min(iters - 1, int((1 - alpha / 2) * iters)))
+    lo = samples[lo_index]
+    hi = samples[hi_index]
     return lo, hi
 
 
 def _bootstrap_delta_ci(
-    lhs: list[float], rhs: list[float], *, iters: int = 2000, alpha: float = 0.05
+    lhs: list[float],
+    rhs: list[float],
+    *,
+    iters: int = DEFAULT_RESAMPLES,
+    alpha: float = 0.05,
 ) -> tuple[float, float]:
     if not lhs or not rhs:
         return (0.0, 0.0)
@@ -119,8 +138,10 @@ def _bootstrap_delta_ci(
         rhs_draw = [rhs[rng.randrange(n_rhs)] for _ in range(n_rhs)]
         samples.append((sum(lhs_draw) / n_lhs) - (sum(rhs_draw) / n_rhs))
     samples.sort()
-    lo = samples[int((alpha / 2) * iters)]
-    hi = samples[int((1 - alpha / 2) * iters)]
+    lo_index = max(0, min(iters - 1, int((alpha / 2) * iters)))
+    hi_index = max(0, min(iters - 1, int((1 - alpha / 2) * iters)))
+    lo = samples[lo_index]
+    hi = samples[hi_index]
     return lo, hi
 
 
@@ -190,11 +211,58 @@ def _ensure_artifacts_exist(bench_dir: Path) -> None:
         raise FileNotFoundError(f"missing required artifacts in {bench_dir}: {', '.join(missing)}")
 
 
-def main() -> int:
-    root = Path(__file__).resolve().parents[1]
-    bench = root / "artifacts" / "bench"
-    results_out = root / "paper" / "results_tables.md"
-    stats_out = root / "paper" / "STATS_TABLES.md"
+def _build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(description="Aggregate benchmark artifacts into paper tables.")
+    parser.add_argument(
+        "--input",
+        default=str(DEFAULT_BENCH_DIR),
+        help="Path to benchmark artifact directory (default: artifacts/bench).",
+    )
+    parser.add_argument(
+        "--out",
+        default=str(DEFAULT_RESULTS_OUT),
+        help="Path to markdown summary output (default: paper/results_tables.md).",
+    )
+    parser.add_argument(
+        "--stats-out",
+        default=str(DEFAULT_STATS_OUT),
+        help="Path to detailed stats output (default: paper/STATS_TABLES.md).",
+    )
+    parser.add_argument(
+        "--baseline",
+        default=DEFAULT_BASELINE,
+        help="Reference baseline for delta/effect-size calculations (default: default).",
+    )
+    parser.add_argument(
+        "--resamples",
+        type=int,
+        default=DEFAULT_RESAMPLES,
+        help="Bootstrap resamples (default: 10000).",
+    )
+    return parser
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = _build_parser()
+    args = parser.parse_args(argv)
+
+    if args.resamples <= 0:
+        raise ValueError("--resamples must be > 0")
+
+    bench = Path(args.input)
+    if not bench.is_absolute():
+        root = Path(__file__).resolve().parents[1]
+        bench = root / bench
+    bench = bench.resolve()
+
+    results_out = Path(args.out)
+    if not results_out.is_absolute():
+        root = Path(__file__).resolve().parents[1]
+        results_out = root / results_out
+    stats_out = Path(args.stats_out)
+    if not stats_out.is_absolute():
+        root = Path(__file__).resolve().parents[1]
+        stats_out = root / stats_out
 
     _ensure_artifacts_exist(bench)
     matrix = _load_json(bench / "matrix.json")
@@ -209,7 +277,8 @@ def main() -> int:
         baseline = str(row.get("baseline", "")).strip() or "unknown"
         groups[baseline].append(row)
     ordered_baselines = _ordered_baselines(groups)
-    baseline_ref = "default" if "default" in groups else ordered_baselines[0]
+    requested_baseline = str(args.baseline).strip()
+    baseline_ref = requested_baseline if requested_baseline in groups else ordered_baselines[0]
 
     # Per-baseline vectors for CIs and effect-size deltas.
     vectors: dict[str, dict[str, list[float]]] = {}
@@ -269,13 +338,13 @@ def main() -> int:
     for baseline in ordered_baselines:
         vec = vectors[baseline]
         correctness_mean = sum(vec["correctness"]) / len(vec["correctness"])
-        correctness_ci = bootstrap_ci(vec["correctness"])
+        correctness_ci = bootstrap_ci(vec["correctness"], iters=args.resamples)
         uer_mean = sum(vec["uer"]) / len(vec["uer"])
-        uer_ci = bootstrap_ci(vec["uer"])
+        uer_ci = bootstrap_ci(vec["uer"], iters=args.resamples)
         tcr_mean = sum(vec["tcr"]) / len(vec["tcr"])
-        tcr_ci = bootstrap_ci(vec["tcr"])
+        tcr_ci = bootstrap_ci(vec["tcr"], iters=args.resamples)
         reason_mean = sum(vec["reason_cov"]) / len(vec["reason_cov"])
-        reason_ci = bootstrap_ci(vec["reason_cov"])
+        reason_ci = bootstrap_ci(vec["reason_cov"], iters=args.resamples)
         rule_id_mean = sum(vec["rule_id_cov"]) / len(vec["rule_id_cov"])
         attack_success_mean = vec["attack_success"][0]
 
@@ -299,7 +368,7 @@ def main() -> int:
         latency_mean = sum(lat) / len(lat)
         ref_latency_mean = sum(ref["latency"]) / len(ref["latency"])
         delta_latency = latency_mean - ref_latency_mean
-        delta_latency_ci = _bootstrap_delta_ci(lat, ref["latency"])
+        delta_latency_ci = _bootstrap_delta_ci(lat, ref["latency"], iters=args.resamples)
         d_latency = _cohens_d(lat, ref["latency"])
         stats_lines.append(
             f"| {baseline} | {delta_uer:.4f} | {delta_tcr:.4f} | "
@@ -320,9 +389,9 @@ def main() -> int:
         p50 = _percentile(lat, 0.50)
         p95 = _percentile(lat, 0.95)
         p99 = _percentile(lat, 0.99)
-        p50_ci = _bootstrap_percentile_ci(lat, 0.50)
-        p95_ci = _bootstrap_percentile_ci(lat, 0.95)
-        p99_ci = _bootstrap_percentile_ci(lat, 0.99)
+        p50_ci = _bootstrap_percentile_ci(lat, 0.50, iters=args.resamples)
+        p95_ci = _bootstrap_percentile_ci(lat, 0.95, iters=args.resamples)
+        p99_ci = _bootstrap_percentile_ci(lat, 0.99, iters=args.resamples)
         stats_lines.append(
             f"| {baseline} | {p50:.4f} {_fmt_ci(*p50_ci, percent=False)} | "
             f"{p95:.4f} {_fmt_ci(*p95_ci, percent=False)} | "
@@ -352,6 +421,8 @@ def main() -> int:
                 f"{float(case.get('p99_ms', 0.0)):.4f} |"
             )
 
+    results_out.parent.mkdir(parents=True, exist_ok=True)
+    stats_out.parent.mkdir(parents=True, exist_ok=True)
     results_out.write_text("\n".join(summary_lines) + "\n", encoding="utf-8")
     stats_out.write_text("\n".join(stats_lines) + "\n", encoding="utf-8")
     print(f"Wrote: {results_out}")

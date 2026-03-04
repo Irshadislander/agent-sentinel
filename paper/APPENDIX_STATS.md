@@ -1,25 +1,45 @@
 # Appendix: Statistical Rigor
 
-## Confidence Intervals
-We report bootstrap 95% confidence intervals for key metrics (latency p50/p95/p99, attack success rate, trace completeness).
+## Confidence Interval Method
+We use non-parametric bootstrap confidence intervals (95%) for metric means and latency percentiles.
 
-## Effect Sizes
-For each ablation we report delta relative to baseline:
+### Bootstrap Configuration
+- Resampling unit: per-run metric values within each baseline/scenario group.
+- Resamples: **10,000** by default.
+- CI type: percentile interval with \(\alpha = 0.05\).
+- Determinism: fixed RNG seed in the aggregation script for reproducible intervals.
+
+## Effect Size Definition
+For each ablation \(a\) and metric \(m\), the reported effect is:
 \[
-\Delta = \hat{m}_{abl} - \hat{m}_{base}
+\Delta m_a = \hat{m}_a - \hat{m}_{\text{baseline}}
 \]
-and a 95% CI on Δ via bootstrap.
+where \(\hat{m}\) is the sample mean for that metric.
 
-## Notes
-We avoid p-value spam. Significance tests are only used where appropriate and effect sizes are emphasized.
+For latency, we also report:
+- \(\Delta\) mean latency (ms) with bootstrap 95% CI.
+- Cohen's \(d\) against the baseline latency distribution.
 
-## Generated statistical tables
-Run:
+## Baseline Definition
+- Primary baseline: `default` (full system).
+- If `default` is missing, the first deterministic baseline in sorted order is used.
+- The effective baseline used for each run is written into generated tables.
 
+## Assumptions and Limits
+- Samples are treated as exchangeable within each baseline/scenario slice.
+- Bootstrap intervals are descriptive uncertainty estimates, not formal hypothesis-test p-values.
+- Small-\(n\) groups are retained; intervals remain valid but wider.
+
+## Reproduction Command
 ```bash
-python3 scripts/aggregate_results.py
+python3 scripts/aggregate_results.py \
+  --input artifacts/bench \
+  --out paper/results_tables.md \
+  --stats-out paper/STATS_TABLES.md \
+  --baseline default \
+  --resamples 10000
 ```
 
 Outputs:
-- `paper/results_tables.md` (CI-augmented summary table)
-- `paper/STATS_TABLES.md` (delta/effect-size and percentile-CI tables)
+- `paper/results_tables.md`
+- `paper/STATS_TABLES.md`
