@@ -1,10 +1,13 @@
 from __future__ import annotations
 
+import inspect
 import json
 import time
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
+
+from agent_sentinel.security.tool_gateway import ToolGateway  # type: ignore
 
 # NOTE:
 # This script is intentionally dependency-light and runs in <1s.
@@ -53,11 +56,76 @@ def _trace_completeness(trace: dict[str, Any]) -> float:
     return present / len(keys)
 
 
-def main() -> int:
-    # Import runtime entrypoints (keep minimal)
-    import agent_sentinel.security.validators as validators_mod  # type: ignore
-    from agent_sentinel.security.tool_gateway import ToolGateway  # type: ignore
+def _make_toolgateway(policy):
+    """
+    ToolGateway requires keyword-only args: recorder, caps, tools.
+    We build minimal versions for the case study.
+    """
+    # --- recorder ---
+    # Try common recorder implementations; fall back to a tiny null recorder.
+    try:
+        from agent_sentinel.forensics.ledger import LedgerRecorder  # type: ignore
 
+        recorder = LedgerRecorder()
+    except Exception:
+
+        class _NullRecorder:
+            def record(self, *args, **kwargs):  # tool calls may record events
+                return None
+
+        recorder = _NullRecorder()
+
+    # --- caps ---
+    # Minimal capability universe: allow these names to exist.
+    # If ToolGateway expects an object, we wrap a set with a "contains" method.
+    cap_set = {"filesystem", "http_request", "shell"}
+
+    class _Caps:
+        def __init__(self, caps):
+            self._caps = set(caps)
+
+        def __contains__(self, item):
+            return item in self._caps
+
+        def has(self, item):
+            return item in self._caps
+
+    caps = _Caps(cap_set)
+
+    # --- tools ---
+    # Minimal tool registry. ToolGateway usually needs something to resolve tool_name -> callable.
+    # We provide safe no-op tools that return predictable results.
+    def _tool_filesystem(**kwargs):
+        return {"ok": True, "tool": "filesystem", "args": kwargs}
+
+    def _tool_http_request(**kwargs):
+        return {"ok": True, "tool": "http_request", "args": kwargs}
+
+    def _tool_shell(**kwargs):
+        return {"ok": True, "tool": "shell", "args": kwargs}
+
+    tools = {
+        "filesystem": _tool_filesystem,
+        "http_request": _tool_http_request,
+        "shell": _tool_shell,
+    }
+
+    # Construct gateway with required args.
+    # If ToolGateway expects different names (rare), we adapt via signature introspection.
+    sig = inspect.signature(ToolGateway.__init__)
+    kwargs = {"policy": policy}
+
+    if "recorder" in sig.parameters:
+        kwargs["recorder"] = recorder
+    if "caps" in sig.parameters:
+        kwargs["caps"] = caps
+    if "tools" in sig.parameters:
+        kwargs["tools"] = tools
+
+    return ToolGateway(**kwargs)
+
+
+def main() -> int:
     # Policies for the case study live next to this script for clarity
     base_dir = Path(__file__).resolve().parent
     pol_allow_fs_http = base_dir / "policies" / "allow_fs_http_deny_shell.json"
@@ -125,32 +193,13 @@ def main() -> int:
         ),
     ]
 
-    def _make_validators():
-        # Try common patterns without breaking if names change.
-        if hasattr(validators_mod, "DefaultValidators"):
-            return validators_mod.DefaultValidators()
-        if hasattr(validators_mod, "Validators"):
-            return validators_mod.Validators()
-        if hasattr(validators_mod, "get_default_validators"):
-            return validators_mod.get_default_validators()
-        if hasattr(validators_mod, "default_validators"):
-            dv = validators_mod.default_validators
-            return dv() if callable(dv) else dv
-        # If the runtime doesn't require validators, we can return None.
-        return None
-
     results: list[dict[str, Any]] = []
-    validators = _make_validators()
 
     for c in cases:
         policy = _load_policy(c.policy_path)
 
         # ToolGateway is the enforcement point
-        try:
-            gw = ToolGateway(policy=policy, validators=validators)
-        except TypeError:
-            # older/newer signature without validators
-            gw = ToolGateway(policy=policy)
+        gw = _make_toolgateway(policy)
 
         t0 = _now_ms()
 
