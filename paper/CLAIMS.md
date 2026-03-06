@@ -1,11 +1,19 @@
-# Contributions (Camera-ready)
+# Contributions (Camera-Ready)
 
-**C1. Deterministic runtime capability-gating model for tool-augmented agents.** We define and implement a runtime capability-gating model that resolves requests before tool execution.
+**C1. Deterministic runtime capability-gating model.**  
+We define and implement a runtime gating model that resolves capability requests before tool execution under explicit policy and default-deny fallback.
 
-**C2. Formal safety properties and deterministic enforcement semantics.** We formalize rule matching, resolution order, and default-deny behavior with explicit invariants and proof sketches.
+**C2. Formal safety properties for runtime enforcement.**  
+We formalize key invariants of the gate, including deterministic outcomes and deny-on-missing/invalid-policy behavior.
 
-**C3. Causal ablation framework isolating gating, isolation, and trace completeness.** We evaluate controlled ablations (`no_policy`, `no_trace`, `raw_errors`, `no_plugin_isolation`) and attribute metric deltas to specific controls.
+**C3. Causal, reproducible adversarial evaluation protocol.**  
+We evaluate targeted ablations (`no_policy`, `no_trace`, `raw_errors`, `no_plugin_isolation`) to isolate control-level effects on safety, observability, and performance.
 
-**C4. Reproducible benchmark harness with statistical reporting.** We provide matrix benchmarking, canonical artifact generation, and confidence-interval/effect-size reporting.
+**C4. Explainable trace and audit outputs.**  
+We emit structured decision artifacts (`decision`, `rule_id`, `reason_code`, trace metadata/commitment) that support machine-auditable runtime explanations.
 
-**C5. Empirical evaluation plus case-study integration.** We demonstrate behavior on benign and adversarial workloads and report safety-observability-extensibility tradeoffs.
+**C5. Reproducible artifact pipeline.**  
+We provide deterministic benchmark/report scripts and fixed artifact conventions to regenerate paper-facing outputs from repository results.
+
+## Scope Boundary
+These claims are specific to runtime tool-use enforcement and auditability. They are not claims of general AI safety.
