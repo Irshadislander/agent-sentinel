@@ -70,7 +70,10 @@ def _make_toolgateway(policy):
     except Exception:
 
         class _NullRecorder:
-            def record(self, *args, **kwargs):  # tool calls may record events
+            def append(self, *args, **kwargs):
+                return None
+
+            def record(self, *args, **kwargs):
                 return None
 
         recorder = _NullRecorder()
@@ -83,6 +86,7 @@ def _make_toolgateway(policy):
     class _Caps:
         def __init__(self, caps):
             self._caps = set(caps)
+            self.granted = set(caps)
 
         def __contains__(self, item):
             return item in self._caps
