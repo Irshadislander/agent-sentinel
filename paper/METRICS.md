@@ -1,83 +1,98 @@
 # Metrics
 
-## Primary Metrics (Benchmark Headlines)
+This section defines publication-facing metrics for baseline and ablation comparisons.
+
+## Notation
+
+- \(s\): system condition (baseline or ablation mode)
+- \(f\): attack family
+- \(d\): difficulty level (`easy`, `medium`, `hard/multi_step`)
+- \(\mathcal{A}_{s,f,d}\): adversarial tasks in slice \((s,f,d)\)
+- \(\mathcal{R}_{s,f,d}\): requests/decisions in slice \((s,f,d)\)
+
+## Primary Metrics
 
 ### 1) Attack Block Rate (ABR)
-Fraction of adversarial tasks blocked by runtime enforcement:
+Fraction of adversarial tasks blocked (deny/no-success outcome):
 
 \[
-\mathrm{ABR}=\frac{\#(\text{attack tasks blocked/denied})}{\#(\text{attack tasks})}
+\mathrm{ABR}(s,f,d)=
+\frac{\#\{\text{blocked tasks in }\mathcal{A}_{s,f,d}\}}
+{\#\{\text{tasks in }\mathcal{A}_{s,f,d}\}}
 \]
 
 Higher is better (ideal: \(1\)).
 
-### 2) Latency Overhead
-Decision-path overhead relative to a selected baseline condition:
+### 2) Attack Success Rate (ASR)
+Fraction of adversarial tasks that achieve attacker-success outcome:
 
 \[
-\Delta \mathrm{Latency}_{pX}
-=
-\mathrm{Latency}_{pX}(\text{system})
--
-\mathrm{Latency}_{pX}(\text{baseline})
+\mathrm{ASR}(s,f,d)=
+\frac{\#\{\text{successful attack tasks in }\mathcal{A}_{s,f,d}\}}
+{\#\{\text{tasks in }\mathcal{A}_{s,f,d}\}}
 \]
 
-where \(pX \in \{p50,p95,p99\}\). Lower overhead is better.
+Lower is better (ideal: \(0\)).
 
-### 3) Trace Completeness Rate (TCR)
-Fraction of requests with required trace evidence fields present:
+For binary block-vs-success task labeling, \(\mathrm{ASR}=1-\mathrm{ABR}\).
+
+### 3) Latency Overhead
+Decision latency overhead relative to a reference system \(s_0\):
 
 \[
-\mathrm{TCR}=\frac{\#(\text{requests with required trace fields})}{\#(\text{requests})}
+\Delta \mathrm{Latency}_{pX}(s,f,d)=
+\mathrm{Latency}_{pX}(s,f,d)-\mathrm{Latency}_{pX}(s_0,f,d)
+\]
+
+where \(pX \in \{p50,p95,p99\}\).
+
+Lower overhead is better.
+
+### 4) Trace Completeness Rate (TCR)
+Let \(F_{\text{trace}}\) be required trace fields. Then:
+
+\[
+\mathrm{TCR}(s,f,d)=
+\frac{\#\{r \in \mathcal{R}_{s,f,d}: r\ \text{contains all}\ F_{\text{trace}}\}}
+{\#\{\mathcal{R}_{s,f,d}\}}
 \]
 
 Higher is better (ideal: \(1\)).
 
-### 4) Structured Decision Artifact Coverage (SDAC)
-Explainability coverage for structured decision fields (`decision`, `rule_id`, `reason_code`, trace metadata):
+### 5) Explainability / Structured Decision Artifact Coverage (SDAC)
+Let \(F_{\text{decision}}\) be required structured decision fields (for example `decision`, `rule_id`, `reason_code`, trace metadata). Then:
 
 \[
-\mathrm{SDAC}=\frac{\#(\text{decisions with required structured fields})}{\#(\text{decisions})}
+\mathrm{SDAC}(s,f,d)=
+\frac{\#\{r \in \mathcal{R}_{s,f,d}: r\ \text{contains all}\ F_{\text{decision}}\}}
+{\#\{\mathcal{R}_{s,f,d}\}}
 \]
 
 Higher is better.
 
-## Secondary Safety Metrics
+## Secondary Metrics
 
-- **Policy decision correctness (%)**: fraction of decisions matching expected test-case outcomes.
+- **Policy decision correctness**:
+  \[
+  \frac{\#(\text{decisions matching expected labels})}{\#(\text{decisions})}
+  \]
 - **Unsafe Execution Rate (UER)**:
   \[
   \mathrm{UER}=\frac{\#(\text{expected deny but allowed})}{\#(\text{expected deny})}
   \]
-  Lower is better (ideal: \(0\)).
-- **Attack success rate (%)**: fraction of attack-category tasks that reach an allow/success outcome.
-  Lower is better.
+- **Reason-code coverage**: fraction of deny outcomes with non-empty/non-unknown `reason_code`.
+- **Deterministic explanation stability**: repeated fixed-input runs producing identical decision artifact tuples.
 
-## Observability Detail
+## Reporting Requirements
 
-- **Reason-code coverage (%)**: fraction of deny outcomes with non-empty, non-unknown reason codes.
-  Higher is better.
-- **Trace integrity detectability**: proportion of tamper scenarios where mismatch is detected.
-  Higher is better.
+Primary metrics are reported:
 
-## Performance Detail (p50/p95/p99)
+1. by system condition,
+2. by attack family,
+3. by difficulty level,
+4. and as aggregate summary.
 
-- **Decision latency distribution** in ms from runtime decision paths:
-  - \(p50\): median latency
-  - \(p95\): tail latency
-  - \(p99\): extreme tail latency
-- **Stress scaling curve**: \(p95\) under increasing policy rule counts.
-- **Overhead deltas**: latency delta versus baseline configuration.
-
-## Explainability Detail
-
-- **Rule-ID coverage (%)**: fraction of decisions with `rule_id` present.
-- **Deterministic explanation stability (%)**: repeated fixed-input runs producing the same
-  `(verdict, rule_id, reason_code, trace class)`.
-
-## Reporting Slices
-Report primary metrics by:
-- system / baseline condition,
-- attack family (`prompt_injection`, `filesystem_damage`, `shell_misuse`, `data_exfiltration`, `network_exfiltration`),
-- difficulty (`easy`, `medium`, `hard` / `multi_step`),
-- and overall aggregate.
+Each reported row should include:
+- point estimate (mean),
+- confidence interval (per [APPENDIX_STATS](APPENDIX_STATS.md)),
+- delta vs reference system.
