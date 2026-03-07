@@ -1,11 +1,9 @@
-# Paper Result Tables
+# Day 12 Appendix
 
-- Source: `/tmp/day12_aggregate_new2.json`
-- Generated at (UTC): `2026-03-03T00:06:48.074971+00:00`
-
-## Table X: Stability Across Seeds (mean ± std)
-
-| baseline | scenario_id | UER (mean±std) | FAR (mean±std) | TCR (mean±std) | EDS (mean±std) | plugin_loads (mean±std) | p95 latency ms (mean±std) |
-|---|---|---|---|---|---|---|---|
-| default | scale_n5 | 0.0000 ± 0.0000 | 0.0000 ± 0.0000 | 1.0000 ± 0.0000 | 1.0000 ± 0.0000 | 0.00 ± 0.00 | 0.471 ± 0.016 |
-| no_trace | scale_n5 | 0.0000 ± 0.0000 | 0.0000 ± 0.0000 | 0.0000 ± 0.0000 | 1.0000 ± 0.0000 | 0.00 ± 0.00 | 0.139 ± 0.009 |
+| baseline | scenario_id | seeds | UER mean±std | FAR mean±std | TCR mean±std | EDS mean±std | plugin_loads mean±std | p50 latency mean±std | p95 latency mean±std |
+|---|---|---:|---|---|---|---|---|---|---|
+| default | scale_n200 | 5 | 0.0000 ± 0.0000 | 0.0000 ± 0.0000 | 1.0000 ± 0.0000 | 1.0000 ± 0.0000 | 0.00 ± 0.00 | 0.367 ± 0.074 | 0.587 ± 0.115 |
+| no_plugin_isolation | scale_n200 | 5 | 0.0000 ± 0.0000 | 0.0000 ± 0.0000 | 1.0000 ± 0.0000 | 1.0000 ± 0.0000 | 1.00 ± 0.00 | 0.354 ± 0.084 | 0.603 ± 0.082 |
+| no_policy | scale_n200 | 5 | 1.0000 ± 0.0000 | 0.0000 ± 0.0000 | 1.0000 ± 0.0000 | 1.0000 ± 0.0000 | 0.00 ± 0.00 | 0.236 ± 0.040 | 0.432 ± 0.147 |
+| no_trace | scale_n200 | 5 | 0.0000 ± 0.0000 | 0.0000 ± 0.0000 | 0.0000 ± 0.0000 | 1.0000 ± 0.0000 | 0.00 ± 0.00 | 0.122 ± 0.024 | 0.192 ± 0.035 |
+| raw_errors | scale_n200 | 5 | 0.0000 ± 0.0000 | 1.0000 ± 0.0000 | 1.0000 ± 0.0000 | 1.0000 ± 0.0000 | 0.00 ± 0.00 | 0.416 ± 0.075 | 0.611 ± 0.066 |
