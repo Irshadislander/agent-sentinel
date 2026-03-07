@@ -1,15 +1,29 @@
 # Novelty
 
-## Niche Claim
-Agent-Sentinel targets a specific niche: deterministic runtime capability-gating for tool-augmented agents with formal safety properties and reproducible adversarial evaluation.
+## Central Niche
+Agent-Sentinel targets a narrow research niche: **runtime capability enforcement for tool-using AI agents** with deterministic policy mediation, scoped safety properties, and reproducible adversarial evaluation.
 
-## Scientific Novelty (Beyond Framework Assembly)
-1. **Deterministic enforcement semantics as a formal object.** We specify runtime decision behavior over capability requests and policy inputs, including stable deny outcomes.
-2. **Property-driven safety characterization.** We define scoped invariants for determinism, default-deny safety, and gateway mediation, rather than relying only on qualitative examples.
-3. **Causal control-level evaluation.** We use targeted ablations (`no_policy`, `no_trace`, `raw_errors`, `no_plugin_isolation`) to attribute metric shifts to specific runtime controls.
-4. **Explainability tied to enforcement outputs.** Decisions are emitted with structured audit fields (`rule_id`, `reason_code`, trace metadata), enabling reproducible diagnosis of runtime behavior.
-5. **Reproducible artifact pipeline.** Benchmark outputs and scripts regenerate reporting artifacts directly from repository workflows.
+## Scientific Contribution (Not Product Positioning)
 
-## Boundaries of the Claim
-- We do not claim complete protection against all attack classes.
-- We do not claim general AI safety; claims are restricted to runtime tool-use enforcement and auditability within the stated threat model.
+1. **Capability-based runtime mediation as a formal object.**
+   The contribution is not “an agent platform,” but a formalized runtime decision object over `(tool, args, context)` requests, capability requirements, and ordered policy rules.
+
+2. **Deterministic enforcement semantics.**
+   Policy mediation is specified as deterministic resolution with explicit default-deny behavior, enabling repeatable security analysis across runs and workloads.
+
+3. **Runtime-scoped safety properties.**
+   We state safety properties about enforcement behavior (for example confinement and deterministic mediation) under explicit trust assumptions, rather than broad claims about model cognition.
+
+4. **Reproducible adversarial evaluation design.**
+   The evaluation is structured as a benchmark matrix (family × difficulty × baseline × metric), enabling causal interpretation of control-level changes.
+
+5. **Explainability coupled to enforcement outputs.**
+   Decision artifacts are first-class outputs of the enforcement path, supporting post-hoc auditing and empirical comparison.
+
+## Why This Is Research
+The core contribution is a falsifiable systems-security formulation with explicit properties and benchmark methodology. The paper asks and answers a research question about runtime mediation semantics, not a product adoption question.
+
+## Boundaries
+- No claim of complete or general AI safety.
+- No claim that runtime enforcement replaces sandboxing, red-teaming, or broader infrastructure security.
+- Claims are limited to runtime tool-use mediation and observability within the stated threat model.
