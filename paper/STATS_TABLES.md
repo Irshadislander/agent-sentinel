@@ -1,5 +1,49 @@
 # Statistical Tables
 
+## Ablation Statistical Reporting (Template)
+
+Populate these tables from measured ablation runs only.
+
+### Ablation Summary
+
+| Ablation mode | Hypothesis | Expected degradation axis | Statistical output placeholder |
+|---|---|---|---|
+| `no_default_deny` | removing deny fallback increases unsafe allows | safety / block rate | `TBD` |
+| `no_first_match_ordering` | removing deterministic ordering increases instability | safety consistency / explainability | `TBD` |
+| `no_trace` / `reduced_observability` | reducing trace lowers observability | trace completeness / artifact coverage | `TBD` |
+| `no_capability_confinement` / `coarse_capability_gating` | weakening capability boundary increases unsafe execution | safety / block rate | `TBD` |
+| `no_enforcement` | bypassing enforcement maximizes attack success | safety | `TBD` |
+
+### Expected Effect on Block Rate (Template)
+
+| Ablation mode | ABR mean (`full_system`) | ABR mean (ablation) | ΔABR | CI / significance |
+|---|---|---|---|---|
+| `no_default_deny` | `TBD` | `TBD` | `TBD` | `TBD` |
+| `no_first_match_ordering` | `TBD` | `TBD` | `TBD` | `TBD` |
+| `no_trace` / `reduced_observability` | `TBD` | `TBD` | `TBD` | `TBD` |
+| `no_capability_confinement` / `coarse_capability_gating` | `TBD` | `TBD` | `TBD` | `TBD` |
+| `no_enforcement` | `TBD` | `TBD` | `TBD` | `TBD` |
+
+### Expected Effect on Latency (Template)
+
+| Ablation mode | Δp50 vs `full_system` | Δp95 vs `full_system` | CI / effect size |
+|---|---|---|---|
+| `no_default_deny` | `TBD` | `TBD` | `TBD` |
+| `no_first_match_ordering` | `TBD` | `TBD` | `TBD` |
+| `no_trace` / `reduced_observability` | `TBD` | `TBD` | `TBD` |
+| `no_capability_confinement` / `coarse_capability_gating` | `TBD` | `TBD` | `TBD` |
+| `no_enforcement` | `TBD` | `TBD` | `TBD` |
+
+### Expected Effect on Trace Completeness (Template)
+
+| Ablation mode | TCR mean (`full_system`) | TCR mean (ablation) | ΔTCR | CI / significance |
+|---|---|---|---|---|
+| `no_default_deny` | `TBD` | `TBD` | `TBD` | `TBD` |
+| `no_first_match_ordering` | `TBD` | `TBD` | `TBD` | `TBD` |
+| `no_trace` / `reduced_observability` | `TBD` | `TBD` | `TBD` | `TBD` |
+| `no_capability_confinement` / `coarse_capability_gating` | `TBD` | `TBD` | `TBD` | `TBD` |
+| `no_enforcement` | `TBD` | `TBD` | `TBD` | `TBD` |
+
 ## Effect Sizes vs Baseline
 
 Reference baseline: `default`

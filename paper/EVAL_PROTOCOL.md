@@ -35,18 +35,37 @@ If a baseline is not implemented in the current runner, it is explicitly treated
 4. **Optional LLM-guard style baseline** (future/optional condition).
    Compares probabilistic prompt-side filtering with deterministic runtime gating.
 
+## Ablation Study Methodology
+To isolate why each control matters, we evaluate targeted ablations that remove or weaken one component at a time.
+Each mode is treated as an explicit evaluation condition (implemented or planned).
+
+| Ablation mode | Component removed/weakened | Expected degradation / failure mode | Metrics most affected |
+|---|---|---|---|
+| `full_system` | none (reference mode) | strongest blocking and audit quality | all metrics (reference) |
+| `no_default_deny` | deny fallback for unmatched/invalid paths removed/weakened | unsafe fallthrough on unmatched requests | attack block rate, safety correctness |
+| `no_first_match_ordering` | deterministic first-match rule resolution removed | unstable/conflicting decisions under overlapping rules | attack block rate, decision consistency, explainability clarity |
+| `no_trace` / `reduced_observability` | trace emission reduced/disabled | forensic visibility loss and weaker explanations | trace completeness, structured artifact coverage |
+| `no_capability_confinement` / `coarse_capability_gating` | fine-grained capability boundary weakened | privilege overreach, cross-capability leakage | attack block rate, unsafe execution indicators |
+| `no_enforcement` | runtime enforcement bypassed | highest attack success / no authorization boundary | attack block rate (largest drop), safety correctness |
+
+This ablation suite is intended to show:
+- why default-deny matters,
+- why deterministic ordering matters,
+- why tracing matters,
+- why capability confinement matters.
+
 ## Experiment Matrix
 Primary matrix:
 
 \[
-\text{systems} \times \text{attack families} \times \text{difficulty levels} \times \text{metrics}
+\text{ablation modes} \times \text{attack families} \times \text{difficulty levels} \times \text{metrics}
 \]
 
 Reporting views:
-- aggregate by system,
+- aggregate by ablation mode,
 - breakdown by family,
 - breakdown by family x difficulty,
-- deltas against `default`.
+- deltas against `full_system`.
 
 ## Metrics
 Primary metrics are defined in [METRICS](METRICS.md):
