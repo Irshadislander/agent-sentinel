@@ -1,12 +1,10 @@
-# Experiments
+# Experiments (Final Reporting Map)
 
 ## 1. Evaluation Scope
-We evaluate deterministic runtime capability gating across three dimensions:
+We evaluate runtime capability mediation across:
 - security effectiveness,
 - performance overhead and scaling,
 - observability quality.
-
-Relevant figures: **System Architecture Overview** and **Capability Enforcement Pipeline** in [FIGURES](FIGURES.md).
 
 ## 2. Systems Compared
 ### Reference
@@ -18,12 +16,21 @@ Relevant figures: **System Architecture Overview** and **Capability Enforcement 
 - `naive_allow_list`
 - `llm_guard_style` (optional/future unless implemented)
 
-Unimplemented optional baselines are reported as `NA`.
+### Ablations
+- `no_default_deny`
+- `no_first_match_ordering`
+- `no_trace` / `reduced_observability`
+- `no_capability_confinement`
+- `no_enforcement`
 
-## 3. Benchmark Matrix
+Unimplemented optional modes are reported as `NA`.
+
+## 3. Benchmark Matrix (Source of Final Tables)
 \[
-\text{attack family} \times \text{difficulty level} \times \text{baseline} \times \text{metric}
+\text{attack family} \times \text{difficulty level} \times \text{baseline/ablation} \times \text{metric}
 \]
+
+Final paper tables are derived from matrix outputs (for example `matrix.json` / `matrix.csv` style summaries), not manual aggregation.
 
 ## 4. Workload Axes
 ### Attack families
@@ -38,78 +45,23 @@ Unimplemented optional baselines are reported as `NA`.
 - `medium`
 - `hard` / `multi_step`
 
-Related visualization: **Attack Family Blocking Summary** in [FIGURES](FIGURES.md).
+## 5. Table-to-Matrix Correspondence
 
-## 5. Core Execution Procedure
-1. Load workloads from `configs/tasks/` and `configs/tasks_synth/`.
-2. Partition workloads by family and difficulty.
-3. Run each slice under each baseline.
-4. Collect allow/deny outcomes, latency, throughput, and decision artifacts.
-5. Compute metrics for each `(family, difficulty, baseline)` cell.
-6. Aggregate outputs into report tables.
+- **Overall Baseline Comparison**: aggregate over all families and difficulties by baseline.
+- **Attack Family Summary**: aggregate over difficulties for each family.
+- **Difficulty-Level Summary**: aggregate over families for each difficulty tier.
+- **Security–Performance Summary**: join security deltas with latency/throughput deltas by baseline.
+- **Ablation Summary**: aggregate ablation deltas vs `full_system`.
 
-Pipeline visualization: **Capability Enforcement Pipeline** in [FIGURES](FIGURES.md).
+## 6. Execution Procedure
+1. Load tasks from benchmark configs.
+2. Label each task by family and difficulty.
+3. Execute each slice across baselines/ablations.
+4. Collect decisions, latency, throughput, and trace artifacts.
+5. Aggregate to matrix outputs.
+6. Render paper-facing tables from those outputs.
 
-## 6. Performance Evaluation Setup
-- Record CPU, RAM, OS/kernel, Python version, and git SHA.
-- Keep runtime settings fixed within each comparison slice.
-- Measure p50/p95/p99 latency, throughput, and overhead deltas versus reference.
-
-## 7. Scale Experiments
-Scale experiments evaluate larger task sets under unchanged policy semantics.
-
-Suggested scale tiers:
-- `small`, `medium`, `large`
-
-Report:
-- throughput per tier,
-- p50/p95/p99 latency per tier,
-- throughput and latency ratios versus smallest tier.
-
-Related visualization: **Scaling Curve** in [FIGURES](FIGURES.md).
-
-## 8. Stress Experiments
-Stress experiments evaluate behavior under adverse conditions.
-
-Examples:
-- mixed-family bursts,
-- elevated adversarial density,
-- malformed request/context inputs,
-- high deny-rate workloads.
-
-Report:
-- ABR/ASR stability,
-- tail latency behavior,
-- TCR/SDAC behavior under stress.
-
-## 9. Sensitivity Experiments
-Sensitivity experiments vary evaluation controls and policy/runtime knobs.
-
-Examples:
-- policy strictness settings,
-- trace detail/integrity settings,
-- capability-granularity settings.
-
-Report:
-- directional security changes,
-- overhead/throughput sensitivity,
-- observability sensitivity.
-
-## 10. Overhead Interpretation Relative to Security Gains
-Interpret overhead jointly with security and observability:
-- compare latency/throughput deltas against ABR/ASR improvements,
-- treat moderate overhead as acceptable when it yields clear risk reduction and stable traces,
-- flag configurations with high overhead and weak security gain.
-
-Related visualization: **Security–Performance Tradeoff** in [FIGURES](FIGURES.md).
-
-## 11. Metrics Reported
-Primary metrics (see [METRICS](METRICS.md)):
-- security: ABR, ASR,
-- performance: p50/p95/p99 latency overhead, throughput, scaling behavior,
-- observability: TCR, SDAC.
-
-## 12. Statistical Reporting
+## 7. Statistical Reporting
 - report mean and 95% confidence intervals,
-- use identical workload slices across compared systems,
-- keep artifact generation reproducible.
+- keep workload slices identical across compared systems,
+- preserve reproducible artifact generation.
