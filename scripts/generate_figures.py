@@ -70,6 +70,54 @@ def _figure_baselines_mean_std(groups: list[dict[str, Any]], out_path: Path, plt
     plt.close(fig)
 
 
+def _figure_architecture_overview(out_path: Path, plt: Any) -> None:
+    fig, ax = plt.subplots(figsize=(11, 4))
+    ax.set_axis_off()
+
+    components = [
+        ("Agent Runtime", (0.08, 0.6)),
+        ("Tool Gateway", (0.32, 0.6)),
+        ("Policy Engine", (0.56, 0.75)),
+        ("Capability Set", (0.56, 0.45)),
+        ("Tool Adapters", (0.80, 0.6)),
+        ("Trace Ledger", (0.80, 0.3)),
+    ]
+
+    for label, (x, y) in components:
+        ax.text(
+            x,
+            y,
+            label,
+            ha="center",
+            va="center",
+            fontsize=10,
+            bbox={"boxstyle": "round,pad=0.35", "facecolor": "#f6f8fa", "edgecolor": "#1f2937"},
+            transform=ax.transAxes,
+        )
+
+    arrows = [
+        ((0.15, 0.6), (0.25, 0.6)),
+        ((0.39, 0.63), (0.49, 0.73)),
+        ((0.39, 0.57), (0.49, 0.47)),
+        ((0.63, 0.60), (0.73, 0.60)),
+        ((0.39, 0.52), (0.73, 0.33)),
+    ]
+    for (x0, y0), (x1, y1) in arrows:
+        ax.annotate(
+            "",
+            xy=(x1, y1),
+            xytext=(x0, y0),
+            xycoords=ax.transAxes,
+            textcoords=ax.transAxes,
+            arrowprops={"arrowstyle": "->", "lw": 1.5, "color": "#374151"},
+        )
+
+    ax.set_title("Architecture Overview", fontsize=12)
+    fig.tight_layout()
+    fig.savefig(out_path, dpi=150)
+    plt.close(fig)
+
+
 def _figure_trace_tradeoff(groups: list[dict[str, Any]], out_path: Path, plt: Any) -> None:
     points: list[tuple[float, float]] = []
     for group in groups:
@@ -166,17 +214,20 @@ def main(argv: list[str] | None = None) -> int:
         raise SystemExit(f"no aggregate groups found in input: {input_path}")
 
     out_dir.mkdir(parents=True, exist_ok=True)
-    fig1_path = out_dir / "fig_baselines_mean_std.png"
-    fig2_path = out_dir / "fig_trace_tradeoff.png"
-    fig3_path = out_dir / "fig_latency_tradeoff.png"
+    fig1_path = out_dir / "fig_architecture_overview.png"
+    fig2_path = out_dir / "fig_baselines_mean_std.png"
+    fig3_path = out_dir / "fig_trace_tradeoff.png"
+    fig4_path = out_dir / "fig_latency_tradeoff.png"
 
-    _figure_baselines_mean_std(groups, fig1_path, plt)
-    _figure_trace_tradeoff(groups, fig2_path, plt)
-    _figure_latency_tradeoff(groups, fig3_path, plt)
+    _figure_architecture_overview(fig1_path, plt)
+    _figure_baselines_mean_std(groups, fig2_path, plt)
+    _figure_trace_tradeoff(groups, fig3_path, plt)
+    _figure_latency_tradeoff(groups, fig4_path, plt)
 
     print(f"Wrote figure: {fig1_path}")
     print(f"Wrote figure: {fig2_path}")
     print(f"Wrote figure: {fig3_path}")
+    print(f"Wrote figure: {fig4_path}")
     return 0
 
 
