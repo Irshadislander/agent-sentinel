@@ -44,6 +44,11 @@ Within this threat model, the attacker cannot:
 - block unauthorized capability requests before side effects,
 - preserve explainable decision artifacts (`decision`, `rule_id`, `reason_code`, trace metadata).
 
+## Production Agent Relevance
+In production-style agent stacks, prompt injection can enter through user messages, retrieved context, or tool-returned content, then influence downstream tool calls. Tool misuse remains relevant because a compromised planning step can request privileged filesystem or shell actions in later steps.
+
+Cross-tool data exfiltration is also a realistic pattern: data gathered via one tool (for example filesystem reads) can be routed through another tool (for example outbound network requests). The threat model therefore treats prompt injection, tool misuse, and cross-tool exfiltration as first-class runtime risks for LangChain-style agents, OpenAI tool-calling runtimes, and multi-agent orchestration systems under the stated trust assumptions.
+
 ## Out of Scope
 - compromised host/runtime trusted computing base,
 - privileged tampering with enforcement code or policy storage,

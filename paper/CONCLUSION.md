@@ -6,6 +6,11 @@ We pair this model with reproducible adversarial evaluation across attack famili
 
 Why this matters is practical and scientific: deployment decisions require enforceable runtime controls, and research claims require reproducible evidence and explicit scope. Agent-Sentinel contributes both under clearly bounded assumptions.
 
+## Production Agent Relevance
+The runtime mediation design in this work is intended to be framework-compatible at tool-call boundaries, including LangChain-style tool agents, OpenAI tool-calling runtimes, and multi-agent orchestration systems, while remaining scoped to benchmark-backed evidence.
+
+Future work includes evaluation inside production agent frameworks.
+
 Future work includes broader workload coverage, deeper analysis of policy-authoring quality, and expanded scaling studies under heterogeneous runtime conditions. These directions extend the benchmark and mediation analysis without expanding claims beyond runtime enforcement scope.
 
 ## Links

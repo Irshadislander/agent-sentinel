@@ -49,7 +49,19 @@ Final paper tables are derived from matrix outputs (for example `matrix.json` / 
 - `medium`
 - `hard` / `multi_step`
 
-## 5. Table-to-Matrix Correspondence
+## 5. Production Agent Relevance
+This benchmark is designed to approximate common tool-use patterns in production-oriented agent stacks without claiming direct production deployment. In particular, the scenarios model:
+- tool invocation chains across multiple steps,
+- filesystem access attempts,
+- shell execution attempts,
+- data exfiltration attempts (local and network-mediated).
+
+The runtime mediation surface aligns with common integration points in:
+- LangChain-style tool agents,
+- OpenAI tool-calling runtimes,
+- multi-agent orchestration systems.
+
+## 6. Table-to-Matrix Correspondence
 
 - **Overall Baseline Comparison**: aggregate over all families and difficulties by baseline.
 - **Attack Success Rate Summary**: aggregate ASR across attack families by system, with companion benign success.
@@ -58,7 +70,7 @@ Final paper tables are derived from matrix outputs (for example `matrix.json` / 
 - **Security–Performance Summary**: join security deltas with latency/throughput deltas by baseline.
 - **Ablation Summary**: aggregate ablation deltas vs `full_system`.
 
-## 6. Execution Procedure
+## 7. Execution Procedure
 1. Load tasks from benchmark configs.
 2. Label each task by family and difficulty.
 3. Execute each slice across baselines/ablations.
@@ -66,7 +78,7 @@ Final paper tables are derived from matrix outputs (for example `matrix.json` / 
 5. Aggregate to matrix outputs.
 6. Render paper-facing tables from those outputs.
 
-## 7. Statistical Reporting
+## 8. Statistical Reporting
 - report mean and 95% confidence intervals,
 - keep workload slices identical across compared systems,
 - preserve reproducible artifact generation.
