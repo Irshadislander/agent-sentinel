@@ -6,6 +6,10 @@ We evaluate runtime capability mediation across:
 - performance overhead and scaling,
 - observability quality.
 
+Primary security outcome metrics are:
+- **Attack Success Rate (ASR)**,
+- **Attack Block Rate (ABR)**.
+
 ## 2. Systems Compared
 ### Reference
 - `full_system`
@@ -48,6 +52,7 @@ Final paper tables are derived from matrix outputs (for example `matrix.json` / 
 ## 5. Table-to-Matrix Correspondence
 
 - **Overall Baseline Comparison**: aggregate over all families and difficulties by baseline.
+- **Attack Success Rate Summary**: aggregate ASR across attack families by system, with companion benign success.
 - **Attack Family Summary**: aggregate over difficulties for each family.
 - **Difficulty-Level Summary**: aggregate over families for each difficulty tier.
 - **Security–Performance Summary**: join security deltas with latency/throughput deltas by baseline.
