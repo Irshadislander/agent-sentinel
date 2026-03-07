@@ -6,6 +6,8 @@ We evaluate deterministic runtime capability gating across three dimensions:
 - performance overhead and scaling,
 - observability quality.
 
+Relevant figures: **System Architecture Overview** and **Capability Enforcement Pipeline** in [FIGURES](FIGURES.md).
+
 ## 2. Systems Compared
 ### Reference
 - `full_system`
@@ -36,6 +38,8 @@ Unimplemented optional baselines are reported as `NA`.
 - `medium`
 - `hard` / `multi_step`
 
+Related visualization: **Attack Family Blocking Summary** in [FIGURES](FIGURES.md).
+
 ## 5. Core Execution Procedure
 1. Load workloads from `configs/tasks/` and `configs/tasks_synth/`.
 2. Partition workloads by family and difficulty.
@@ -43,6 +47,8 @@ Unimplemented optional baselines are reported as `NA`.
 4. Collect allow/deny outcomes, latency, throughput, and decision artifacts.
 5. Compute metrics for each `(family, difficulty, baseline)` cell.
 6. Aggregate outputs into report tables.
+
+Pipeline visualization: **Capability Enforcement Pipeline** in [FIGURES](FIGURES.md).
 
 ## 6. Performance Evaluation Setup
 - Record CPU, RAM, OS/kernel, Python version, and git SHA.
@@ -59,6 +65,8 @@ Report:
 - throughput per tier,
 - p50/p95/p99 latency per tier,
 - throughput and latency ratios versus smallest tier.
+
+Related visualization: **Scaling Curve** in [FIGURES](FIGURES.md).
 
 ## 8. Stress Experiments
 Stress experiments evaluate behavior under adverse conditions.
@@ -92,6 +100,8 @@ Interpret overhead jointly with security and observability:
 - compare latency/throughput deltas against ABR/ASR improvements,
 - treat moderate overhead as acceptable when it yields clear risk reduction and stable traces,
 - flag configurations with high overhead and weak security gain.
+
+Related visualization: **Security–Performance Tradeoff** in [FIGURES](FIGURES.md).
 
 ## 11. Metrics Reported
 Primary metrics (see [METRICS](METRICS.md)):

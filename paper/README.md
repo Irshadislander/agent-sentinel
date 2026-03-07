@@ -95,6 +95,16 @@ python scripts/generate_canonical_report.py --matrix-input artifacts/bench/matri
 - Matrix raw data: `artifacts/bench/matrix.json`
 - Figure 1: `paper/FIG_PIPELINE.txt`
 
+## Figures and Experiment Outputs
+
+Figures are derived from the same experiment outputs used for table generation.
+
+- `artifacts/bench/matrix.json` feeds `paper/results_tables.md` baseline/family/difficulty summaries.
+- `paper/results_tables.md` is the tabular source aligned with figure narratives in `paper/FIGURES.md`.
+- `paper/FIG_PIPELINE.txt` corresponds to the Capability Enforcement Pipeline figure used in `paper/EXPERIMENTS.md`.
+- `paper/figures/fig_pareto_frontier.png` (or `fig_security_performance_tradeoff.png`) corresponds to security-overhead tradeoff tables.
+- `paper/figures/fig_scaling_curve.png` corresponds to scaling tables in `paper/results_tables.md`.
+
 ## Main Table Generation Command
 
 ```bash
