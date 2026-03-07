@@ -95,6 +95,12 @@ python scripts/generate_canonical_report.py --matrix-input artifacts/bench/matri
 - Matrix raw data: `artifacts/bench/matrix.json`
 - Figure 1: `paper/FIG_PIPELINE.txt`
 
+## Overleaf-Ready Asset Folders
+
+- `paper/tables/` contains Overleaf-ready paper tables (for example `table_baselines.md`, `table_asr.md`, `table_results_day12.md`, `table_appendix_day12.md`).
+- `paper/figures/` contains Overleaf-ready paper figures and diagrams (for example `fig_architecture_overview.png`, `fig_baselines_mean_std.png`, `fig_trace_tradeoff.png`, `fig_latency_tradeoff.png`).
+- These are the primary folders to copy into Overleaf.
+
 ## Figures and Experiment Outputs
 
 Figures are derived from the same experiment outputs used for table generation.

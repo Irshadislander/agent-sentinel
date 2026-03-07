@@ -9,13 +9,15 @@ from typing import Any
 
 DEFAULT_INPUT_PATH = Path("bench/results/matrix.json")
 DEFAULT_AGGREGATE_PATH = Path("bench/results/day12_aggregate.json")
-DEFAULT_RESULTS_DAY11_PATH = Path("paper/RESULTS_DAY11.md")
-DEFAULT_APPENDIX_DAY11_PATH = Path("paper/APPENDIX_DAY11.md")
-DEFAULT_RESULTS_DAY12_PATH = Path("paper/RESULTS_DAY12.md")
-DEFAULT_APPENDIX_DAY12_PATH = Path("paper/APPENDIX_DAY12.md")
-DEFAULT_OUTPUT_DAY11_PATH = Path("paper/results_tables.md")
-DEFAULT_OUTPUT_DAY12_PATH = Path("paper/results_tables_day12.md")
-DEFAULT_INPUT_PATH = Path("bench/results/matrix.json")
+DEFAULT_TABLES_DIR = Path("paper/tables")
+DEFAULT_RESULTS_DAY11_PATH = DEFAULT_TABLES_DIR / "table_results_day11.md"
+DEFAULT_APPENDIX_DAY11_PATH = DEFAULT_TABLES_DIR / "table_appendix_day11.md"
+DEFAULT_RESULTS_DAY12_PATH = DEFAULT_TABLES_DIR / "table_results_day12.md"
+DEFAULT_APPENDIX_DAY12_PATH = DEFAULT_TABLES_DIR / "table_appendix_day12.md"
+DEFAULT_OUTPUT_DAY11_PATH = DEFAULT_TABLES_DIR / "table_baselines.md"
+DEFAULT_OUTPUT_DAY12_PATH = DEFAULT_TABLES_DIR / "table_baselines_day12.md"
+DEFAULT_ASR_DAY11_PATH = DEFAULT_TABLES_DIR / "table_asr.md"
+DEFAULT_ASR_DAY12_PATH = DEFAULT_TABLES_DIR / "table_asr_day12.md"
 UER_DENIED_CATEGORIES = {"malicious", "policy_blocked"}
 
 
@@ -330,6 +332,32 @@ def _render_markdown(
     return "\n".join(lines)
 
 
+def _render_asr_markdown(*, source: Path, rows: list[dict[str, Any]]) -> str:
+    lines: list[str] = [
+        "# Table: Attack Success Rate Summary",
+        "",
+        f"- Source: `{source.as_posix()}`",
+        "",
+        "| System | Attack Success Rate ↓ | Benign Success ↑ | Notes |",
+        "|---|---:|---:|---|",
+    ]
+
+    if rows:
+        grouped = _group_by_baseline(rows)
+        for baseline in sorted(grouped):
+            values = _metrics(grouped[baseline])
+            asr = values["UER"]
+            benign_success = 1.0 - values["FAR"]
+            lines.append(
+                f"| {baseline} | {asr:.4f} | {benign_success:.4f} | derived from existing matrix slices |"
+            )
+    else:
+        lines.append("| - | - | - | no rows available in input |")
+
+    lines.append("")
+    return "\n".join(lines)
+
+
 def _render_results_summary(
     *,
     rows: list[dict[str, Any]],
@@ -411,9 +439,14 @@ def _build_parser() -> argparse.ArgumentParser:
         "--output",
         default="",
         help=(
-            "Output markdown path. Default is paper/results_tables.md for matrix input "
-            "or paper/results_tables_day12.md for day12 aggregate input."
+            "Output markdown path. Default is paper/tables/table_baselines.md for matrix input "
+            "or paper/tables/table_baselines_day12.md for day12 aggregate input."
         ),
+    )
+    parser.add_argument(
+        "--asr-output",
+        default="",
+        help="Optional ASR table markdown output path.",
     )
     parser.add_argument(
         "--results-output",
@@ -464,10 +497,17 @@ def main(argv: list[str] | None = None) -> int:
         if args.appendix_output
         else (DEFAULT_APPENDIX_DAY12_PATH if is_day12_input else DEFAULT_APPENDIX_DAY11_PATH)
     )
+    asr_output_path = (
+        Path(args.asr_output)
+        if args.asr_output
+        else (DEFAULT_ASR_DAY12_PATH if is_day12_input else DEFAULT_ASR_DAY11_PATH)
+    )
 
     markdown = _render_markdown(source=input_path, rows=rows, aggregate_groups=aggregate_groups)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(markdown, encoding="utf-8")
+    asr_output_path.parent.mkdir(parents=True, exist_ok=True)
+    asr_output_path.write_text(_render_asr_markdown(source=input_path, rows=rows), encoding="utf-8")
 
     day_label = "Day 12" if is_day12_input else "Day 11"
     summary_markdown = _render_results_summary(
@@ -481,6 +521,7 @@ def main(argv: list[str] | None = None) -> int:
     appendix_output_path.write_text(markdown, encoding="utf-8")
 
     print(f"Wrote paper tables: {output_path}")
+    print(f"Wrote ASR table: {asr_output_path}")
     print(f"Wrote summary: {results_output_path}")
     print(f"Wrote appendix: {appendix_output_path}")
     return 0
