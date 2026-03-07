@@ -35,6 +35,21 @@ If a baseline is not implemented in the current runner, it is explicitly treated
 4. **Optional LLM-guard style baseline** (future/optional condition).
    Compares probabilistic prompt-side filtering with deterministic runtime gating.
 
+## Step-by-Step Evaluation Pipeline
+1. **Workload generation**
+   - Load tasks from `configs/tasks/` and synthetic workloads from `configs/tasks_synth/`.
+   - Attach attack-family and difficulty labels.
+2. **Attack injection / execution**
+   - Execute each adversarial task prompt/request under the selected system mode.
+3. **Policy enforcement**
+   - Resolve runtime allow/deny decisions at the enforcement boundary.
+4. **Trace logging**
+   - Emit structured decision artifacts and trace metadata (`decision`, `rule_id`, `reason_code`, trace fields).
+5. **Metric computation**
+   - Compute ABR, ASR, latency overhead, trace completeness, and decision-artifact coverage.
+6. **Aggregation and reporting**
+   - Aggregate by system/family/difficulty and generate paper-facing result tables.
+
 ## Ablation Study Methodology
 To isolate why each control matters, we evaluate targeted ablations that remove or weaken one component at a time.
 Each mode is treated as an explicit evaluation condition (implemented or planned).
