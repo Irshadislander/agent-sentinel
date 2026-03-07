@@ -1,10 +1,10 @@
 # Experiments
 
 ## 1. Evaluation Scope
-We evaluate deterministic runtime capability gating under adversarial workloads and quantify:
+We evaluate deterministic runtime capability gating across three dimensions:
 - security effectiveness,
-- observability quality,
-- runtime overhead.
+- performance overhead and scaling,
+- observability quality.
 
 ## 2. Systems Compared
 ### Reference
@@ -23,8 +23,6 @@ Unimplemented optional baselines are reported as `NA`.
 \text{attack family} \times \text{difficulty level} \times \text{baseline} \times \text{metric}
 \]
 
-This matrix defines the complete comparison space for baseline reporting.
-
 ## 4. Workload Axes
 ### Attack families
 - `prompt_injection`
@@ -38,40 +36,70 @@ This matrix defines the complete comparison space for baseline reporting.
 - `medium`
 - `hard` / `multi_step`
 
-## 5. Execution Procedure
+## 5. Core Execution Procedure
 1. Load workloads from `configs/tasks/` and `configs/tasks_synth/`.
 2. Partition workloads by family and difficulty.
 3. Run each slice under each baseline.
-4. Collect allow/deny outcomes, latency, and decision artifacts.
+4. Collect allow/deny outcomes, latency, throughput, and decision artifacts.
 5. Compute metrics for each `(family, difficulty, baseline)` cell.
-6. Aggregate outputs into paper tables.
+6. Aggregate outputs into report tables.
 
-## 6. Metrics Reported
+## 6. Performance Evaluation Setup
+- Record CPU, RAM, OS/kernel, Python version, and git SHA.
+- Keep runtime settings fixed within each comparison slice.
+- Measure p50/p95/p99 latency, throughput, and overhead deltas versus reference.
+
+## 7. Scale Experiments
+Scale experiments evaluate larger task sets under unchanged policy semantics.
+
+Suggested scale tiers:
+- `small`, `medium`, `large`
+
+Report:
+- throughput per tier,
+- p50/p95/p99 latency per tier,
+- throughput and latency ratios versus smallest tier.
+
+## 8. Stress Experiments
+Stress experiments evaluate behavior under adverse conditions.
+
+Examples:
+- mixed-family bursts,
+- elevated adversarial density,
+- malformed request/context inputs,
+- high deny-rate workloads.
+
+Report:
+- ABR/ASR stability,
+- tail latency behavior,
+- TCR/SDAC behavior under stress.
+
+## 9. Sensitivity Experiments
+Sensitivity experiments vary evaluation controls and policy/runtime knobs.
+
+Examples:
+- policy strictness settings,
+- trace detail/integrity settings,
+- capability-granularity settings.
+
+Report:
+- directional security changes,
+- overhead/throughput sensitivity,
+- observability sensitivity.
+
+## 10. Overhead Interpretation Relative to Security Gains
+Interpret overhead jointly with security and observability:
+- compare latency/throughput deltas against ABR/ASR improvements,
+- treat moderate overhead as acceptable when it yields clear risk reduction and stable traces,
+- flag configurations with high overhead and weak security gain.
+
+## 11. Metrics Reported
 Primary metrics (see [METRICS](METRICS.md)):
-- attack block rate,
-- attack success rate,
-- latency overhead,
-- trace completeness,
-- decision artifact / explainability coverage.
+- security: ABR, ASR,
+- performance: p50/p95/p99 latency overhead, throughput, scaling behavior,
+- observability: TCR, SDAC.
 
-## 7. Reporting Structure
-The paper reports:
-- Overall Baseline Comparison,
-- Attack Family Summary,
-- Difficulty-Level Summary,
-- Family × Difficulty Comparison,
-- Per-Family Baseline Comparison,
-- Overhead Comparison.
-
-## 8. Runtime Metadata
-For each run set, report:
-- CPU,
-- RAM,
-- OS/kernel,
-- Python version,
-- git SHA.
-
-## 9. Statistical Reporting
-- Report mean and confidence intervals.
-- Keep identical workload slices across baselines for valid deltas.
-- Keep artifact generation reproducible.
+## 12. Statistical Reporting
+- report mean and 95% confidence intervals,
+- use identical workload slices across compared systems,
+- keep artifact generation reproducible.
