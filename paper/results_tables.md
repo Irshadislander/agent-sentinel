@@ -1,7 +1,6 @@
 # Paper Result Tables
 
-Use this file for reviewer-facing baseline comparison tables.
-Populate from measured artifacts only; do not enter synthetic values.
+Populate all cells from measured artifacts only.
 
 ## Overall Baseline Comparison
 
@@ -13,11 +12,49 @@ Reference: `full_system`
 | `no_enforcement` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` |
 | `allow_all` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` |
 | `naive_allow_list` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` |
-| `llm_guard_style` (optional/future) | `TBD/NA` | `TBD/NA` | `TBD/NA` | `TBD/NA` | `TBD/NA` | `TBD/NA` | mark `NA` if unavailable |
+| `llm_guard_style` (optional/future) | `TBD/NA` | `TBD/NA` | `TBD/NA` | `TBD/NA` | `TBD/NA` | `TBD/NA` | use `NA` if unavailable |
 
-## Baseline Comparison by Attack Family
+## Attack Family Summary
 
-| Attack family | Baseline | ABR (mean, 95% CI) | ASR (mean, 95% CI) | ΔABR vs `full_system` | ΔASR vs `full_system` | TCR | SDAC |
+| Attack family | ABR (mean, 95% CI) | ASR (mean, 95% CI) | TCR (mean, 95% CI) | SDAC (mean, 95% CI) | Interpretation |
+|---|---|---|---|---|---|
+| `prompt_injection` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` |
+| `filesystem_damage` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` |
+| `shell_misuse` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` |
+| `data_exfiltration` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` |
+| `network_exfiltration` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` |
+
+## Difficulty-Level Summary
+
+| Difficulty | ABR (mean, 95% CI) | ASR (mean, 95% CI) | TCR (mean, 95% CI) | SDAC (mean, 95% CI) | Interpretation |
+|---|---|---|---|---|---|
+| `easy` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` |
+| `medium` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` |
+| `hard` / `multi_step` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` |
+
+## Family × Difficulty Comparison
+
+| Attack family | Difficulty | Baseline | ABR (mean, 95% CI) | ASR (mean, 95% CI) | ΔABR vs family-level `full_system` | ΔASR vs family-level `full_system` |
+|---|---|---|---|---|---|---|
+| `prompt_injection` | `easy` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` |
+| `prompt_injection` | `medium` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` |
+| `prompt_injection` | `hard` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` |
+| `filesystem_damage` | `easy` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` |
+| `filesystem_damage` | `medium` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` |
+| `filesystem_damage` | `hard` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` |
+| `shell_misuse` | `easy` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` |
+| `shell_misuse` | `medium` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` |
+| `shell_misuse` | `hard` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` |
+| `data_exfiltration` | `easy` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` |
+| `data_exfiltration` | `medium` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` |
+| `data_exfiltration` | `hard` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` |
+| `network_exfiltration` | `easy` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` |
+| `network_exfiltration` | `medium` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` |
+| `network_exfiltration` | `hard` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` |
+
+## Per-Family Baseline Comparison
+
+| Attack family | Baseline | ABR (mean, 95% CI) | ASR (mean, 95% CI) | TCR (mean, 95% CI) | SDAC (mean, 95% CI) | ΔABR vs family `full_system` | ΔASR vs family `full_system` |
 |---|---|---|---|---|---|---|---|
 | `prompt_injection` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` |
 | `filesystem_damage` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` |
@@ -25,28 +62,8 @@ Reference: `full_system`
 | `data_exfiltration` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` |
 | `network_exfiltration` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` |
 
-## Baseline Comparison by Difficulty
-
-| Difficulty | Baseline | ABR (mean, 95% CI) | ASR (mean, 95% CI) | ΔABR vs `full_system` | ΔASR vs `full_system` | TCR | SDAC |
-|---|---|---|---|---|---|---|---|
-| `easy` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` |
-| `medium` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` |
-| `hard` / `multi_step` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` |
-
-## Overhead Comparison
-
-Reference: `full_system`
-
-| Baseline | p50 latency (mean, 95% CI) | p95 latency (mean, 95% CI) | p99 latency (mean, 95% CI) | Δp50 vs `full_system` | Δp95 vs `full_system` | Δp99 vs `full_system` |
-|---|---|---|---|---|---|---|
-| `full_system` | `TBD` | `TBD` | `TBD` | `0` | `0` | `0` |
-| `no_enforcement` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` |
-| `allow_all` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` |
-| `naive_allow_list` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` |
-| `llm_guard_style` (optional/future) | `TBD/NA` | `TBD/NA` | `TBD/NA` | `TBD/NA` | `TBD/NA` | `TBD/NA` |
-
 ## Notes
 
-- Optional/future baseline rows remain in tables but use `NA` when not implemented.
-- Use identical workload slices across baselines before computing deltas.
-- Keep ablation-specific reporting in [STATS_TABLES](STATS_TABLES.md).
+- Keep optional/future baseline rows and report `NA` if unavailable.
+- Do not insert synthetic or estimated values.
+- Use identical workload slices for valid delta computation.

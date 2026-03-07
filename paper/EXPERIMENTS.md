@@ -1,28 +1,31 @@
 # Experiments
 
-## 1. What Is Evaluated
-We evaluate whether deterministic runtime capability gating improves security and observability for tool-augmented agents under adversarial workloads, and what latency overhead this introduces.
+## 1. Evaluation Scope
+We evaluate deterministic runtime capability gating under adversarial workloads and quantify:
+- security effectiveness,
+- observability quality,
+- runtime overhead.
 
-## 2. Systems and Baselines
-### Reference mode
-- `full_system`: Agent-Sentinel with deterministic policy evaluation, capability checks, default-deny behavior, and structured trace output.
+## 2. Systems Compared
+### Reference
+- `full_system`
 
-### Baseline conditions
-- `no_enforcement`: direct tool execution without runtime gating.
-- `allow_all`: permissive policy condition.
-- `naive_allow_list`: coarse allow-list condition.
-- `llm_guard_style`: optional/future baseline unless explicitly implemented.
-
-### Ablation conditions
-- `no_default_deny`
-- `no_first_match_ordering`
-- `no_trace` / `reduced_observability`
-- `no_capability_confinement` / `coarse_capability_gating`
+### Baselines
 - `no_enforcement`
+- `allow_all`
+- `naive_allow_list`
+- `llm_guard_style` (optional/future unless implemented)
 
-Baselines establish comparative security posture; ablations isolate causal effect of removed controls.
+Unimplemented optional baselines are reported as `NA`.
 
-## 3. Attack Families and Difficulty
+## 3. Benchmark Matrix
+\[
+\text{attack family} \times \text{difficulty level} \times \text{baseline} \times \text{metric}
+\]
+
+This matrix defines the complete comparison space for baseline reporting.
+
+## 4. Workload Axes
 ### Attack families
 - `prompt_injection`
 - `filesystem_damage`
@@ -35,56 +38,40 @@ Baselines establish comparative security posture; ablations isolate causal effec
 - `medium`
 - `hard` / `multi_step`
 
-## 4. Baseline Comparison Matrix
-\[
-\text{baseline} \times \text{attack family} \times \text{difficulty level} \times \text{metric}
-\]
-
-where baseline includes `full_system`, `no_enforcement`, `allow_all`, `naive_allow_list`, and optional `llm_guard_style` when available.
-
-## 5. Full Experiment Matrix
-\[
-\text{system mode} \times \text{attack family} \times \text{difficulty level} \times \text{metric}
-\]
-
-This matrix covers baseline and ablation reporting with identical workload slices.
-
-## 6. Evaluation Workflow
+## 5. Execution Procedure
 1. Load workloads from `configs/tasks/` and `configs/tasks_synth/`.
-2. Execute each slice under selected system mode.
-3. Apply runtime policy enforcement at the tool decision boundary.
-4. Record decisions, latency, and decision artifacts.
-5. Compute metrics by mode, family, and difficulty.
-6. Export artifacts and paper tables.
+2. Partition workloads by family and difficulty.
+3. Run each slice under each baseline.
+4. Collect allow/deny outcomes, latency, and decision artifacts.
+5. Compute metrics for each `(family, difficulty, baseline)` cell.
+6. Aggregate outputs into paper tables.
 
-## 7. Metrics Reported
-Primary metrics (defined in [METRICS](METRICS.md)):
+## 6. Metrics Reported
+Primary metrics (see [METRICS](METRICS.md)):
 - attack block rate,
 - attack success rate,
 - latency overhead,
 - trace completeness,
-- structured decision artifact coverage.
+- decision artifact / explainability coverage.
 
-Reporting views:
-- overall baseline comparison,
-- baseline by family,
-- baseline by difficulty,
-- overhead comparison,
-- deltas versus `full_system`.
+## 7. Reporting Structure
+The paper reports:
+- Overall Baseline Comparison,
+- Attack Family Summary,
+- Difficulty-Level Summary,
+- Family × Difficulty Comparison,
+- Per-Family Baseline Comparison,
+- Overhead Comparison.
 
-## 8. Runtime Environment Reporting
-For each run set, record:
-- CPU model and core count,
+## 8. Runtime Metadata
+For each run set, report:
+- CPU,
 - RAM,
-- OS/kernel string,
+- OS/kernel,
 - Python version,
-- git commit SHA.
+- git SHA.
 
-Runtime assumptions:
-- Python 3.11+,
-- development install via `pip install -e ".[dev]"`.
-
-## 9. Repetition and Statistical Summary
-- Run repeated trials when available.
-- Report mean and spread (standard deviation and/or confidence intervals).
-- Preserve run metadata and artifacts for reproducibility.
+## 9. Statistical Reporting
+- Report mean and confidence intervals.
+- Keep identical workload slices across baselines for valid deltas.
+- Keep artifact generation reproducible.
