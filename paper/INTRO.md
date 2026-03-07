@@ -1,29 +1,23 @@
 # Introduction
 
-## Problem
-Tool-augmented agents are no longer text-only interfaces: they issue executable calls into filesystems, HTTP endpoints, and plugin surfaces. A single unsafe tool invocation can become a runtime security incident. The central systems question is whether the runtime can enforce least privilege deterministically before side effects occur.
+Tool-augmented agents are increasingly connected to high-impact tools such as filesystems, network endpoints, and shell-like execution surfaces. In this setting, unsafe tool calls become runtime security failures. The core systems problem is enforcing least privilege deterministically before side effects occur.
 
-## Gap in Existing Work
-Current defenses are split across prompt-level safeguards, sandboxing, and generic policy/runtime infrastructure. These are useful components, but the combination is often missing: deterministic runtime tool gating, formal safety properties of the gate, explainable decision outputs, and reproducible adversarial evaluation that isolates control-level effects.
+Existing defenses provide useful but partial coverage. Prompt-level guardrails are probabilistic, sandboxing is necessary but not sufficient for request-level authorization, and generic runtime infrastructure does not always provide deterministic decision semantics with explainable outputs. What is often missing is a unified runtime enforcement layer that is formally scoped and reproducibly evaluated under adversarial conditions.
 
-## Our Approach
-Agent-Sentinel treats runtime authorization as a first-class enforcement layer. Every tool request passes through capability gating with explicit policy resolution and default deny. The runtime emits structured decision artifacts (`decision`, `rule_id`, `reason_code`, trace metadata), enabling machine-auditable explanations of why requests were allowed or denied. We pair the implementation with a formal model and adversarial ablation protocol.
+Agent-Sentinel addresses this gap with deterministic runtime capability gating at the tool boundary. Each tool request is evaluated against ordered policy rules with default deny fallback; tool execution proceeds only on allow. The system emits structured decision artifacts (`decision`, `rule_id`, `reason_code`, trace metadata) to support auditing and debugging. We pair this implementation with a formal model, explicit threat assumptions, and a benchmark-style adversarial evaluation protocol.
 
 ## Contributions
-1. Deterministic runtime capability-gating model for tool-augmented agents at the tool boundary.
-2. Formal safety properties for that model, including determinism and default-deny behavior under missing/invalid policy inputs.
-3. Causal, reproducible adversarial evaluation using targeted ablations (`no_policy`, `no_trace`, `raw_errors`, `no_plugin_isolation`).
-4. Explainable trace/audit outputs with explicit decision fields (`rule_id`, `reason_code`, trace metadata).
-5. Reproducible artifact pipeline from benchmark outputs to paper tables.
+- Deterministic runtime capability-gating model for tool-augmented agents at the request-to-tool boundary.
+- Runtime-scoped formal safety framing for policy-based enforcement behavior and capability confinement.
+- Reproducible adversarial evaluation design with baseline and ablation conditions over defined attack families and difficulty levels.
+- Explainable decision artifacts and trace outputs suitable for operational auditing and incident analysis.
+- End-to-end artifact workflow connecting run outputs to reporting tables.
 
-## Why Now
-Production agent systems are rapidly increasing their access to high-impact tools. As this access expands, safety claims based on anecdotal demos are insufficient. Deterministic enforcement plus artifact-backed adversarial evaluation makes runtime safety behavior testable and reproducible.
+## Paper Structure
+Section 2 presents the method and enforcement pipeline. Section 3 formalizes the capability and policy model. Sections 4-6 define threat assumptions, metrics, and evaluation protocol. Section 7 reports experimental and ablation results. We conclude with deployment implications, limitations, and future directions.
 
 ## Scope
-This paper is scoped to runtime tool-use enforcement and auditability. It does not claim comprehensive or general AI safety.
-
-## Paper Roadmap
-We formalize the model and threat assumptions, define metrics and protocol, and report safety-observability-performance tradeoffs using reproducible artifacts.
+This paper focuses on runtime tool-use enforcement and observability. It does not claim comprehensive or general AI safety.
 
 ## Links
 - [FORMAL_MODEL](FORMAL_MODEL.md)
