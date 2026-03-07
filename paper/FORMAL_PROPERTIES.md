@@ -10,6 +10,8 @@ Fix request universe \(U\), policy \(P\), and deterministic decision function \(
 - \(\mathrm{Req}(r)\): capability requirements of \(r\)
 - \(G_P(r)\): capabilities granted to \(r\) by policy/runtime state
 - \(\mathrm{Allowed}(P)=\{r \in U \mid D_P(r)=\text{allow}\}\)
+- \(K(r;P_a,P_b)\): compatibility predicate for request \(r\) under policy pair \((P_a,P_b)\)
+- \(\mathrm{Compat}(P_a,P_b)=\{r\in U \mid K(r;P_a,P_b)=\text{true}\}\)
 
 ## P1. Safety Monotonicity
 ### Statement
@@ -61,6 +63,39 @@ This is scoped to unchanged request contexts and matching logic, and to capabili
 ### Interpretation
 Editing one capability policy should not cause unrelated capability regressions.
 
+## P4. Policy Composability (Scoped Theorem)
+### Theorem
+Assume:
+1. deterministic runtime mediation \(D_P(r)\),
+2. ordered rule evaluation in each policy,
+3. default-deny fallback on unmatched or incompatible paths.
+
+Define composition \(P_a \otimes P_b\) by:
+\[
+D_{P_a \otimes P_b}(r)=\text{allow}
+\]
+iff \(D_{P_a}(r)=\text{allow}\), \(D_{P_b}(r)=\text{allow}\), and \(K(r;P_a,P_b)\) holds; otherwise deny.
+
+Then:
+\[
+\mathrm{Allowed}(P_a \otimes P_b)\subseteq \mathrm{Allowed}(P_a)\cap \mathrm{Allowed}(P_b)\cap \mathrm{Compat}(P_a,P_b)
+\]
+
+### Intuition
+Composition behaves as a fail-closed conjunction. A request is allowed only when both policies allow it and request-level compatibility holds.
+
+### Proof Sketch
+1. Let \(r \in \mathrm{Allowed}(P_a \otimes P_b)\).
+2. By definition, \(D_{P_a}(r)=\text{allow}\), \(D_{P_b}(r)=\text{allow}\), and \(K(r;P_a,P_b)\) is true.
+3. Therefore \(r\in \mathrm{Allowed}(P_a)\), \(r\in \mathrm{Allowed}(P_b)\), and \(r\in \mathrm{Compat}(P_a,P_b)\).
+4. Hence \(r\) belongs to the intersection, proving subset inclusion.
+
+### Limitations / Assumptions
+- This is a scoped runtime-enforcement result, not a machine-checked proof.
+- It assumes composition is implemented as conjunctive mediation with default deny.
+- It assumes consistent request parsing and capability mapping across both policies for \(K\).
+- It does not claim semantic equivalence when policy vocabularies are incompatible.
+
 ## Minimal Counterexamples and Prevention
 ### CE1: No Default Deny
 Unsafe behavior: unmatched `shell.exec` request falls through to allow.
@@ -84,5 +119,6 @@ Agent-Sentinel prevention: deterministic capability-scoped rule evaluation limit
 | Safety Monotonicity | deterministic ordered rule resolution + default deny | `policy_engine.resolve_decision`, rule ordering in policy parsing/evaluation | stable allow/deny class under restrictive policy edits |
 | Capability Confinement | pre-execution capability check at gateway boundary | `ToolGateway.execute`, capability checks via `caps.granted` and policy resolver | deny path with no successful tool execution |
 | Capability Non-Interference (scoped) | capability-scoped matching with deterministic evaluation | policy rule capability fields + gateway/policy capability mapping | unchanged decisions for unrelated capability requests under scoped edits |
+| Policy Composability (scoped) | conjunctive composition under deterministic mediation + default deny | composition wrapper around policy decisions; same request path through gateway/policy resolver | composed allow implies per-policy allow + compatibility for the same request |
 
 Structured artifacts (`decision`, `rule_id`, `reason_code`, trace metadata) support auditing of these properties.

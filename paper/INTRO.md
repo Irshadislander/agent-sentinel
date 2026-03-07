@@ -11,7 +11,7 @@ This paper studies runtime capability enforcement as a research problem: given a
 
 ## Contributions
 - A capability-based runtime enforcement model for tool-using agents with deterministic policy mediation.
-- Runtime-scoped safety properties for deterministic outcomes and capability confinement under stated trust assumptions.
+- Runtime-scoped safety properties under stated trust assumptions, including monotonicity, capability confinement, and scoped policy composability.
 - A reproducible adversarial benchmark design spanning attack families, difficulty levels, baselines, and ablations.
 - Structured decision artifacts (`decision`, `rule_id`, `reason_code`, trace metadata) for explainable, machine-auditable runtime behavior.
 - An artifact pipeline that connects benchmark outputs to paper-facing tables and figure guidance.

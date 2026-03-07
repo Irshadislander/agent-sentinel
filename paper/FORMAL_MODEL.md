@@ -65,6 +65,23 @@ Resolution is deterministic first-match:
 3. return that rule's decision,
 4. if no rule matches, return `deny` (default deny).
 
+### 3.1 Policy Composition (Scoped)
+For two policies \(P_a\) and \(P_b\), composition is defined over the same request form
+\(r=(\text{tool},\text{args},\text{context})\).
+
+Let \(K(r;P_a,P_b)\in\{\text{true},\text{false}\}\) be a compatibility predicate
+(for example, aligned capability naming and request-to-capability mapping).
+
+\[
+D_{P_a \otimes P_b}(r)=
+\begin{cases}
+\text{allow}, & \text{if } D_{P_a}(r)=\text{allow} \land D_{P_b}(r)=\text{allow} \land K(r;P_a,P_b) \\
+\text{deny}, & \text{otherwise}
+\end{cases}
+\]
+
+This is fail-closed: disagreement or incompatibility resolves to `deny`.
+
 ## 4. Enforcement Semantics
 Let \(G_P(r) \subseteq C\) denote capabilities granted to request \(r\) under policy \(P\).
 
@@ -85,7 +102,7 @@ Default deny applies when:
 - request class cannot be mapped to an allowed capability path.
 
 ## 5. Safety Properties (Scoped)
-We use three scoped properties:
+We use four scoped properties:
 
 ### P1. Safety Monotonicity
 Restrictive policy refinements cannot increase the allowed request set.
@@ -113,6 +130,13 @@ D_P(r_i) = D_{P'}(r_i)
 \]
 
 for requests \(r_i\) that require only capability \(c_i\), when edits from \(P\) to \(P'\) affect only capability \(c_j \neq c_i\).
+
+### P4. Policy Composability (Scoped)
+Under deterministic mediation, ordered rule evaluation, and default-deny fallback, policy composition cannot expand the allow set beyond compatible intersection:
+\[
+\mathrm{Allowed}(P_a \otimes P_b) \subseteq \mathrm{Allowed}(P_a)\cap \mathrm{Allowed}(P_b)\cap \mathrm{Compat}(P_a,P_b)
+\]
+where \(\mathrm{Compat}(P_a,P_b)\) is the set of requests satisfying \(K\).
 
 ## 6. Decision Artifacts
 Each decision emits structured evidence:
