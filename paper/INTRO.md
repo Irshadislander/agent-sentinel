@@ -19,6 +19,14 @@ This paper studies runtime capability enforcement as a research problem: given a
 ## Why This Matters
 This work frames secure agent execution as a measurable systems question rather than a product feature claim. It provides a narrow, testable contribution: deterministic runtime enforcement and auditable decision semantics for tool use, not general AI safety.
 
+## Production Agent Relevance
+The enforcement interface studied here is intentionally runtime-facing and maps to common tool-call boundaries in modern agent stacks. This makes the framework directly relevant to:
+- LangChain-style tool agents,
+- OpenAI tool-calling runtimes,
+- multi-agent orchestration systems.
+
+The claim is applicability of the mediation model, not evidence of broad production deployment.
+
 ## Links
 - [FORMAL_MODEL](FORMAL_MODEL.md)
 - [THREAT_MODEL](THREAT_MODEL.md)
