@@ -1,28 +1,26 @@
 # Related Work
 
-## Compact Comparison
+## Positioning Table
 
-| Approach family | Runtime tool gating | Deterministic enforcement | Formal safety property | Explainable decisions | Reproducible adversarial evaluation |
+| Approach family | Runtime tool mediation | Deterministic policy decision | Scoped formal safety property | Explainable decision artifacts | Reproducible adversarial benchmark |
 |---|---|---|---|---|---|
-| Probabilistic / runtime-verification style agent guards | Partial | No | Rare/limited | Partial | Rare/limited |
-| General AI runtime infrastructure / agent runtime systems | Partial | Partial | Rare/limited | Partial | Rare/limited |
-| Prompt-injection / guardrail work | No | No | Rare/limited | Partial | Partial |
-| Sandbox / tool isolation systems | Partial | Partial | Partial | Limited | Limited |
-| **Agent-Sentinel (this work)** | **Yes** | **Yes** | **Yes (scoped invariants)** | **Yes** | **Yes** |
+| Prompt guardrails / prompt-injection defenses | No (upstream) | No | Rare/limited | Partial | Partial |
+| General agent runtime infrastructure | Partial | Partial | Rare/limited | Partial | Rare/limited |
+| Sandboxing / isolation systems | Partial (post-execution containment) | Partial | Partial | Limited | Limited |
+| Policy systems (generic access control) | Partial (not agent-specific runtime path) | Partial | Partial | Partial | Rare/limited |
+| **Agent-Sentinel (this work)** | **Yes** | **Yes** | **Yes (runtime-scoped)** | **Yes** | **Yes** |
 
-Legend: "Partial" indicates adjacent support but not the full end-to-end property in this paper's scope.
+## Prompt Guardrails
+Prompt-level defenses focus on input/output filtering and instruction conflict handling. They are complementary, but they do not by themselves enforce capability authorization at the moment of tool execution.
 
-## Probabilistic and Runtime-Verification Guards
-Probabilistic guards and runtime-verification heuristics often estimate risk or detect suspicious behavior, but their decisions may vary across runs and are not always tied to deterministic policy resolution at the tool boundary. Agent-Sentinel is positioned as deterministic runtime enforcement rather than probabilistic filtering.
+## Runtime Infrastructure
+Agent runtimes provide orchestration and tool abstraction, but often do not define deterministic, formally scoped mediation semantics as the primary research object. Agent-Sentinel contributes this mediation layer and its evaluation framing.
 
-## General Agent Runtime Infrastructure
-Agent runtime systems typically emphasize orchestration and tool plumbing. They may host policy hooks, but often do not center formalized runtime safety properties plus ablation-based adversarial evidence. Agent-Sentinel contributes this enforcement-and-evaluation layer.
+## Sandboxing and Isolation
+Sandboxing limits damage after code or tool execution starts. Agent-Sentinel addresses an earlier point in the control path: pre-execution authorization with explicit deny semantics. The two are complementary, not interchangeable.
 
-## Prompt-Injection and Guardrail Methods
-Prompt-injection defenses operate upstream by shaping prompts, outputs, or model behavior. These controls are complementary but do not replace runtime authorization at the point of tool execution. Agent-Sentinel focuses on that execution boundary.
+## Policy Systems
+Generic policy systems provide access-control abstractions, but may not target tool-using agent request semantics, adversarial prompt-to-tool transitions, or decision-artifact reproducibility under benchmark stress.
 
-## Sandbox and Tool-Isolation Systems
-Isolation systems reduce blast radius after code/tool execution begins. By themselves, they do not usually provide deterministic capability-level allow/deny decisions with explicit `rule_id`/`reason_code` outputs. Agent-Sentinel is a pre-execution policy gate that can coexist with sandboxing.
-
-## Positioning Summary
-The closest prior systems provide valuable components, but typically not the combined target of this paper: deterministic runtime capability-gating, scoped formal safety properties, explainable decision artifacts, and reproducible adversarial evaluation.
+## Reviewer-Facing Positioning
+Agent-Sentinel is positioned as a systems-security research contribution on deterministic runtime capability mediation for agent tool use. Its novelty is the combination of formalized runtime semantics, scoped safety properties, and reproducible adversarial evaluation, not a claim of end-to-end AI safety.

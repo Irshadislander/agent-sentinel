@@ -1,17 +1,16 @@
 # Conclusion
 
-Agent-Sentinel frames runtime tool safety as a deterministic authorization problem at the tool boundary. The main contribution is a capability-gating enforcement layer that evaluates policy before execution, applies default-deny behavior, and emits structured decision artifacts for every request.
+This paper contributes a research-focused formulation of runtime security for tool-using AI agents: capability-based enforcement with deterministic policy mediation at the request-to-tool boundary. The core scientific contribution is not a product stack, but a formalized runtime mediation model with scoped safety properties and auditable decision outputs.
 
-This design is paired with a formal runtime model and evaluated using reproducible adversarial workloads with baseline and ablation conditions. The result is a measurable comparison framework across security effectiveness, latency overhead, and trace quality, rather than qualitative guardrail narratives.
+We pair this model with reproducible adversarial evaluation across attack families, difficulty levels, baselines, and ablations, enabling direct measurement of security effectiveness, overhead, and observability tradeoffs. This positions runtime tool-use safety as a testable systems question rather than a qualitative guardrail narrative.
 
-The security implication is practical: reliable tool-using agents need enforceable runtime controls and auditable decisions under explicit trust assumptions. Agent-Sentinel contributes this layer without claiming general AI safety.
+Why this matters is practical and scientific: deployment decisions require enforceable runtime controls, and research claims require reproducible evidence and explicit scope. Agent-Sentinel contributes both under clearly bounded assumptions.
 
-Future work includes broader workload coverage, deeper analysis of policy-authoring quality, and expanded deployment studies for high-throughput environments and heterogeneous agent runtimes.
+Future work includes broader workload coverage, deeper analysis of policy-authoring quality, and expanded scaling studies under heterogeneous runtime conditions. These directions extend the benchmark and mediation analysis without expanding claims beyond runtime enforcement scope.
 
 ## Links
 - [FORMAL_MODEL](FORMAL_MODEL.md)
 - [THREAT_MODEL](THREAT_MODEL.md)
 - [METRICS](METRICS.md)
 - [RESULTS](results_tables.md)
-- [ROBUSTNESS](ROBUSTNESS.md)
-- [PERF](PERF_DAYXX.md)
+- [RELATED_WORK](RELATED_WORK.md)

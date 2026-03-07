@@ -1,19 +1,19 @@
-# Contributions (Camera-Ready)
+# Contributions (Final Framing)
 
-**C1. Deterministic runtime capability-gating model.**  
-We define and implement a runtime gating model that resolves capability requests before tool execution under explicit policy and default-deny fallback.
+**C1. Capability-based runtime enforcement model.**
+We define a runtime mediation model for tool requests in which execution is authorized only through capability checks and policy rules at the request boundary.
 
-**C2. Formal safety properties for runtime enforcement.**  
-We formalize key invariants of the gate, including deterministic outcomes and deny-on-missing/invalid-policy behavior.
+**C2. Deterministic policy mediation semantics.**
+We specify deterministic decision behavior with ordered rule evaluation and default-deny fallback, making authorization outcomes stable and reproducible.
 
-**C3. Causal, reproducible adversarial evaluation protocol.**  
-We evaluate targeted ablations (`no_policy`, `no_trace`, `raw_errors`, `no_plugin_isolation`) to isolate control-level effects on safety, observability, and performance.
+**C3. Runtime-scoped safety properties.**
+We state explicit safety properties of the mediation layer (including capability confinement and deterministic decision behavior) under declared trust assumptions.
 
-**C4. Explainable trace and audit outputs.**  
-We emit structured decision artifacts (`decision`, `rule_id`, `reason_code`, trace metadata/commitment) that support machine-auditable runtime explanations.
+**C4. Reproducible adversarial evaluation framework.**
+We evaluate the enforcement model with a benchmark matrix over attack families, difficulty levels, baselines, and ablations using predeclared metrics.
 
-**C5. Reproducible artifact pipeline.**  
-We provide deterministic benchmark/report scripts and fixed artifact conventions to regenerate paper-facing outputs from repository results.
+**C5. Explainable decision and trace artifacts.**
+We treat structured decision outputs (`decision`, `rule_id`, `reason_code`, trace metadata) as measurable research outputs for auditing and comparison.
 
 ## Scope Boundary
-These claims are specific to runtime tool-use enforcement and auditability. They are not claims of general AI safety.
+These claims are restricted to runtime tool-use enforcement and observability. They are not claims of general AI safety or complete system security.

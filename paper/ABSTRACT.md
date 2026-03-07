@@ -1,12 +1,10 @@
 # Abstract
 
-Tool-augmented agents can trigger filesystem, network, and shell-like actions with real side effects, so safety depends on enforcement at runtime tool boundaries rather than prompt quality alone. Existing approaches often emphasize prompt filtering, sandboxing, or orchestration infrastructure in isolation, leaving a gap in deterministic authorization with explainable decisions.
+Tool-using AI agents can trigger filesystem, network, and shell side effects, so security depends on runtime control at the tool boundary, not only on prompt quality. Existing approaches often emphasize prompt guardrails, orchestration, or isolation in isolation, leaving a gap in deterministic request-level authorization with formalized behavior.
 
-Agent-Sentinel addresses this gap through deterministic runtime capability gating: each request is evaluated against ordered policy rules with default-deny fallback before any tool execution. The key technical contribution is a unified enforcement model with structured decision artifacts (`decision`, `rule_id`, `reason_code`, trace metadata) that supports both formal runtime safety framing and operational auditability.
+Agent-Sentinel addresses this gap with capability-based runtime enforcement: each tool request is mediated by deterministic policy evaluation with default-deny fallback before execution. We formalize the runtime decision model and state scoped safety properties for capability confinement and deterministic policy mediation.
 
-We evaluate the system under benign and adversarial workloads using baseline and ablation conditions, including targeted control removals (`no_policy`, `no_trace`, `raw_errors`, `no_plugin_isolation`), and report attack blocking, latency overhead, and trace-quality metrics. The artifact pipeline is reproducible from repository workflows and tables.
-
-The practical implication is that secure tool-using agents benefit from deterministic runtime authorization plus machine-auditable decision traces. Scope is intentionally narrow: runtime tool-use enforcement and observability, not general AI safety.
+We evaluate this model with a reproducible adversarial benchmark across attack families, difficulty levels, baselines, and ablations, reporting security effectiveness, latency overhead, and decision-trace quality. The practical significance is a research-grounded enforcement layer for tool-using agents that supports auditable deployment decisions without claiming general AI safety.
 
 ## Links
 - [FORMAL_MODEL](FORMAL_MODEL.md)
@@ -14,4 +12,3 @@ The practical implication is that secure tool-using agents benefit from determin
 - [METRICS](METRICS.md)
 - [RESULTS](results_tables.md)
 - [ROBUSTNESS](ROBUSTNESS.md)
-- [PERF](PERF_DAYXX.md)
