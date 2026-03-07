@@ -7,7 +7,7 @@ We define a runtime mediation model for tool requests in which execution is auth
 We specify deterministic decision behavior with ordered rule evaluation and default-deny fallback, making authorization outcomes stable and reproducible.
 
 **C3. Runtime-scoped safety properties.**
-We state explicit safety properties of the mediation layer (including capability confinement and deterministic decision behavior) under declared trust assumptions.
+We state explicit safety properties of the mediation layer under declared trust assumptions, including monotonicity, capability confinement, and scoped policy composability for deterministic default-deny mediation. These are theorem statements with proof sketches, not claims of machine-checked full verification.
 
 **C4. Reproducible adversarial evaluation framework.**
 We evaluate the enforcement model with a benchmark matrix over attack families, difficulty levels, baselines, and ablations using predeclared metrics.

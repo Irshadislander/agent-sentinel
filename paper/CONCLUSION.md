@@ -1,6 +1,6 @@
 # Conclusion
 
-This paper contributes a research-focused formulation of runtime security for tool-using AI agents: capability-based enforcement with deterministic policy mediation at the request-to-tool boundary. The core scientific contribution is not a product stack, but a formalized runtime mediation model with scoped safety properties and auditable decision outputs.
+This paper contributes a research-focused formulation of runtime security for tool-using AI agents: capability-based enforcement with deterministic policy mediation at the request-to-tool boundary. The core scientific contribution is not a product stack, but a formalized runtime mediation model with scoped safety properties, including monotonicity and policy composability under default-deny semantics, plus auditable decision outputs.
 
 We pair this model with reproducible adversarial evaluation across attack families, difficulty levels, baselines, and ablations, enabling direct measurement of security effectiveness, overhead, and observability tradeoffs. This positions runtime tool-use safety as a testable systems question rather than a qualitative guardrail narrative.
 
