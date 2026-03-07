@@ -1,22 +1,12 @@
 # Abstract
 
-## Problem
-Tool-augmented agents can trigger filesystem, network, and plugin actions with real side effects. In this setting, safety depends on runtime enforcement at the tool boundary, not only on prompt quality.
+Tool-augmented agents can trigger filesystem, network, and shell-like actions with real side effects, so safety depends on enforcement at runtime tool boundaries rather than prompt quality alone. Existing approaches often emphasize prompt filtering, sandboxing, or orchestration infrastructure in isolation, leaving a gap in deterministic authorization with explainable decisions.
 
-## Why Existing Work Is Insufficient
-Nearby approaches usually focus on one layer at a time (prompt guardrails, sandboxing, or policy infrastructure). They often do not provide a unified runtime mechanism that is deterministic, formally specified, and evaluated through reproducible adversarial ablations.
+Agent-Sentinel addresses this gap through deterministic runtime capability gating: each request is evaluated against ordered policy rules with default-deny fallback before any tool execution. The key technical contribution is a unified enforcement model with structured decision artifacts (`decision`, `rule_id`, `reason_code`, trace metadata) that supports both formal runtime safety framing and operational auditability.
 
-## What Agent-Sentinel Introduces
-Agent-Sentinel provides deterministic runtime capability-gating for tool-augmented agents. Requests are resolved before tool execution with default-deny fallback, and decisions emit structured evidence (`decision`, `rule_id`, `reason_code`, trace metadata) for explainability and audit.
+We evaluate the system under benign and adversarial workloads using baseline and ablation conditions, including targeted control removals (`no_policy`, `no_trace`, `raw_errors`, `no_plugin_isolation`), and report attack blocking, latency overhead, and trace-quality metrics. The artifact pipeline is reproducible from repository workflows and tables.
 
-## What We Prove and Evaluate
-We formalize the decision model and scoped safety properties (determinism, default-deny safety, gateway-mediated enforcement boundary). We evaluate benign and adversarial workloads with controlled ablations (`no_policy`, `no_trace`, `raw_errors`, `no_plugin_isolation`) to isolate effects on safety, observability, and performance.
-
-## Reproducibility and Artifacts
-We provide formal-model and threat-model documents, matrix benchmark outputs, and canonical report-generation scripts so results can be regenerated from repository artifacts.
-
-## Scope
-This paper addresses runtime tool-use enforcement and auditability; it does not claim general AI safety.
+The practical implication is that secure tool-using agents benefit from deterministic runtime authorization plus machine-auditable decision traces. Scope is intentionally narrow: runtime tool-use enforcement and observability, not general AI safety.
 
 ## Links
 - [FORMAL_MODEL](FORMAL_MODEL.md)

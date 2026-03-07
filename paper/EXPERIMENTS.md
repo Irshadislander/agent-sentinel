@@ -1,46 +1,28 @@
 # Experiments
 
-## 1. Hardware and Runtime Environment
+## 1. What Is Evaluated
+We evaluate whether deterministic runtime capability gating improves security and observability for tool-augmented agents under adversarial workloads, and what latency overhead this enforcement introduces.
 
-For each run set, report:
+## 2. Systems and Baselines
+### Reference mode
+- `full_system`: Agent-Sentinel with deterministic policy evaluation, capability checks, and structured trace output.
 
-- CPU model and core count
-- RAM
-- OS/kernel string
-- Python version
-- Git commit SHA
+### Baseline conditions
+- `no_enforcement`: direct tool execution without runtime gating.
+- `allow_all`: permissive policy condition.
+- `naive_allow_list`: coarse allow-list style condition.
+- optional `llm_guard_style` baseline if implemented; otherwise reported as planned.
 
-Runtime assumptions:
-- Python 3.11+
-- package installed with dev dependencies: `pip install -e ".[dev]"`
+### Ablation conditions
+- `no_default_deny`
+- `no_first_match_ordering`
+- `no_trace` / `reduced_observability`
+- `no_capability_confinement` / `coarse_capability_gating`
+- `no_enforcement`
 
-## 2. Benchmark Structure
-Core matrix:
+Baselines characterize comparative security posture; ablations isolate the effect of removing specific controls.
 
-\[
-\text{ablation modes} \times \text{attack families} \times \text{difficulty levels} \times \text{metrics}
-\]
-
-This structure is used to isolate which removed/weakened component causes each degradation.
-
-## 3. Ablation Modes
-1. `full_system` (reference mode).
-2. `no_default_deny`.
-3. `no_first_match_ordering`.
-4. `no_trace` / `reduced_observability`.
-5. `no_capability_confinement` / `coarse_capability_gating`.
-6. `no_enforcement`.
-
-What each mode is meant to show:
-- `no_default_deny`: effect of removing deny fallback for unmatched cases.
-- `no_first_match_ordering`: effect of removing deterministic rule conflict resolution.
-- `no_trace`: effect of reducing observability and audit evidence.
-- `no_capability_confinement`: effect of weakening fine-grained least-privilege boundaries.
-- `no_enforcement`: lower-bound safety when enforcement is bypassed entirely.
-
-If a mode is not yet implemented in the current benchmark runner, mark it as planned and keep its reporting row as placeholder.
-
-## 4. Workload Axes
+## 3. Attack Families and Difficulty
 ### Attack families
 - `prompt_injection`
 - `filesystem_damage`
@@ -48,59 +30,49 @@ If a mode is not yet implemented in the current benchmark runner, mark it as pla
 - `data_exfiltration`
 - `network_exfiltration`
 
-### Difficulty
+### Difficulty levels
 - `easy`
 - `medium`
 - `hard` / `multi_step`
 
+## 4. Experiment Matrix
+\[
+\text{system mode} \times \text{attack family} \times \text{difficulty} \times \text{metrics}
+\]
+
+This matrix is used consistently for reference, baseline, and ablation comparisons.
+
 ## 5. Evaluation Workflow
-1. Load workload tasks from `configs/tasks/` and `configs/tasks_synth/`.
-2. Execute each task under a selected system mode (baseline/ablation).
-3. Apply policy enforcement at runtime decision boundary.
-4. Capture trace and structured decision artifacts.
+1. Load workloads from `configs/tasks/` and `configs/tasks_synth/`.
+2. Execute each workload slice under the selected system mode.
+3. Apply runtime policy enforcement at the tool decision boundary.
+4. Record allow/deny decisions, latency, and decision artifacts.
 5. Compute metrics by system, family, and difficulty.
-6. Export artifacts and paper tables.
+6. Export artifacts and reporting tables.
 
-## 6. Attack Execution Procedure
-- Run all tasks in each `(family, difficulty)` slice through the same runtime path.
-- Keep policy inputs and run settings fixed within each comparison slice.
-- Record allow/deny outcomes, latency, and decision artifact fields for every request.
-- Repeat runs across seeds when available.
-
-## 7. Baseline Evaluation Procedure
-Evaluate `default` and baseline/ablation modes against identical workloads.
-
-For each mode:
-- run the same workload matrix,
-- compute the same metric set,
-- compare with reference (`default` for baseline tables, `full_system` for ablation tables).
-
-## 8. Metrics and Reporting
-Use the primary metrics in [METRICS](METRICS.md):
+## 6. Metrics Reported
+Primary metrics (defined in [METRICS](METRICS.md)):
 - attack block rate,
+- attack success rate,
 - latency overhead,
 - trace completeness,
 - structured decision artifact coverage.
 
-Reporting slices:
-- per-ablation aggregate,
-- per-family,
-- per-family x difficulty,
-- deltas versus `full_system`.
+Reporting includes overall aggregates, per-family views, per-family x difficulty views, and deltas versus reference mode.
 
-## 9. Ablation Reporting Plan
-For each ablation mode, report:
-- component removed/weakened,
-- expected failure mode,
-- observed deltas on primary metrics:
-  attack block rate, latency overhead, trace completeness, structured artifact coverage.
+## 7. Runtime Environment Reporting
+For each run set, record:
+- CPU model and core count,
+- RAM,
+- OS/kernel string,
+- Python version,
+- git commit SHA.
 
-Use:
-\[
-\Delta m = m(\text{ablation}) - m(\text{full\_system})
-\]
+Runtime assumptions:
+- Python 3.11+,
+- development install via `pip install -e ".[dev]"`.
 
-## 10. Repetition and Statistics
-- Run repeated trials (minimum 10 when available).
-- Report mean and spread (std and/or CI when available).
-- Preserve run metadata (`git SHA`, runtime config, timestamp) for reproducibility.
+## 8. Repetition and Statistical Summary
+- Run repeated trials when available.
+- Report mean and spread (standard deviation and/or confidence intervals per stats protocol).
+- Preserve run metadata and artifacts to keep comparisons reproducible.

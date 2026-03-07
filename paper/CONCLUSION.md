@@ -1,10 +1,12 @@
 # Conclusion
 
-Agent-Sentinel frames runtime tool safety as a deterministic systems problem: evaluate policy first, execute only on allow, and emit stable audit semantics for every request.
+Agent-Sentinel frames runtime tool safety as a deterministic authorization problem at the tool boundary. The main contribution is a capability-gating enforcement layer that evaluates policy before execution, applies default-deny behavior, and emits structured decision artifacts for every request.
 
-The combined formalization and evaluation pipeline enables measurable claims on safety, observability, robustness, and latency under controlled ablations.
+This design is paired with a formal runtime model and evaluated using reproducible adversarial workloads with baseline and ablation conditions. The result is a measurable comparison framework across security effectiveness, latency overhead, and trace quality, rather than qualitative guardrail narratives.
 
-This produces a reproducible basis for comparing runtime safety controls beyond qualitative guardrail narratives.
+The security implication is practical: reliable tool-using agents need enforceable runtime controls and auditable decisions under explicit trust assumptions. Agent-Sentinel contributes this layer without claiming general AI safety.
+
+Future work includes broader workload coverage, deeper analysis of policy-authoring quality, and expanded deployment studies for high-throughput environments and heterogeneous agent runtimes.
 
 ## Links
 - [FORMAL_MODEL](FORMAL_MODEL.md)
