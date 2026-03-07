@@ -3,6 +3,49 @@
 - Source: `bench/results/matrix.json`
 - Generated at (UTC): `2026-03-04T03:45:31.936492+00:00`
 
+## Ablation Summary (Template)
+
+Populate this section from measured runs only (no synthetic values).
+
+| Ablation mode | Component changed | Expected primary failure mode | Implemented in current run? | Observed summary |
+|---|---|---|---|---|
+| `full_system` | none | reference behavior | yes/no | `TBD` |
+| `no_default_deny` | default-deny fallback removed/weakened | unmatched unsafe requests can pass | yes/no | `TBD` |
+| `no_first_match_ordering` | deterministic ordering removed | conflicting-rule instability | yes/no | `TBD` |
+| `no_trace` / `reduced_observability` | tracing reduced/disabled | audit/observability degradation | yes/no | `TBD` |
+| `no_capability_confinement` / `coarse_capability_gating` | capability boundary weakened | privilege overreach | yes/no | `TBD` |
+| `no_enforcement` | enforcement bypassed | largest attack success increase | yes/no | `TBD` |
+
+## Expected Effect on Block Rate (Template)
+
+| Ablation mode | Expected direction vs `full_system` | Observed ABR | ΔABR |
+|---|---|---|---|
+| `no_default_deny` | decrease | `TBD` | `TBD` |
+| `no_first_match_ordering` | decrease / unstable by family | `TBD` | `TBD` |
+| `no_trace` / `reduced_observability` | near-neutral to slight decrease | `TBD` | `TBD` |
+| `no_capability_confinement` / `coarse_capability_gating` | decrease | `TBD` | `TBD` |
+| `no_enforcement` | largest decrease | `TBD` | `TBD` |
+
+## Expected Effect on Latency (Template)
+
+| Ablation mode | Expected direction vs `full_system` | Observed p50/p95 overhead |
+|---|---|---|
+| `no_default_deny` | mixed (path dependent) | `TBD` |
+| `no_first_match_ordering` | mixed / implementation dependent | `TBD` |
+| `no_trace` / `reduced_observability` | decrease expected | `TBD` |
+| `no_capability_confinement` / `coarse_capability_gating` | slight decrease expected | `TBD` |
+| `no_enforcement` | decrease expected | `TBD` |
+
+## Expected Effect on Trace Completeness (Template)
+
+| Ablation mode | Expected direction vs `full_system` | Observed TCR | ΔTCR |
+|---|---|---|---|
+| `no_default_deny` | neutral to slight decrease | `TBD` | `TBD` |
+| `no_first_match_ordering` | neutral to slight decrease | `TBD` | `TBD` |
+| `no_trace` / `reduced_observability` | largest decrease | `TBD` | `TBD` |
+| `no_capability_confinement` / `coarse_capability_gating` | slight decrease | `TBD` | `TBD` |
+| `no_enforcement` | moderate decrease / path dependent | `TBD` | `TBD` |
+
 ## Table 1: Baseline Metrics
 
 | Baseline | UER | ΔUER vs default | FAR | ΔFAR vs default | TCR | ΔTCR vs default | EDS | ΔEDS vs default | plugin_loads | Δplugin_loads vs default |

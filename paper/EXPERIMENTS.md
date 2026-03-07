@@ -4,23 +4,27 @@
 Core matrix:
 
 \[
-\text{systems} \times \text{attack families} \times \text{difficulty levels} \times \text{metrics}
+\text{ablation modes} \times \text{attack families} \times \text{difficulty levels} \times \text{metrics}
 \]
 
-This structure is used to separate workload difficulty effects from system design effects.
+This structure is used to isolate which removed/weakened component causes each degradation.
 
-## 2. Systems / Baseline Conditions
-1. `default` (Agent-Sentinel full runtime enforcement).
-2. no enforcement (`no_policy` / `no_gateway_enforcement` mode).
-3. allow-all policy condition.
-4. naive allow-list condition.
-5. optional LLM-guard style baseline (future/optional if not implemented in current runner).
+## 2. Ablation Modes
+1. `full_system` (reference mode).
+2. `no_default_deny`.
+3. `no_first_match_ordering`.
+4. `no_trace` / `reduced_observability`.
+5. `no_capability_confinement` / `coarse_capability_gating`.
+6. `no_enforcement`.
 
-What each baseline shows:
-- no enforcement: lower-bound safety behavior when gating is removed.
-- allow-all: policy permissiveness effect.
-- naive allow-list: gap between basic allow-listing and structured runtime enforcement.
-- optional LLM guard: prompt-side probabilistic filtering versus deterministic runtime gating.
+What each mode is meant to show:
+- `no_default_deny`: effect of removing deny fallback for unmatched cases.
+- `no_first_match_ordering`: effect of removing deterministic rule conflict resolution.
+- `no_trace`: effect of reducing observability and audit evidence.
+- `no_capability_confinement`: effect of weakening fine-grained least-privilege boundaries.
+- `no_enforcement`: lower-bound safety when enforcement is bypassed entirely.
+
+If a mode is not yet implemented in the current benchmark runner, mark it as planned and keep its reporting row as placeholder.
 
 ## 3. Workload Axes
 ### Attack families
@@ -43,12 +47,24 @@ Use the primary metrics in [METRICS](METRICS.md):
 - structured decision artifact coverage.
 
 Reporting slices:
-- per-system aggregate,
+- per-ablation aggregate,
 - per-family,
 - per-family x difficulty,
-- deltas versus `default`.
+- deltas versus `full_system`.
 
-## 5. Repetition and Statistics
+## 5. Ablation Reporting Plan
+For each ablation mode, report:
+- component removed/weakened,
+- expected failure mode,
+- observed deltas on primary metrics:
+  attack block rate, latency overhead, trace completeness, structured artifact coverage.
+
+Use:
+\[
+\Delta m = m(\text{ablation}) - m(\text{full\_system})
+\]
+
+## 6. Repetition and Statistics
 - Run repeated trials (minimum 10 when available).
 - Report mean and spread (std and/or CI when available).
 - Preserve run metadata (`git SHA`, runtime config, timestamp) for reproducibility.
