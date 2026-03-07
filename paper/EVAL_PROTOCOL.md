@@ -1,41 +1,61 @@
 # Evaluation Protocol
 
-## Scenario Set
-We evaluate mixed task categories from `configs/tasks/` and matrix outputs from `artifacts/bench/matrix.json`.
+## Objective
+Evaluate Agent-Sentinel as a benchmarked runtime security system, not only as a demo.
+The protocol measures attack blocking, runtime overhead, and quality of decision artifacts under adversarial workloads.
 
-Scenario categories:
-- `benign`: expected allow.
-- `policy_blocked` / `malicious`: expected deny.
-- `malformed_payload`: error-path and explainability stress.
-- `plugin_failure`: plugin boundary robustness stress.
-- `trace_stress`: observability stress.
+## Adversarial Workload Taxonomy
+Tasks are grouped into five attack families:
 
-## Axes
-1) **Correctness**: observed decision vs expected decision.
-2) **Observability**: trace completeness and presence of `rule_id`/`reason_code`.
-3) **Robustness**: attack success and denial-reason distribution.
-4) **Performance**: latency p50/p95/p99 and stress scaling.
+1. `prompt_injection`: attacker attempts to override policy through instructions.
+2. `filesystem_damage`: destructive or unauthorized file modification/deletion.
+3. `shell_misuse`: unsafe command execution attempts.
+4. `data_exfiltration`: attempts to read and extract sensitive local data.
+5. `network_exfiltration`: attempts to send sensitive data to external endpoints.
 
-## Ablations
-- `default`: full system (policy + gateway + structured errors + tracing).
-- `no_policy`: bypass/disable policy enforcement.
-  Expected direction: UER increases, attack success increases.
-- `no_trace`: disable trace emission.
-  Expected direction: TCR decreases.
-- `raw_errors`: replace structured error mapping with raw exception style.
-  Expected direction: reason-code coverage and explainability decrease.
-- `no_plugin_isolation`: relaxed plugin allowlist isolation.
-  Expected direction: plugin-related attack success increases.
-- `allowlist_only` / `no_gateway_enforcement` (if enabled in run config): stress unsafe-path behavior.
+Each task has an expected policy outcome (`allow` or `deny`) for correctness and block-rate measurement.
 
-## Hypotheses by Ablation
-- **H1 (Determinism)**: `default` has stable decision/reason outcomes across repeated runs.
-- **H2 (Trace Tradeoff)**: `no_trace` lowers TCR while reducing trace overhead.
-- **H3 (Safety Enforcement)**: `no_policy` and `no_gateway_enforcement` degrade safety metrics vs `default`.
-- **H4 (Explainability)**: `raw_errors` lowers reason-code and rule-id coverage vs structured mode.
-- **H5 (Isolation)**: `no_plugin_isolation` increases plugin attack success vs `default`.
+## Difficulty Levels
+Adversarial tasks are labeled by difficulty:
 
-## Repetitions
-- Matrix runs are repeated across multiple seeds and/or repetitions (minimum 10 when available).
-- Aggregation reports mean, delta vs baseline, and bootstrap 95% CI.
-- All output tables are generated deterministically from artifact JSON.
+1. `easy`: direct single-step unsafe request.
+2. `medium`: partial obfuscation or indirect unsafe intent.
+3. `hard` / `multi_step`: chained sequence where benign steps lead to unsafe execution/exfiltration.
+
+## Baseline Systems (Evaluation Modes)
+We compare `default` (full Agent-Sentinel) against baseline conditions.
+If a baseline is not implemented in the current runner, it is explicitly treated as planned/optional.
+
+1. **No enforcement** (`no_policy` / `no_gateway_enforcement` mode).
+   Shows expected attack behavior when runtime gating is absent.
+2. **Allow-all** (permissive policy condition).
+   Isolates the effect of policy strictness from gateway mechanics.
+3. **Naive allow-list** (simplified capability allow-list condition).
+   Tests whether basic allow-listing is sufficient without richer checks/artifacts.
+4. **Optional LLM-guard style baseline** (future/optional condition).
+   Compares probabilistic prompt-side filtering with deterministic runtime gating.
+
+## Experiment Matrix
+Primary matrix:
+
+\[
+\text{systems} \times \text{attack families} \times \text{difficulty levels} \times \text{metrics}
+\]
+
+Reporting views:
+- aggregate by system,
+- breakdown by family,
+- breakdown by family x difficulty,
+- deltas against `default`.
+
+## Metrics
+Primary metrics are defined in [METRICS](METRICS.md):
+- attack block rate,
+- latency overhead,
+- trace completeness,
+- structured decision artifact coverage.
+
+## Repetitions and Aggregation
+- Repeat runs across seeds/repetitions (minimum 10 when available).
+- Report mean and spread (std and/or confidence intervals when available).
+- Generate tables deterministically from artifact JSON.
