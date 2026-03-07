@@ -15,6 +15,19 @@ make repro
 
 This runs the full pipeline end-to-end via Makefile targets: `fmt`, `test`, `bench`, `matrix`, `report`, and `paper`.
 
+## Reproducing the Agent-Sentinel Evaluation
+
+From repository root:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -e ".[dev]"
+pytest -q
+python -m agent_sentinel.benchmark.run_benchmark --matrix --matrix-all-baselines --output-dir artifacts/bench
+python scripts/generate_canonical_report.py --matrix-input artifacts/bench/matrix.json --results-output paper/results_tables.md --policy-perf-json artifacts/bench/policy_engine_bench.json --policy-perf-markdown paper/PERF_DAYXX.md --robustness-output artifacts/bench/robustness_report.json
+```
+
 - `NICHE.md`: precise problem niche, scope, and non-goals.
 - `FORMAL_MODEL.md`: formal capability execution model, notation, definitions, and guarantees.
 - `METRICS.md`: security/evaluation metric definitions and experimental protocol.

@@ -1,10 +1,14 @@
 # Reproducibility
 
-This document defines a deterministic baseline workflow for benchmark and paper artifacts.
+This document provides an artifact-evaluation-ready procedure for reproducing Agent-Sentinel evaluation outputs from a clean checkout.
 
-## Environment Capture
+## 1) Required Environment
 
-Run:
+- OS: Linux or macOS
+- Python: **3.11+** (`pyproject.toml` requires `>=3.11`)
+- Tools: `git`, `python3`, `pip`, shell
+
+Record environment metadata:
 
 ```bash
 python3 -VV
@@ -12,12 +16,7 @@ uname -a
 git rev-parse --short HEAD
 ```
 
-Record:
-- Python version
-- OS/kernel string
-- Git commit SHA
-
-## Deterministic Benchmark Commands
+## 2) Dependency Installation
 
 From repository root:
 
@@ -28,7 +27,15 @@ python -m pip install -U pip
 python -m pip install -e ".[dev]"
 ```
 
-### 1) Matrix Benchmark (fixed output filenames)
+## 3) Test Execution
+
+```bash
+pytest -q
+```
+
+## 4) Benchmark Execution Steps
+
+### 4.1 Matrix benchmark
 
 ```bash
 python -m agent_sentinel.benchmark.run_benchmark \
@@ -37,11 +44,11 @@ python -m agent_sentinel.benchmark.run_benchmark \
   --output-dir artifacts/bench
 ```
 
-Expected files:
+Expected outputs:
 - `artifacts/bench/matrix.json`
 - `artifacts/bench/matrix.csv`
 
-### 2) Single Baseline Benchmark (fixed output filenames)
+### 4.2 Single baseline sanity run
 
 ```bash
 python -m agent_sentinel.benchmark.run_benchmark \
@@ -51,21 +58,20 @@ python -m agent_sentinel.benchmark.run_benchmark \
   --csv-name latest.csv
 ```
 
-Expected files:
+Expected outputs:
 - `artifacts/bench/latest.json`
 - `artifacts/bench/latest.csv`
 
-### 3) Policy-Engine Microbenchmark (fixed output filenames)
+### 4.3 Policy-engine microbenchmark
 
 ```bash
 python scripts/bench_policy_engine.py
 ```
 
-Expected files:
+Expected output:
 - `artifacts/bench/policy_engine_bench.json`
-- `paper/PERF_DAYXX.md`
 
-### 4) Canonical Report Bundle
+## 5) Result Table Generation
 
 ```bash
 python scripts/generate_canonical_report.py \
@@ -76,20 +82,23 @@ python scripts/generate_canonical_report.py \
   --robustness-output artifacts/bench/robustness_report.json
 ```
 
-Expected files:
+Expected outputs:
 - `paper/results_tables.md`
-- `artifacts/bench/policy_engine_bench.json`
-- `artifacts/bench/robustness_report.json`
 - `paper/PERF_DAYXX.md`
+- `artifacts/bench/robustness_report.json`
 
-## Expected CLI Confirmation Strings
+## 6) Where Evaluation Inputs Are Defined
 
-- Benchmark run: `Benchmark results written: ...`
-- Matrix run: `Benchmark matrix written: ...`
-- Policy microbenchmark: `Wrote policy engine benchmark JSON: ...`
-- Canonical report: `Wrote results summary markdown: ...`
+- Attack scenarios / workloads:
+  - `configs/tasks/`
+  - `configs/tasks_synth/`
+  - framing: `paper/ATTACK_SCENARIOS.md`
+- Policies:
+  - `configs/policies/default.yaml`
+  - enforcement logic: `src/agent_sentinel/security/policy_engine.py`
 
-## Notes
+## 7) Determinism Notes
 
-- Output filenames under `artifacts/bench/` are deterministic (`latest.*`, `matrix.*`, `policy_engine_bench.json`, `robustness_report.json`).
-- Timestamps and benchmark IDs inside JSON payloads are expected to vary by run.
+- Output filenames under `artifacts/bench/` are deterministic (`matrix.*`, `latest.*`, `policy_engine_bench.json`, `robustness_report.json`).
+- Timestamps and run identifiers inside output JSON are expected to vary.
+- Statistical reporting conventions are documented in `paper/APPENDIX_STATS.md`.
