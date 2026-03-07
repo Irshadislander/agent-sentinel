@@ -13,6 +13,18 @@
 | no_trace | 0.2468 | +0.0000 | 0.0000 | +0.0000 | 0.0000 | -0.8741 | 0.0900 | +0.0000 | 0 | +0 |
 | raw_errors | 0.2468 | +0.0000 | 1.0000 | +1.0000 | 0.8741 | +0.0000 | 0.0900 | +0.0000 | 0 | +0 |
 
+## Attack Success Rate Summary
+
+Attack success outcomes are reported as attack-family-aggregated results from the existing benchmark export. Benign success is computed from benign slices as \(1-\mathrm{FAR}\) for the same system row.
+
+| System | Attack Success Rate ↓ | Benign Success ↑ | Notes |
+|---|---:|---:|---|
+| default | 0.2468 | 1.0000 | family-aggregated ASR from existing matrix-derived baseline summary |
+| no_plugin_isolation | 0.2468 | 1.0000 | same ASR as default in current Day 12 export |
+| no_policy | 0.9810 | 1.0000 | weakest enforcement profile (highest attack success) |
+| no_trace | 0.2468 | 1.0000 | attack success unchanged vs default; observability degraded |
+| raw_errors | 0.2468 | 0.0000 | benign reliability collapse under raw error mode |
+
 ## Table A: Scale Stability
 
 | scenario_id | N | UER | FAR | TCR | EDS | p50_ms | p95_ms |

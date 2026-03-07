@@ -4,10 +4,19 @@ This section defines final publication-facing metrics.
 
 ## 1. Security Effectiveness
 
-- **Attack Block Rate (ABR)**: \(\mathrm{ABR}=\#\text{blocked attacks}/\#\text{attacks}\)
 - **Attack Success Rate (ASR)**: \(\mathrm{ASR}=\#\text{successful attacks}/\#\text{attacks}\)
+- **Attack Block Rate (ABR)**: \(\mathrm{ABR}=\#\text{blocked attacks}/\#\text{attacks}\)
 
-For binary labels, \(\mathrm{ASR}=1-\mathrm{ABR}\).
+Relationship on the same binary attack-labeled slice:
+\[
+\mathrm{ASR} + \mathrm{ABR} = 1
+\]
+equivalently, \(\mathrm{ASR}=1-\mathrm{ABR}\).
+
+Interpretation:
+- lower ASR means fewer successful attacks,
+- higher ABR means more blocked attacks,
+- both must be computed from the same denominator to remain comparable.
 
 ## 2. Performance
 
