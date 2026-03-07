@@ -1,74 +1,135 @@
 # Formal Capability Execution Model
 
-## 1. Problem Setting
-Tool-using agents request capabilities at runtime. The enforcement objective is to decide
-allow/deny before execution, emit a traceable decision path, and preserve deterministic
-outcomes for fixed inputs.
+## 1. System Model
+We model a tool-augmented runtime with four objects:
 
-## Formal Objects
+- Agent \(A\): emits tool requests.
+- Tool set \(T\): executable tool interfaces.
+- Capability set \(C\): atomic permissions enforced at runtime.
+- Policy \(P\): ordered rules that map requests to decisions.
 
-- Capability: a string identifier \(c \in \mathcal{C}\) describing an action (e.g., "fs.read", "http.request").
-- Policy: a structured document \(P\) that defines a finite rule set \(R(P) = \{r_1,\dots,r_n\}\).
-- Rule: \(r = (\text{id}, \text{action}, \text{capabilities}, \text{predicate})\) where:
-  - id is a stable identifier
-  - action ∈ {allow, deny, require_approval, allow_with_redaction}
-  - capabilities is a set of capability identifiers
-  - predicate is an optional match function over request context
-- Request context: \(x\) is metadata about the request (tool name, arguments, caller identity, environment).
-- Decision function:
-  \[
-    D(c, P, x) \to (\text{verdict}, \text{rule\_id}, \text{reason\_code}, \text{trace})
-  \]
+A runtime request is:
 
-## Matching and Precedence
+\[
+r = (\text{tool}, \text{args}, \text{context})
+\]
 
-A rule r matches (c, x) if:
-1) c ∈ r.capabilities, and
-2) r.predicate(x) is true (or predicate is absent).
+where \(\text{tool} \in T\), `args` is structured input, and `context` is request metadata.
 
-Let M be the ordered list of matching rules in policy order.
-Precedence is:
-1) If any matching deny exists → verdict = deny (choose first deny in policy order)
-2) Else if any matching require_approval exists → verdict = require_approval
-3) Else if any matching allow_with_redaction exists → verdict = allow_with_redaction
-4) Else if any matching allow exists → verdict = allow
-5) Else → default deny
+The runtime decides before execution:
 
-## 4. Decision Semantics
+\[
+D_P(r) \in \{\text{allow}, \text{deny}\}
+\]
 
-Given \((c, P, x)\), evaluation is:
+## 2. Capability Model
+A capability is an element \(c \in C\). Example capability names:
 
-1. Parse and validate policy document.
-2. If policy is missing/invalid, return deny with stable reason code.
-3. Evaluate rules in policy order to produce the matching set \(M\).
-4. Apply precedence over \(M\) to select a unique verdict and rule identifier.
-5. Emit an ordered trace ending with a terminal resolution marker.
+- `filesystem.read`
+- `filesystem.write`
+- `network.http`
+- `shell.exec`
 
-## 5. Outcome-to-Reason Mapping
+Each request has required capabilities:
 
-| Outcome class | verdict | rule_id | reason_code |
-|---|---|---|---|
-| Policy missing | deny | None | `POLICY_MISSING` |
-| Policy invalid | deny | None | `POLICY_INVALID` |
-| Matching deny rule | deny | matched id | `RULE_DENY_MATCH` |
-| Matching require_approval rule | require_approval | matched id | `RULE_REQUIRE_APPROVAL_MATCH` |
-| Matching allow_with_redaction rule | allow_with_redaction | matched id | `RULE_ALLOW_WITH_REDACTION_MATCH` |
-| Matching allow rule | allow | matched id | `RULE_ALLOW_MATCH` |
-| No rule match | deny | None | `DEFAULT_DENY_NO_MATCH` |
+\[
+\mathrm{Req}(r) \subseteq C
+\]
 
-## Invariants
+The request can execute only when required capabilities are granted by policy/runtime state.
 
-### I1 — Determinism
-For fixed inputs (c, P, x), D returns the same verdict, rule_id, reason_code, and trace.
+## 3. Policy Model
+Policy \(P\) is an ordered sequence:
 
-**Proof sketch.** (i) R(P) extraction is deterministic or fails with a deterministic error code. (ii) Matching iterates in policy order only. (iii) Precedence is a total order with deterministic first-match selection. (iv) Trace is appended in a fixed sequence. Therefore outputs are identical for identical inputs.
+\[
+P = [\rho_1,\rho_2,\dots,\rho_n]
+\]
 
-### I2 — Default-Deny Safety
-If policy is missing or invalid, verdict = deny with a stable reason_code.
+Each rule \(\rho_i\) includes:
 
-**Proof sketch.** The resolver catches policy parse/validation failures and returns a deny decision with reason_code VALIDATION_DENY (or equivalent) without evaluating any allow branch. Therefore no capability is permitted on invalid input.
+- `rule_id`
+- capability requirements
+- optional conditions over `(tool, args, context)`
+- decision in `{allow, deny}`
 
-### I3 — Isolation Boundary (Non-Bypass)
-Tools/plugins cannot bypass policy enforcement: any tool execution must pass through the tool gateway which invokes D.
+Functional view:
 
-**Proof sketch.** The only tool execution path is via the tool gateway entrypoint. The gateway requires a policy decision before tool invocation and enforces deny/approval/redaction outcomes. Under this control-flow constraint, a plugin cannot directly invoke tools without gateway mediation.
+\[
+P : (\text{tool}, \text{args}, \text{context}) \rightarrow \{\text{allow}, \text{deny}\}
+\]
+
+Resolution is deterministic first-match:
+
+1. evaluate rules in order,
+2. pick the first matching rule,
+3. return that rule's decision,
+4. if no rule matches, return `deny` (default deny).
+
+## 4. Enforcement Semantics
+Let \(G_P(r) \subseteq C\) denote capabilities granted to request \(r\) under policy \(P\).
+
+\[
+D_P(r)=
+\begin{cases}
+\text{allow}, & \text{if } \mathrm{Req}(r) \subseteq G_P(r) \\
+\text{deny}, & \text{otherwise}
+\end{cases}
+\]
+
+Runtime semantics are pre-execution: denied requests are blocked before tool side effects.
+
+Default deny applies when:
+
+- no rule matches,
+- policy is missing/invalid,
+- request class cannot be mapped to an allowed capability path.
+
+## 5. Safety Properties (Scoped)
+We use three scoped properties:
+
+### P1. Safety Monotonicity
+Restrictive policy refinements cannot increase the allowed request set.
+
+\[
+\mathrm{Allowed}(P') \subseteq \mathrm{Allowed}(P)
+\]
+
+for policy refinements \(P'\) that only add denials/remove grants.
+
+### P2. Capability Confinement
+If a request requires an ungranted capability, it is denied and not executed.
+
+\[
+\mathrm{Req}(r) \nsubseteq G_P(r) \Rightarrow D_P(r)=\text{deny}
+\]
+
+This is a runtime enforcement property, not a claim about model intent.
+
+### P3. Capability Non-Interference (Scoped)
+Policy changes for one independent capability should not alter decisions for an unrelated capability (under unchanged context/matching logic).
+
+\[
+D_P(r_i) = D_{P'}(r_i)
+\]
+
+for requests \(r_i\) that require only capability \(c_i\), when edits from \(P\) to \(P'\) affect only capability \(c_j \neq c_i\).
+
+## 6. Decision Artifacts
+Each decision emits structured evidence:
+
+- `decision`
+- `rule_id`
+- `reason_code`
+- trace metadata
+
+These artifacts make runtime behavior auditable and explainable.
+
+## 7. Connection to Implementation
+The model maps directly to repository components:
+
+- `ToolGateway` (`src/agent_sentinel/security/tool_gateway.py`): runtime enforcement boundary before tool execution.
+- Policy resolver (`src/agent_sentinel/security/policy_engine.py`): ordered matching, deterministic decision, default-deny outcomes.
+- Capability set (`caps.granted` and capability checks in gateway/policy logic): request-to-capability gating.
+- Flight recorder / ledger (`src/agent_sentinel/forensics/ledger.py`): append-only decision/event evidence.
+
+See [FORMAL_PROPERTIES](FORMAL_PROPERTIES.md) for tightened property statements, proof sketches, and minimal counterexamples.
