@@ -1,69 +1,55 @@
 # Paper Result Tables
 
-Populate all cells from measured artifacts only.
+Populate all entries from measured artifacts only.
 
-## Overall Baseline Comparison
+## Overall Performance Summary
+
+| System/Baseline | Security summary (ABR/ASR) | Performance summary (latency + throughput) | Observability summary (TCR/SDAC) | Overall interpretation |
+|---|---|---|---|---|
+| `full_system` | `TBD` | `TBD` | `TBD` | reference |
+| `no_enforcement` | `TBD` | `TBD` | `TBD` | `TBD` |
+| `allow_all` | `TBD` | `TBD` | `TBD` | `TBD` |
+| `naive_allow_list` | `TBD` | `TBD` | `TBD` | `TBD` |
+| `llm_guard_style` (optional/future) | `TBD/NA` | `TBD/NA` | `TBD/NA` | `NA` if unavailable |
+
+## Latency and Overhead
 
 Reference: `full_system`
 
-| Baseline | ABR (mean, 95% CI) | ASR (mean, 95% CI) | ΔABR vs `full_system` | ΔASR vs `full_system` | TCR (mean, 95% CI) | SDAC (mean, 95% CI) | Notes |
+| Baseline | p50 latency (mean, 95% CI) | p95 latency (mean, 95% CI) | p99 latency (mean, 95% CI) | Δp50 | Δp95 | Δp99 | Throughput (mean, 95% CI) |
 |---|---|---|---|---|---|---|---|
-| `full_system` | `TBD` | `TBD` | `0` | `0` | `TBD` | `TBD` | reference |
+| `full_system` | `TBD` | `TBD` | `TBD` | `0` | `0` | `0` | `TBD` |
 | `no_enforcement` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` |
 | `allow_all` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` |
 | `naive_allow_list` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` |
-| `llm_guard_style` (optional/future) | `TBD/NA` | `TBD/NA` | `TBD/NA` | `TBD/NA` | `TBD/NA` | `TBD/NA` | use `NA` if unavailable |
+| `llm_guard_style` (optional/future) | `TBD/NA` | `TBD/NA` | `TBD/NA` | `TBD/NA` | `TBD/NA` | `TBD/NA` | `TBD/NA` |
 
-## Attack Family Summary
+## Scaling Results
 
-| Attack family | ABR (mean, 95% CI) | ASR (mean, 95% CI) | TCR (mean, 95% CI) | SDAC (mean, 95% CI) | Interpretation |
-|---|---|---|---|---|---|
-| `prompt_injection` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` |
-| `filesystem_damage` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` |
-| `shell_misuse` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` |
-| `data_exfiltration` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` |
-| `network_exfiltration` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` |
+| Scale tier | Workload size | Baseline | Throughput (mean, 95% CI) | p95 latency (mean, 95% CI) | Throughput ratio vs smallest | p95 ratio vs smallest | Notes |
+|---|---:|---|---|---|---|---|---|
+| `small` | `TBD` | `TBD` | `TBD` | `TBD` | `1.0` | `1.0` | `TBD` |
+| `medium` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` |
+| `large` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` |
 
-## Difficulty-Level Summary
+## Stress / Sensitivity Summary
 
-| Difficulty | ABR (mean, 95% CI) | ASR (mean, 95% CI) | TCR (mean, 95% CI) | SDAC (mean, 95% CI) | Interpretation |
-|---|---|---|---|---|---|
-| `easy` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` |
-| `medium` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` |
-| `hard` / `multi_step` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` |
+| Condition type | Condition | Baseline | ABR | ASR | p95 latency | Throughput | TCR | SDAC | Interpretation |
+|---|---|---|---|---|---|---|---|---|---|
+| `stress` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` |
+| `sensitivity` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` |
 
-## Family × Difficulty Comparison
+## Security–Performance Tradeoff Summary
 
-| Attack family | Difficulty | Baseline | ABR (mean, 95% CI) | ASR (mean, 95% CI) | ΔABR vs family-level `full_system` | ΔASR vs family-level `full_system` |
-|---|---|---|---|---|---|---|
-| `prompt_injection` | `easy` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` |
-| `prompt_injection` | `medium` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` |
-| `prompt_injection` | `hard` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` |
-| `filesystem_damage` | `easy` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` |
-| `filesystem_damage` | `medium` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` |
-| `filesystem_damage` | `hard` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` |
-| `shell_misuse` | `easy` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` |
-| `shell_misuse` | `medium` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` |
-| `shell_misuse` | `hard` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` |
-| `data_exfiltration` | `easy` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` |
-| `data_exfiltration` | `medium` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` |
-| `data_exfiltration` | `hard` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` |
-| `network_exfiltration` | `easy` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` |
-| `network_exfiltration` | `medium` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` |
-| `network_exfiltration` | `hard` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` |
-
-## Per-Family Baseline Comparison
-
-| Attack family | Baseline | ABR (mean, 95% CI) | ASR (mean, 95% CI) | TCR (mean, 95% CI) | SDAC (mean, 95% CI) | ΔABR vs family `full_system` | ΔASR vs family `full_system` |
-|---|---|---|---|---|---|---|---|
-| `prompt_injection` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` |
-| `filesystem_damage` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` |
-| `shell_misuse` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` |
-| `data_exfiltration` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` |
-| `network_exfiltration` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` |
+| Baseline | Security delta vs `full_system` (ABR/ASR) | Performance delta vs `full_system` (latency/throughput) | Observability delta (TCR/SDAC) | Tradeoff assessment |
+|---|---|---|---|---|
+| `no_enforcement` | `TBD` | `TBD` | `TBD` | `TBD` |
+| `allow_all` | `TBD` | `TBD` | `TBD` | `TBD` |
+| `naive_allow_list` | `TBD` | `TBD` | `TBD` | `TBD` |
+| `llm_guard_style` (optional/future) | `TBD/NA` | `TBD/NA` | `TBD/NA` | `NA` if unavailable |
 
 ## Notes
 
-- Keep optional/future baseline rows and report `NA` if unavailable.
-- Do not insert synthetic or estimated values.
-- Use identical workload slices for valid delta computation.
+- Do not insert synthetic values.
+- Keep optional/future baseline rows as `NA` when unavailable.
+- Use identical workload slices for valid tradeoff comparisons.

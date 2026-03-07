@@ -1,35 +1,46 @@
 # Robustness Evaluation
 
-This section reports attack-oriented checks for runtime policy enforcement, decision explainability, and traceability. The objective is to verify that bypass attempts fail with explicit reason codes and observable trace signatures.
+This section explains how robustness and performance should be interpreted jointly in runtime security evaluation.
 
-## Attack Scenario Mapping
+## Robustness–Performance Interaction
 
-| Attack scenario | Expected outcome | Expected reason_code | Expected trace signature |
-|---|---|---|---|
-| Policy bypass attempt (request disallowed capability) | Deny | `DEFAULT_DENY_NO_MATCH` or `RULE_DENY_MATCH` | contains `no_match` or `match:<rule_id>:deny` and terminal `final:deny:<reason_code>` |
-| Plugin override attempt (tool-name alias spoofing) | Deny under insufficient capabilities | capability-specific deny path (`RULE_DENY_MATCH`/default-deny equivalent) | normalized evaluation path with deterministic terminal deny trace |
-| Trace suppression attempt (malformed context/policy input) | Deny for invalid/missing policy, trace still emitted | `POLICY_INVALID` or `POLICY_MISSING` | includes `policy:invalid` or `policy:missing` and terminal deny trace |
+Runtime enforcement introduces overhead by design. Robust behavior means the system preserves security and observability while keeping performance degradation bounded and predictable.
 
-## Robustness Metrics in Reports
+## Expected Degradation Patterns
 
-- Denial reason distribution: count denials by `reason_code`.
-- Category-level concentration: top denial reason codes per task category.
-- Critical safety check: `denied-but-executed` count, expected to remain `0` in secured mode.
+When safeguards are weakened or removed, expected degradation includes:
+- security degradation: ABR decreases, ASR increases,
+- observability degradation: TCR/SDAC decrease when trace paths are reduced,
+- apparent latency improvement in unsafe modes that skip enforcement work.
 
-These measurements are integrated into benchmark reporting to make denial causes auditable and comparable across baseline settings.
+Under stress conditions (burst load, mixed families, malformed inputs), expected degradation includes:
+- higher tail latency (p95/p99),
+- lower throughput,
+- potential trace-quality reduction if observability controls are weakened.
 
-## Trace Integrity & Tamper Evidence
+## Stable Behavior Patterns
 
-When `trace_integrity` is enabled in policy, each evaluation trace is committed via a deterministic hash chain:
+Stable behavior in secure runtime settings should show:
+- deterministic allow/deny decisions for identical inputs,
+- preserved default-deny behavior for malformed or ambiguous requests,
+- bounded tail-latency growth as workload size increases,
+- sustained trace completeness and decision-artifact coverage.
 
-- `h_0 = 0^256` (fixed zero seed)
-- `h_i = H(h_{i-1} || trace_entry_i)`
-- `trace_commitment = h_n`
+## Why Runtime Overhead Is Acceptable in Security Settings
 
-The commitment is emitted in decision/audit outputs. This provides lightweight tamper evidence:
+In systems/security deployments, moderate and predictable overhead is acceptable when it provides:
+- clear reduction in unsafe tool execution risk,
+- auditable decision evidence for incident response and forensics,
+- reproducible enforcement semantics across workload classes.
 
-- Entry mutation changes `trace_commitment`.
-- Trace truncation changes `trace_commitment`.
-- Recomputed commitment mismatch indicates post-decision trace modification.
+Performance must therefore be interpreted as a security tradeoff, not an isolated objective.
 
-Integrity mode is optional to support overhead measurement; disabling it keeps prior behavior while preserving deterministic decision semantics.
+## Robustness Reporting Guidance
+
+Robustness reporting should include:
+- security metrics: ABR/ASR,
+- performance metrics: p50/p95/p99 latency, throughput, scaling ratios,
+- observability metrics: TCR/SDAC,
+- stress and sensitivity summaries with confidence intervals.
+
+This keeps robustness claims benchmark-based and reviewer-auditable.
