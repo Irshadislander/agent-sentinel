@@ -3,6 +3,33 @@
 - Source: `bench/results/matrix.json`
 - Generated at (UTC): `2026-03-04T03:45:31.936492+00:00`
 
+## Reporting Map
+
+This file is structured so reviewers can quickly identify:
+1. systems compared,
+2. primary metrics,
+3. baseline comparison outputs,
+4. ablation comparison outputs.
+
+## Systems Compared (Template)
+
+| System label | Type | Implemented in this run? | Notes |
+|---|---|---|---|
+| `default` / `full_system` | reference | yes/no | runtime enforcement + structured decision artifacts |
+| `allow_all` | baseline condition | yes/no | permissive policy condition |
+| `naive_allow_list` | baseline condition | yes/no | simplified capability allow-list |
+| `no_enforcement` | baseline/ablation condition | yes/no | enforcement bypass |
+| `no_default_deny` | ablation mode | yes/no | default-deny weakened |
+| `no_first_match_ordering` | ablation mode | yes/no | deterministic ordering weakened |
+| `no_trace` / `reduced_observability` | ablation mode | yes/no | trace coverage reduced |
+| `no_capability_confinement` / `coarse_capability_gating` | ablation mode | yes/no | capability boundary weakened |
+
+## Primary Metrics (Template)
+
+| System/Ablation | ABR | ASR | Latency overhead (p50/p95/p99) | TCR | SDAC | Source section |
+|---|---|---|---|---|---|---|
+| `TBD` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` | baseline/ablation table id |
+
 ## Ablation Summary (Template)
 
 Populate this section from measured runs only (no synthetic values).
@@ -46,6 +73,9 @@ Populate this section from measured runs only (no synthetic values).
 | `no_capability_confinement` / `coarse_capability_gating` | slight decrease | `TBD` | `TBD` |
 | `no_enforcement` | moderate decrease / path dependent | `TBD` | `TBD` |
 
+## Baseline Results
+Primary baseline comparison tables appear here first.
+
 ## Table 1: Baseline Metrics
 
 | Baseline | UER | ΔUER vs default | FAR | ΔFAR vs default | TCR | ΔTCR vs default | EDS | ΔEDS vs default | plugin_loads | Δplugin_loads vs default |
@@ -55,6 +85,10 @@ Populate this section from measured runs only (no synthetic values).
 | no_policy | 0.9810 | +0.7342 | 0.0000 | +0.0000 | 0.8741 | +0.0000 | 0.8450 | +0.7550 | 0 | +0 |
 | no_trace | 0.2468 | +0.0000 | 0.0000 | +0.0000 | 0.0000 | -0.8741 | 0.0900 | +0.0000 | 0 | +0 |
 | raw_errors | 0.2468 | +0.0000 | 1.0000 | +1.0000 | 0.8741 | +0.0000 | 0.0900 | +0.0000 | 0 | +0 |
+
+## Ablation Results
+Use the ablation templates above for implemented ablation modes.
+Keep unimplemented modes explicitly as placeholders.
 
 ## Table A: Scale Stability
 

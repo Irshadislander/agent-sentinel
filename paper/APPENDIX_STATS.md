@@ -1,36 +1,69 @@
-# Appendix: Statistical Rigor
+# Appendix: Statistical Reporting Protocol
 
-## Confidence Interval Method
-We use non-parametric bootstrap confidence intervals (95%) for metric means and latency percentiles.
+This appendix defines how confidence intervals, deltas, and aggregate summaries are produced.
 
-### Bootstrap Configuration
-- Resampling unit: per-run metric values within each baseline/scenario group.
-- Resamples: **10,000** by default.
-- CI type: percentile interval with \(\alpha = 0.05\).
-- Determinism: fixed RNG seed in the aggregation script for reproducible intervals.
+## 1) Confidence Intervals
 
-## Effect Size Definition
-For each ablation \(a\) and metric \(m\), the reported effect is:
+Primary uncertainty reporting uses 95% confidence intervals.
+
+- Recommended method: non-parametric bootstrap.
+- Resampling unit: per-run metric values within a fixed slice.
+- Slice key: `(system, attack_family, difficulty)`.
+- CI type: percentile interval.
+- CI level: 95%.
+
+If a different CI method is used, it must be explicitly labeled in the table caption.
+
+## 2) Delta vs Baseline / Reference
+
+For metric \(m\), delta for system \(s\) versus reference \(s_0\):
+
 \[
-\Delta m_a = \hat{m}_a - \hat{m}_{\text{baseline}}
+\Delta m(s,f,d)=m(s,f,d)-m(s_0,f,d)
 \]
-where \(\hat{m}\) is the sample mean for that metric.
 
-For latency, we also report:
-- \(\Delta\) mean latency (ms) with bootstrap 95% CI.
-- Cohen's \(d\) against the baseline latency distribution.
+Reference conventions:
+- baseline comparison tables: \(s_0=\) `default`
+- ablation comparison tables: \(s_0=\) `full_system`
 
-## Baseline Definition
-- Primary baseline: `default` (full system).
-- If `default` is missing, the first deterministic baseline in sorted order is used.
-- The effective baseline used for each run is written into generated tables.
+Each section must state the reference explicitly.
 
-## Assumptions and Limits
-- Samples are treated as exchangeable within each baseline/scenario slice.
-- Bootstrap intervals are descriptive uncertainty estimates, not formal hypothesis-test p-values.
-- Small-\(n\) groups are retained; intervals remain valid but wider.
+## 3) What Is Averaged
 
-## Reproduction Command
+- First compute per-run metric values for each `(system, family, difficulty)` slice.
+- Reported mean is the average over repeated runs/seeds for that slice.
+- Aggregates may be:
+  - macro average (equal weight by slice), or
+  - micro average (weight by task/request count),
+  and must be labeled as macro or micro.
+
+## 4) Required Reporting Slices
+
+Primary metrics should be reported at:
+
+1. system-level aggregate,
+2. attack-family summary,
+3. difficulty summary,
+4. system x family x difficulty slices (full matrix in artifacts; condensed in paper).
+
+## 5) Table Output Contract
+
+For each primary metric table row, include where available:
+- point estimate (mean),
+- 95% CI,
+- delta vs reference,
+- sample size indicator (`n` runs and/or tasks).
+
+No synthetic values should be inserted. Unavailable slices stay as placeholders.
+
+## 6) Reproducibility
+
+- Use deterministic aggregation scripts and fixed seeds where supported.
+- Keep artifact source path and generation timestamp in table headers.
+- Ensure `results_tables.md` and `STATS_TABLES.md` are generated from the same artifact snapshot.
+
+## 7) Example Aggregation Command
+
 ```bash
 python3 scripts/aggregate_results.py \
   --input artifacts/bench \
@@ -40,6 +73,6 @@ python3 scripts/aggregate_results.py \
   --resamples 10000
 ```
 
-Outputs:
+Expected outputs:
 - `paper/results_tables.md`
 - `paper/STATS_TABLES.md`

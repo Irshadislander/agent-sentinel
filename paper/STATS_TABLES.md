@@ -1,48 +1,64 @@
 # Statistical Tables
 
-## Ablation Statistical Reporting (Template)
+## Reporting Structure
 
-Populate these tables from measured ablation runs only.
+This file is organized into:
+1. baseline comparisons,
+2. ablation comparisons,
+3. attack-family summaries,
+4. latency summaries,
+5. trace/observability summaries.
 
-### Ablation Summary
+Populate templates from measured runs only.
 
-| Ablation mode | Hypothesis | Expected degradation axis | Statistical output placeholder |
-|---|---|---|---|
-| `no_default_deny` | removing deny fallback increases unsafe allows | safety / block rate | `TBD` |
-| `no_first_match_ordering` | removing deterministic ordering increases instability | safety consistency / explainability | `TBD` |
-| `no_trace` / `reduced_observability` | reducing trace lowers observability | trace completeness / artifact coverage | `TBD` |
-| `no_capability_confinement` / `coarse_capability_gating` | weakening capability boundary increases unsafe execution | safety / block rate | `TBD` |
-| `no_enforcement` | bypassing enforcement maximizes attack success | safety | `TBD` |
+## Baseline Comparisons (Template)
 
-### Expected Effect on Block Rate (Template)
+Reference: `default`
 
-| Ablation mode | ABR mean (`full_system`) | ABR mean (ablation) | ΔABR | CI / significance |
+| System | ABR mean (95% CI) | ASR mean (95% CI) | ΔABR vs `default` | ΔASR vs `default` | TCR mean (95% CI) | SDAC mean (95% CI) |
+|---|---|---|---|---|---|---|
+| `default` | `TBD` | `TBD` | `0` | `0` | `TBD` | `TBD` |
+| `allow_all` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` |
+| `naive_allow_list` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` |
+| `no_enforcement` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` |
+
+## Ablation Comparisons (Template)
+
+Reference: `full_system`
+
+| Ablation mode | ABR mean (95% CI) | ΔABR vs `full_system` | TCR mean (95% CI) | ΔTCR | SDAC mean (95% CI) | Key interpretation |
+|---|---|---|---|---|---|---|
+| `full_system` | `TBD` | `0` | `TBD` | `0` | `TBD` | reference |
+| `no_default_deny` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` |
+| `no_first_match_ordering` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` |
+| `no_trace` / `reduced_observability` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` |
+| `no_capability_confinement` / `coarse_capability_gating` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` |
+| `no_enforcement` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` |
+
+## Attack-Family Summaries (Template)
+
+| Family | Difficulty | System/Ablation | ABR mean (95% CI) | ASR mean (95% CI) | ΔABR vs reference |
+|---|---|---|---|---|---|
+| `prompt_injection` | `easy` | `TBD` | `TBD` | `TBD` | `TBD` |
+| `filesystem_damage` | `medium` | `TBD` | `TBD` | `TBD` | `TBD` |
+| `shell_misuse` | `hard` | `TBD` | `TBD` | `TBD` | `TBD` |
+| `data_exfiltration` | `medium` | `TBD` | `TBD` | `TBD` | `TBD` |
+| `network_exfiltration` | `hard` | `TBD` | `TBD` | `TBD` | `TBD` |
+
+## Latency Summaries
+
+| System/Ablation | p50 (95% CI) | p95 (95% CI) | p99 (95% CI) | Δp95 vs reference |
 |---|---|---|---|---|
-| `no_default_deny` | `TBD` | `TBD` | `TBD` | `TBD` |
-| `no_first_match_ordering` | `TBD` | `TBD` | `TBD` | `TBD` |
-| `no_trace` / `reduced_observability` | `TBD` | `TBD` | `TBD` | `TBD` |
-| `no_capability_confinement` / `coarse_capability_gating` | `TBD` | `TBD` | `TBD` | `TBD` |
-| `no_enforcement` | `TBD` | `TBD` | `TBD` | `TBD` |
+| `TBD` | `TBD` | `TBD` | `TBD` | `TBD` |
 
-### Expected Effect on Latency (Template)
+## Trace and Observability Summaries
 
-| Ablation mode | Δp50 vs `full_system` | Δp95 vs `full_system` | CI / effect size |
-|---|---|---|---|
-| `no_default_deny` | `TBD` | `TBD` | `TBD` |
-| `no_first_match_ordering` | `TBD` | `TBD` | `TBD` |
-| `no_trace` / `reduced_observability` | `TBD` | `TBD` | `TBD` |
-| `no_capability_confinement` / `coarse_capability_gating` | `TBD` | `TBD` | `TBD` |
-| `no_enforcement` | `TBD` | `TBD` | `TBD` |
-
-### Expected Effect on Trace Completeness (Template)
-
-| Ablation mode | TCR mean (`full_system`) | TCR mean (ablation) | ΔTCR | CI / significance |
+| System/Ablation | TCR mean (95% CI) | SDAC mean (95% CI) | Reason-code coverage | ΔTCR vs reference |
 |---|---|---|---|---|
-| `no_default_deny` | `TBD` | `TBD` | `TBD` | `TBD` |
-| `no_first_match_ordering` | `TBD` | `TBD` | `TBD` | `TBD` |
-| `no_trace` / `reduced_observability` | `TBD` | `TBD` | `TBD` | `TBD` |
-| `no_capability_confinement` / `coarse_capability_gating` | `TBD` | `TBD` | `TBD` | `TBD` |
-| `no_enforcement` | `TBD` | `TBD` | `TBD` | `TBD` |
+| `TBD` | `TBD` | `TBD` | `TBD` | `TBD` |
+
+## Existing Populated Outputs
+The sections below retain currently generated outputs where available.
 
 ## Effect Sizes vs Baseline
 
