@@ -1,44 +1,45 @@
 # Method
 
-## Runtime Capability Gating
-Agent-Sentinel places enforcement on the runtime path between agent planning and tool execution. Requests are represented as:
+## System Overview
+Agent-Sentinel is a runtime mediation layer placed between agent planning and tool execution. Each request is represented as:
 
 \[
 r = (\text{tool}, \text{args}, \text{context})
 \]
 
-Each tool is mapped to required capabilities. A request is allowed only when policy evaluation authorizes the required capability set for that request context.
+The runtime resolves each request to `allow` or `deny` before any tool side effect occurs.
 
-## Policy Evaluation
+## Runtime Mediation Flow
+1. The agent emits a tool request.
+2. `ToolGateway` receives the request and resolves its required capability set.
+3. `Policy Engine` evaluates ordered rules for the request context.
+4. Capability and validator checks are applied.
+5. The runtime emits an explicit `allow` or `deny` decision.
+6. Tool execution proceeds only on `allow`; `deny` terminates the execution path.
+7. A structured decision/trace artifact is emitted for every request.
+
+## Policy Semantics
 Policy evaluation is deterministic and fail-closed:
-1. load and validate policy input;
-2. evaluate rules in defined order;
-3. apply first matching rule decision;
-4. apply default deny when no allow condition is satisfied.
+- rules are evaluated in defined order,
+- first matching rule determines the decision,
+- unmatched or incompatible paths resolve to `deny`.
 
-This keeps authorization behavior stable across runs and prevents ambiguous fallback behavior.
+This provides stable authorization semantics across repeated runs with identical inputs.
 
 ## Decision Artifacts
-Every decision emits structured artifacts for explainability and audit:
+Each mediated request emits structured evidence for audit and debugging:
 - `decision` (`allow` or `deny`),
-- `rule_id` (matched rule identifier, when applicable),
-- `reason_code` (decision rationale),
-- trace metadata (request and runtime context fields).
+- `rule_id` (when a rule match exists),
+- `reason_code` / reason string,
+- trace metadata (request/runtime context fields).
 
-These artifacts support downstream analysis of block rate, trace completeness, and decision coverage.
+These artifacts support security metrics (for example block/success outcomes) and observability metrics (trace completeness and artifact coverage).
 
-## Enforcement Pipeline
-The runtime pipeline is:
-1. agent produces tool request,
-2. gateway performs capability and policy checks,
-3. gateway emits decision artifact,
-4. tool executes only on allow,
-5. traces and metrics are aggregated for reporting.
+## Real-Agent Integration Path
+The repository includes a minimal integration harness (`examples/agent_integration/run_case_study.py`) that simulates a tool-using agent loop. It demonstrates the full runtime path from prompt-derived request to gateway mediation, allow/deny decision, and trace emission.
 
-This implementation-level pipeline aligns with the formal model and threat assumptions, while keeping claims scoped to runtime enforcement behavior.
-
-## Ablation Hooks
-Experimental toggles remove specific controls (`no_policy`, `no_trace`, `raw_errors`, `no_plugin_isolation`) to isolate causal effects on safety, observability, and performance without changing workload definitions.
+## Boundary of Claims
+Method claims are scoped to runtime mediation behavior under the declared threat model and trust assumptions. This method is not presented as a full sandbox or complete system-security replacement.
 
 ## Links
 - [FORMAL_MODEL](FORMAL_MODEL.md)

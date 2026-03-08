@@ -1,31 +1,33 @@
 # Introduction
 
 ## Problem
-Tool-augmented agents are increasingly connected to high-impact execution surfaces (filesystem, network, shell, and external tools). In this setting, unsafe tool invocation is a runtime systems-security failure with immediate side effects.
+Tool-using agents are increasingly connected to high-impact execution surfaces such as filesystem, network, and shell interfaces. In this setting, unsafe behavior is a runtime authorization failure with immediate side effects, not only a low-quality model response.
+
+This threat model differs from plain chat LLM systems. Chat-only systems primarily emit text, while tool-using systems transform model output into executable operations against external state.
 
 ## Gap in Existing Work
-Prior work offers important but partial defenses: prompt guardrails are often probabilistic, runtime infrastructure focuses on orchestration, and sandboxing limits blast radius after execution begins. What is frequently missing is a deterministic, capability-based authorization layer at the request-to-tool boundary with formalized behavior and reproducible evaluation.
+Prior defenses are important but partial in isolation: prompt guardrails are often probabilistic, orchestration frameworks focus on workflow composition, and sandboxing constrains damage after execution starts. What is frequently missing is deterministic authorization at the request-to-tool boundary itself.
 
-## Research Focus
-This paper studies runtime capability enforcement as a research problem: given a tool request, policy, and capability map, can the runtime deterministically mediate execution and emit auditable decision artifacts? Agent-Sentinel answers this with policy-mediated, default-deny gating before tool side effects, coupled to a formal model and benchmark-driven evaluation.
+## Our Focus
+We study runtime capability mediation as a systems-security problem: given a tool request, policy, and capability map, can the runtime deterministically allow or deny execution and emit auditable evidence? Agent-Sentinel addresses this with ordered policy evaluation, explicit default-deny behavior, and structured decision artifacts before tool side effects occur.
 
 ## Contributions
-- A capability-based runtime enforcement model for tool-using agents with deterministic policy mediation.
-- Runtime-scoped safety properties under stated trust assumptions, including monotonicity, capability confinement, and scoped policy composability.
-- A reproducible adversarial benchmark design spanning attack families, difficulty levels, baselines, and ablations.
-- Structured decision artifacts (`decision`, `rule_id`, `reason_code`, trace metadata) for explainable, machine-auditable runtime behavior.
-- An artifact pipeline that connects benchmark outputs to paper-facing tables and figure guidance.
+- A deterministic capability-based runtime mediation model for tool-using agents.
+- Scoped formal properties under explicit trust assumptions, including monotonicity, capability confinement, and policy composability.
+- A reproducible benchmark protocol spanning attack families, difficulty levels, baselines, and ablations.
+- A minimal real-agent integration case study demonstrating request-to-decision mediation through the runtime gateway.
+- An artifact pipeline that maps benchmark outputs to paper-facing tables and figures.
 
-## Why This Matters
-This work frames secure agent execution as a measurable systems question rather than a product feature claim. It provides a narrow, testable contribution: deterministic runtime enforcement and auditable decision semantics for tool use, not general AI safety.
+## Scope
+This paper contributes bounded runtime security and observability guarantees. It does not claim general AI safety or complete system security.
 
 ## Production Agent Relevance
-The enforcement interface studied here is intentionally runtime-facing and maps to common tool-call boundaries in modern agent stacks. This makes the framework directly relevant to:
+The mediation interface is runtime-facing and aligns with common tool-call boundaries in:
 - LangChain-style tool agents,
 - OpenAI tool-calling runtimes,
 - multi-agent orchestration systems.
 
-The claim is applicability of the mediation model, not evidence of broad production deployment.
+The claim is framework applicability of the mediation model, not evidence of broad production deployment.
 
 ## Links
 - [FORMAL_MODEL](FORMAL_MODEL.md)

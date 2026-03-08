@@ -1,17 +1,12 @@
 # Conclusion
 
-This paper contributes a research-focused formulation of runtime security for tool-using AI agents: capability-based enforcement with deterministic policy mediation at the request-to-tool boundary. The core scientific contribution is not a product stack, but a formalized runtime mediation model with scoped safety properties, including monotonicity and policy composability under default-deny semantics, plus auditable decision outputs.
+Agent-Sentinel frames tool-use security as a runtime mediation problem: authorize each tool request deterministically at the execution boundary, then emit auditable decision evidence. The core contribution is a capability-based default-deny enforcement model with scoped formal properties (including monotonicity and composability) under explicit trust assumptions.
 
-We pair this model with reproducible adversarial evaluation across attack families, difficulty levels, baselines, and ablations, enabling direct measurement of security effectiveness, overhead, and observability tradeoffs. This positions runtime tool-use safety as a testable systems question rather than a qualitative guardrail narrative.
+Evaluation combines a reproducible adversarial benchmark (families, difficulty levels, baselines, and ablations) with a minimal real-agent integration case study. Together, these artifacts provide measurable evidence on security outcomes, runtime overhead, and trace quality without overstating coverage.
 
-Why this matters is practical and scientific: deployment decisions require enforceable runtime controls, and research claims require reproducible evidence and explicit scope. Agent-Sentinel contributes both under clearly bounded assumptions.
+The practical takeaway is that runtime capability mediation can be deployed as a concrete control point in tool-using agent stacks, complementing guardrails and sandboxing in defense-in-depth designs. The scientific takeaway is that tool-use safety can be studied as a reproducible systems-security problem with explicit scope and falsifiable claims.
 
-## Production Agent Relevance
-The runtime mediation design in this work is intended to be framework-compatible at tool-call boundaries, including LangChain-style tool agents, OpenAI tool-calling runtimes, and multi-agent orchestration systems, while remaining scoped to benchmark-backed evidence.
-
-Future work includes evaluation inside production agent frameworks.
-
-Future work includes broader workload coverage, deeper analysis of policy-authoring quality, and expanded scaling studies under heterogeneous runtime conditions. These directions extend the benchmark and mediation analysis without expanding claims beyond runtime enforcement scope.
+Future work includes broader workload coverage, stronger policy-authoring support, and deeper evaluation in production-oriented agent frameworks.
 
 ## Links
 - [FORMAL_MODEL](FORMAL_MODEL.md)
