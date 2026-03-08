@@ -29,3 +29,16 @@ Populate this section from existing benchmark matrix outputs. Do not manually sy
 | `default` | `easy` | `TBD` | from matrix difficulty slice |
 | `default` | `medium` | `TBD` | from matrix difficulty slice |
 | `default` | `hard` / `multi_step` | `TBD` | from matrix difficulty slice |
+
+## Real-Agent Case Study Details
+
+The real-agent case study uses `examples/agent_integration/run_case_study.py` as a minimal tool-using agent harness. Prompts are mapped to concrete tool requests (`shell`, `http_request`, or `filesystem`) and routed through `ToolGateway` under two policy modes:
+- restrictive policy (`allow_fs_http_deny_shell`),
+- permissive control (`allow_all`).
+
+Per-case reporting includes:
+- tool request (`tool_name`, `capability`, `tool_args`),
+- mediation decision (`allow` or `deny`),
+- trace fields (`decision`, `tool_name`, `capability`, `reason`, timestamp and related identifiers).
+
+This appendix section documents runtime mediation behavior at request level; it does not add new benchmark numbers beyond generated case-study artifacts.
