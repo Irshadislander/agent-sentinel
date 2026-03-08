@@ -1,16 +1,13 @@
-# Experiments (Final Reporting Map)
+# Experiments
 
-## 1. Evaluation Scope
-We evaluate runtime capability mediation across:
-- security effectiveness,
-- performance overhead and scaling,
-- observability quality.
+## Evaluation Objective
+We evaluate whether deterministic runtime capability mediation improves security outcomes for tool-using agents while preserving acceptable runtime cost and decision observability.
 
-Primary security outcome metrics are:
+Primary security outcomes:
 - **Attack Success Rate (ASR)**,
 - **Attack Block Rate (ABR)**.
 
-## 2. Systems Compared
+## Systems and Conditions
 ### Reference
 - `full_system`
 
@@ -18,7 +15,7 @@ Primary security outcome metrics are:
 - `no_enforcement`
 - `allow_all`
 - `naive_allow_list`
-- `llm_guard_style` (optional/future unless implemented)
+- `llm_guard_style` (optional/future, reported as `NA` if unavailable)
 
 ### Ablations
 - `no_default_deny`
@@ -27,68 +24,46 @@ Primary security outcome metrics are:
 - `no_capability_confinement`
 - `no_enforcement`
 
-Unimplemented optional modes are reported as `NA`.
+## Benchmark Design
+The benchmark matrix is:
 
-## 3. Benchmark Matrix (Source of Final Tables)
 \[
 \text{attack family} \times \text{difficulty level} \times \text{baseline/ablation} \times \text{metric}
 \]
 
-Final paper tables are derived from matrix outputs (for example `matrix.json` / `matrix.csv` style summaries), not manual aggregation.
-
-## 4. Workload Axes
-### Attack families
+Attack families:
 - `prompt_injection`
 - `filesystem_damage`
 - `shell_misuse`
 - `data_exfiltration`
 - `network_exfiltration`
 
-### Difficulty levels
+Difficulty levels:
 - `easy`
 - `medium`
 - `hard` / `multi_step`
 
-## 5. Production Agent Relevance
-This benchmark is designed to approximate common tool-use patterns in production-oriented agent stacks without claiming direct production deployment. In particular, the scenarios model:
-- tool invocation chains across multiple steps,
-- filesystem access attempts,
-- shell execution attempts,
-- data exfiltration attempts (local and network-mediated).
+## Reporting Artifacts (Tables and Figures)
+Paper-facing tables are generated from benchmark outputs and organized in `paper/tables/` (for example `table_baselines.md`, `table_asr.md`, `table_results_day12.md`, `table_appendix_day12.md`).
 
-The runtime mediation surface aligns with common integration points in:
-- LangChain-style tool agents,
-- OpenAI tool-calling runtimes,
-- multi-agent orchestration systems.
+Paper-facing figures are generated in `paper/figures/` (for example architecture overview, baseline comparison, trace tradeoff, and latency tradeoff figures).
 
-## 6. Real Agent Evaluation
-We include a minimal real-agent integration case study in `examples/agent_integration/run_case_study.py`. The harness simulates a tool-using agent loop: a prompt is converted to a tool request, the request is routed through `ToolGateway`, and the runtime returns an allow/deny outcome.
+Supporting benchmark outputs are stored in `artifacts/bench/` (for example `matrix.json`, policy performance JSON, and robustness JSON).
 
-The case study evaluates both safe and unsafe actions:
-- safe behavior: benign fetch/save-style requests under a restrictive policy,
-- unsafe behavior: shell-execution attempts after benign steps,
-- control condition: permissive policy mode where shell is intentionally allowed.
+## Real Agent Evaluation
+We include a minimal real-agent integration case study in `examples/agent_integration/run_case_study.py`. The harness simulates a tool-using agent loop in which prompt-derived requests are routed through `ToolGateway`, mediated by policy/capability checks, and resolved as `allow` or `deny` with trace output.
 
-This section is intended as a runtime mediation demonstration, not a framework-scale deployment claim. The key artifact is the per-request decision/trace output emitted by the mediation path.
+Case-study scenarios include:
+- benign safe-action requests under restrictive policy,
+- shell-misuse attack attempts,
+- permissive-policy control behavior.
 
-## 7. Table-to-Matrix Correspondence
+This is a runtime mediation demonstration and integration check, not a claim of large-scale production deployment.
 
-- **Overall Baseline Comparison**: aggregate over all families and difficulties by baseline.
-- **Attack Success Rate Summary**: aggregate ASR across attack families by system, with companion benign success.
-- **Attack Family Summary**: aggregate over difficulties for each family.
-- **Difficulty-Level Summary**: aggregate over families for each difficulty tier.
-- **Security–Performance Summary**: join security deltas with latency/throughput deltas by baseline.
-- **Ablation Summary**: aggregate ablation deltas vs `full_system`.
+## Execution and Reproducibility
+1. Run benchmark slices across systems/ablations.
+2. Collect decision, latency, and trace artifacts.
+3. Aggregate into matrix outputs.
+4. Render paper-facing tables and figures from generated artifacts.
 
-## 8. Execution Procedure
-1. Load tasks from benchmark configs.
-2. Label each task by family and difficulty.
-3. Execute each slice across baselines/ablations.
-4. Collect decisions, latency, throughput, and trace artifacts.
-5. Aggregate to matrix outputs.
-6. Render paper-facing tables from those outputs.
-
-## 9. Statistical Reporting
-- report mean and 95% confidence intervals,
-- keep workload slices identical across compared systems,
-- preserve reproducible artifact generation.
+Statistical reporting uses consistent workload slices and confidence intervals; no manual result synthesis is used in paper tables.

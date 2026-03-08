@@ -1,10 +1,10 @@
 # Abstract
 
-Tool-using AI agents can trigger filesystem, network, and shell side effects, so security depends on runtime control at the tool boundary, not only on prompt quality. Existing approaches often emphasize prompt guardrails, orchestration, or isolation in isolation, leaving a gap in deterministic request-level authorization with formalized behavior.
+Tool-using agents can trigger filesystem, network, and shell side effects, so security depends on runtime authorization at the tool boundary rather than prompt quality alone. Existing defenses emphasize prompt filtering, orchestration, or isolation, but often lack deterministic request-level capability mediation with explicit audit semantics.
 
-Agent-Sentinel addresses this gap with capability-based runtime enforcement: each tool request is mediated by deterministic policy evaluation with default-deny fallback before execution. We formalize the runtime decision model and state scoped safety properties for capability confinement and deterministic policy mediation.
+Agent-Sentinel introduces deterministic runtime capability gating: each tool request is evaluated by ordered policy rules with default-deny fallback before execution. We formalize this mediation model and state scoped runtime properties (including confinement, monotonicity, and composability) under explicit trust assumptions.
 
-We evaluate this model with a reproducible adversarial benchmark across attack families, difficulty levels, baselines, and ablations, reporting security effectiveness, latency overhead, and decision-trace quality. The practical significance is a research-grounded enforcement layer for tool-using agents that supports auditable deployment decisions without claiming general AI safety.
+Evaluation combines a reproducible adversarial benchmark (attack families, difficulty levels, baselines, and ablations) with a minimal real-agent integration case study. We report security outcomes, latency overhead, and decision-trace quality from generated artifacts. The practical significance is a bounded, auditable control layer for deploying tool-using agents without claiming end-to-end AI safety.
 
 ## Links
 - [FORMAL_MODEL](FORMAL_MODEL.md)
