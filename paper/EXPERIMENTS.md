@@ -61,7 +61,17 @@ The runtime mediation surface aligns with common integration points in:
 - OpenAI tool-calling runtimes,
 - multi-agent orchestration systems.
 
-## 6. Table-to-Matrix Correspondence
+## 6. Real Agent Evaluation
+We include a minimal real-agent integration case study in `examples/agent_integration/run_case_study.py`. The harness simulates a tool-using agent loop: a prompt is converted to a tool request, the request is routed through `ToolGateway`, and the runtime returns an allow/deny outcome.
+
+The case study evaluates both safe and unsafe actions:
+- safe behavior: benign fetch/save-style requests under a restrictive policy,
+- unsafe behavior: shell-execution attempts after benign steps,
+- control condition: permissive policy mode where shell is intentionally allowed.
+
+This section is intended as a runtime mediation demonstration, not a framework-scale deployment claim. The key artifact is the per-request decision/trace output emitted by the mediation path.
+
+## 7. Table-to-Matrix Correspondence
 
 - **Overall Baseline Comparison**: aggregate over all families and difficulties by baseline.
 - **Attack Success Rate Summary**: aggregate ASR across attack families by system, with companion benign success.
@@ -70,7 +80,7 @@ The runtime mediation surface aligns with common integration points in:
 - **Security–Performance Summary**: join security deltas with latency/throughput deltas by baseline.
 - **Ablation Summary**: aggregate ablation deltas vs `full_system`.
 
-## 7. Execution Procedure
+## 8. Execution Procedure
 1. Load tasks from benchmark configs.
 2. Label each task by family and difficulty.
 3. Execute each slice across baselines/ablations.
@@ -78,7 +88,7 @@ The runtime mediation surface aligns with common integration points in:
 5. Aggregate to matrix outputs.
 6. Render paper-facing tables from those outputs.
 
-## 8. Statistical Reporting
+## 9. Statistical Reporting
 - report mean and 95% confidence intervals,
 - keep workload slices identical across compared systems,
 - preserve reproducible artifact generation.

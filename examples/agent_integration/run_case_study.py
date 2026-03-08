@@ -56,6 +56,33 @@ def _trace_completeness(trace: dict[str, Any]) -> float:
     return present / len(keys)
 
 
+def _prompt_to_tool_request(prompt: str, case_name: str) -> dict[str, Any]:
+    """
+    Deterministically map a prompt to a tool request.
+    This explicitly represents the "agent output -> tool request" step.
+    """
+    if "shell" in prompt or "run" in prompt:
+        return {
+            "case": case_name,
+            "tool_name": "shell",
+            "capability": "shell",
+            "tool_args": {"cmd": "echo hello"},
+        }
+    if "Fetch" in prompt or "http" in prompt:
+        return {
+            "case": case_name,
+            "tool_name": "http_request",
+            "capability": "http_request",
+            "tool_args": {"url": "https://example.com"},
+        }
+    return {
+        "case": case_name,
+        "tool_name": "filesystem",
+        "capability": "filesystem",
+        "tool_args": {"path": "./out.txt", "op": "write"},
+    }
+
+
 def _make_toolgateway(policy):
     """
     ToolGateway requires keyword-only args: recorder, caps, tools.
@@ -207,22 +234,20 @@ def main() -> int:
 
         t0 = _now_ms()
 
-        # We simulate an "agent" producing a tool request from a prompt.
-        # The key is that the tool request hits the gateway.
-        # Minimal deterministic mapping:
-        if "shell" in c.prompt or "run" in c.prompt:
-            tool_name = "shell"
-            capability = "shell"
-            tool_args = {"cmd": "echo hello"}
-        elif "Fetch" in c.prompt or "http" in c.prompt:
-            tool_name = "http_request"
-            capability = "http_request"
-            tool_args = {"url": "https://example.com"}
-        else:
-            tool_name = "filesystem"
-            capability = "filesystem"
-            tool_args = {"path": "./out.txt", "op": "write"}
+        # Simulated agent output: concrete tool request object.
+        tool_request = _prompt_to_tool_request(c.prompt, c.name)
+        tool_name = str(tool_request["tool_name"])
+        capability = str(tool_request["capability"])
+        tool_args = dict(tool_request["tool_args"])
 
+        # Mediation step: request must pass through ToolGateway.
+        mediation = {
+            "component": "ToolGateway",
+            "method": "execute",
+            "policy_id": policy.get("policy_id"),
+            "tool_name": tool_name,
+            "capability": capability,
+        }
         try:
             gw.execute(tool_name=tool_name, args=tool_args)
             decision = type(
@@ -265,10 +290,13 @@ def main() -> int:
                 "case": c.name,
                 "policy": policy.get("policy_id"),
                 "tool": tool_name,
+                "tool_request": tool_request,
+                "mediation": mediation,
                 "blocked": blocked,
                 "expected_blocked": c.expected_blocked,
                 "latency_ms": max(0.0, t1 - t0),
                 "trace_completeness": _trace_completeness(trace),
+                "trace_emitted": bool(trace.get("decision")),
                 "trace": trace,
             }
         )

@@ -25,6 +25,13 @@ Attack success outcomes are reported as attack-family-aggregated results from th
 | no_trace | 0.2468 | 1.0000 | attack success unchanged vs default; observability degraded |
 | raw_errors | 0.2468 | 0.0000 | benign reliability collapse under raw error mode |
 
+## Real-Agent Mediation Case Study
+
+| Agent Setting | Unsafe Actions Blocked | Safe Actions Allowed | Notes |
+|---|---|---|---|
+| `allow_fs_http_deny_shell` | Yes | Yes | Benign tool requests are allowed; shell misuse requests are denied by mediation policy. |
+| `allow_all` (control) | No (by policy design) | Yes | Control condition validating that policy configuration determines allowed capability surface. |
+
 ## Table A: Scale Stability
 
 | scenario_id | N | UER | FAR | TCR | EDS | p50_ms | p95_ms |
