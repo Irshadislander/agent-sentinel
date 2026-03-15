@@ -1,0 +1,134 @@
+{
+  "analytical_baselines": [
+    {
+      "implemented": false,
+      "label": "Container / Sandbox",
+      "notes": "Analytical systems baseline only; not executed in this benchmark suite.",
+      "system_id": "container_sandbox"
+    }
+  ],
+  "exact_75_scenario_workload_found": false,
+  "generated_at_utc": "2026-03-15T06:30:00.729116+00:00",
+  "policy_path": "configs/policies/default.yaml",
+  "safe_categories": [
+    "benign",
+    "trace_stress"
+  ],
+  "systems": [
+    {
+      "execution_error_count": 21,
+      "label": "No Protection",
+      "median_latency_ms": 0.072917,
+      "notes": "Always allow tool execution; no runtime mediation.",
+      "p95_latency_ms": 0.121818,
+      "safe_actions_allowed_pct": 100.0,
+      "safe_allowed_count": 115,
+      "safe_total": 115,
+      "scenario_count": 200,
+      "system_id": "no_protection",
+      "unsafe_actions_blocked_pct": 0.0,
+      "unsafe_blocked_count": 0,
+      "unsafe_total": 85
+    },
+    {
+      "execution_error_count": 21,
+      "label": "Static Allowlist",
+      "median_latency_ms": 0.072021,
+      "notes": "Allow only by tool name; no argument-aware enforcement.",
+      "p95_latency_ms": 0.099666,
+      "safe_actions_allowed_pct": 100.0,
+      "safe_allowed_count": 115,
+      "safe_total": 115,
+      "scenario_count": 200,
+      "system_id": "static_allowlist",
+      "unsafe_actions_blocked_pct": 50.59,
+      "unsafe_blocked_count": 43,
+      "unsafe_total": 85
+    },
+    {
+      "execution_error_count": 21,
+      "label": "Argument Allowlist",
+      "median_latency_ms": 0.130875,
+      "notes": "Allow by tool name plus simple path and destination checks.",
+      "p95_latency_ms": 0.218315,
+      "safe_actions_allowed_pct": 100.0,
+      "safe_allowed_count": 115,
+      "safe_total": 115,
+      "scenario_count": 200,
+      "system_id": "argument_allowlist",
+      "unsafe_actions_blocked_pct": 50.59,
+      "unsafe_blocked_count": 43,
+      "unsafe_total": 85
+    },
+    {
+      "execution_error_count": 21,
+      "label": "Validator Only",
+      "median_latency_ms": 0.095563,
+      "notes": "Argument validation enabled; capability policy mediation disabled.",
+      "p95_latency_ms": 0.174037,
+      "safe_actions_allowed_pct": 100.0,
+      "safe_allowed_count": 115,
+      "safe_total": 115,
+      "scenario_count": 200,
+      "system_id": "validator_only",
+      "unsafe_actions_blocked_pct": 50.59,
+      "unsafe_blocked_count": 43,
+      "unsafe_total": 85
+    },
+    {
+      "execution_error_count": 21,
+      "label": "No Audit",
+      "median_latency_ms": 0.13575,
+      "notes": "Full mediation path with audit and trace emission disabled.",
+      "p95_latency_ms": 0.226064,
+      "safe_actions_allowed_pct": 100.0,
+      "safe_allowed_count": 115,
+      "safe_total": 115,
+      "scenario_count": 200,
+      "system_id": "no_audit",
+      "unsafe_actions_blocked_pct": 50.59,
+      "unsafe_blocked_count": 43,
+      "unsafe_total": 85
+    },
+    {
+      "execution_error_count": 21,
+      "label": "Progent-style",
+      "median_latency_ms": 0.152458,
+      "notes": "Lightweight rule-based DSL-style policy over tools and arguments.",
+      "p95_latency_ms": 0.24944,
+      "safe_actions_allowed_pct": 100.0,
+      "safe_allowed_count": 115,
+      "safe_total": 115,
+      "scenario_count": 200,
+      "system_id": "progent_style",
+      "unsafe_actions_blocked_pct": 50.59,
+      "unsafe_blocked_count": 43,
+      "unsafe_total": 85
+    },
+    {
+      "execution_error_count": 21,
+      "label": "Agent-Sentinel",
+      "median_latency_ms": 0.344416,
+      "notes": "Full runtime capability mediation with validators and audit trail.",
+      "p95_latency_ms": 0.611275,
+      "safe_actions_allowed_pct": 100.0,
+      "safe_allowed_count": 115,
+      "safe_total": 115,
+      "scenario_count": 200,
+      "system_id": "agent_sentinel",
+      "unsafe_actions_blocked_pct": 50.59,
+      "unsafe_blocked_count": 43,
+      "unsafe_total": 85
+    }
+  ],
+  "tasks_dir": "/Users/irshadahmad/Documents/agent-sentinel/configs/tasks_synth/scale_n200",
+  "unsafe_categories": [
+    "malformed_payload",
+    "malicious",
+    "plugin_failure",
+    "policy_blocked"
+  ],
+  "workload_scenario_count": 200,
+  "workload_selection_mode": "auto",
+  "workload_selection_reason": "No exact 75-scenario benchmark workload was found. Using the largest pre-generated benchmark workload available (scale_n200): 200 scenarios from /Users/irshadahmad/Documents/agent-sentinel/configs/tasks_synth/scale_n200."
+}

@@ -1,0 +1,8 @@
+system_id,label,unsafe_actions_blocked_pct,safe_actions_allowed_pct,median_latency_ms,p95_latency_ms,unsafe_total,unsafe_blocked_count,safe_total,safe_allowed_count,execution_error_count,scenario_count,notes
+no_protection,No Protection,0.0,100.0,0.072917,0.121818,85,0,115,115,21,200,Always allow tool execution; no runtime mediation.
+static_allowlist,Static Allowlist,50.59,100.0,0.072021,0.099666,85,43,115,115,21,200,Allow only by tool name; no argument-aware enforcement.
+argument_allowlist,Argument Allowlist,50.59,100.0,0.130875,0.218315,85,43,115,115,21,200,Allow by tool name plus simple path and destination checks.
+validator_only,Validator Only,50.59,100.0,0.095563,0.174037,85,43,115,115,21,200,Argument validation enabled; capability policy mediation disabled.
+no_audit,No Audit,50.59,100.0,0.13575,0.226064,85,43,115,115,21,200,Full mediation path with audit and trace emission disabled.
+progent_style,Progent-style,50.59,100.0,0.152458,0.24944,85,43,115,115,21,200,Lightweight rule-based DSL-style policy over tools and arguments.
+agent_sentinel,Agent-Sentinel,50.59,100.0,0.344416,0.611275,85,43,115,115,21,200,Full runtime capability mediation with validators and audit trail.
