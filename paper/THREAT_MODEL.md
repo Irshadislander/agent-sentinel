@@ -1,55 +1,80 @@
 # Threat Model
 
-## Attacker Capabilities
-The attacker is assumed able to:
+## Threat Boundaries
+Agent-Sentinel is designed for tool-using LLM agents that can access external execution surfaces such as filesystem, network, and shell interfaces. The attacker is modeled as controlling or influencing inputs to the agent and attempting to induce unsafe tool use at runtime.
 
-- manipulate prompts and external input content,
-- attempt tool misuse (filesystem/network/shell requests),
-- chain tool calls across multiple steps to reach unsafe effects,
-- exploit capability requests by asking for actions beyond granted privileges.
+### In-Scope Threats
+The attacker can:
 
-## Attacker Goals
-Primary attacker goals are:
+- perform prompt injection attacks through user input, retrieved content, or intermediate context;
+- induce malicious tool request generation, including unsafe arguments and unauthorized actions;
+- attempt capability escalation through chained tool invocations;
+- attempt data exfiltration through tool outputs, including cross-tool flows;
+- embed adversarial instructions or payloads in tool outputs that influence later tool calls.
 
-- unauthorized tool execution,
-- capability escalation from benign to privileged actions,
-- data exfiltration via local reads or network output,
-- reduced observability of malicious actions.
+### Out-of-Scope Threats
+The attacker cannot:
 
-## System Trust Assumptions
-This model assumes the enforcement core and policy store are controlled by trusted operators.
-Security claims are runtime enforcement claims under these assumptions.
+- modify the agent runtime code;
+- modify policy files or trusted policy state;
+- compromise the OS kernel;
+- perform hardware attacks;
+- exploit side channels against the gateway mediation path;
+- directly invoke tools outside the gateway.
 
-## Trusted Components
-- runtime enforcement layer (tool gateway and decision path),
-- policy evaluation logic and capability mapping,
-- policy configuration under trusted administration,
-- structured decision/trace emission path.
+## Trusted Computing Base (TCB)
+The following components are trusted:
+
+- **Tool Gateway:** intercepts all tool requests before execution;
+- **Policy Engine:** evaluates capability policies and returns allow/deny decisions;
+- **Validators:** perform argument-level safety checks on mediated requests;
+- **Audit Trail:** records immutable decision and execution evidence;
+- **Policy Configuration:** defines capability mappings and ordered policy rules under trusted administration.
+
+The gateway mediation layer is assumed to be always interposed between the agent and all external tools.
+
+Security claims in this paper are conditioned on this TCB remaining intact and correctly configured.
 
 ## Untrusted Components
-- prompts and user-provided instructions,
-- model-generated plans and tool arguments,
-- external content returned to the agent,
-- third-party tool/plugin behavior unless explicitly trusted.
+The following components are treated as adversarial or potentially adversarial:
 
-## Explicit Non-Capabilities of the Attacker (In-Model)
-Within this threat model, the attacker cannot:
+- the LLM agent itself;
+- tool outputs;
+- external APIs;
+- file system inputs;
+- network responses.
 
-- modify the enforcement layer implementation,
-- modify policy configuration in trusted storage,
-- bypass runtime decision evaluation before tool execution.
+Agent-Sentinel therefore treats the agent as potentially compromised via prompt injection. Model-generated plans, tool selections, and tool arguments are not trusted inputs to the enforcement decision.
 
-## Security Objectives
-- enforce least privilege through capability gating and default deny,
-- block unauthorized capability requests before side effects,
-- preserve explainable decision artifacts (`decision`, `rule_id`, `reason_code`, trace metadata).
+## Attack Surface
+The core attack interface is:
 
-## Production Agent Relevance
-In production-style agent stacks, prompt injection can enter through user messages, retrieved context, or tool-returned content, then influence downstream tool calls. Tool misuse remains relevant because a compromised planning step can request privileged filesystem or shell actions in later steps.
+`LLM agent -> tool invocation -> system resources`
 
-Cross-tool data exfiltration is also a realistic pattern: data gathered via one tool (for example filesystem reads) can be routed through another tool (for example outbound network requests). The threat model therefore treats prompt injection, tool misuse, and cross-tool exfiltration as first-class runtime risks for LangChain-style agents, OpenAI tool-calling runtimes, and multi-agent orchestration systems under the stated trust assumptions.
+Within this interface, the primary attack surfaces are:
 
-## Out of Scope
-- compromised host/runtime trusted computing base,
-- privileged tampering with enforcement code or policy storage,
-- full OS/kernel compromise or equivalent infrastructure takeover.
+- **tool arguments:** malicious parameters, path targets, command payloads, and exfiltration destinations;
+- **chained tool invocation:** multi-step sequences that transfer authority or data across tools;
+- **external API responses:** attacker-controlled or attacker-influenced content returned to the agent;
+- **file access requests:** reads or writes that expose sensitive state or stage later actions.
+
+This threat model focuses on attacks that attempt to cross the tool boundary and produce unauthorized side effects on external resources.
+
+## Security Goals
+Within the stated assumptions, Agent-Sentinel aims to provide:
+
+- **Capability Confinement:** requests requiring ungranted capabilities are denied before tool execution;
+- **Policy Enforcement:** each tool request is mediated by policy at runtime with explicit allow/deny semantics;
+- **Auditability:** decisions and relevant execution metadata are recorded for post-hoc analysis;
+- **Controlled Tool Invocation:** tool access is constrained to authorized calls that pass gateway mediation and validation.
+
+These are runtime mediation guarantees for the tool boundary. They are not claims of full system security or formal verification of the complete deployment.
+
+## Non-Goals
+Agent-Sentinel does not defend against:
+
+- malicious tool implementations;
+- OS compromise;
+- policy misconfiguration.
+
+It is a runtime mediation layer, not a complete substitute for secure tool design, system hardening, or policy review.
