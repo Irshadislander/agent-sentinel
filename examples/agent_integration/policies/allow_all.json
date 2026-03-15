@@ -1,0 +1,21 @@
+{
+  "policy_id": "case_allow_all",
+  "rules": [
+    {
+      "rule_id": "allow_shell",
+      "action": "allow",
+      "capability": "shell"
+    },
+    {
+      "rule_id": "allow_filesystem",
+      "action": "allow",
+      "capability": "filesystem"
+    },
+    {
+      "rule_id": "allow_http",
+      "action": "allow",
+      "capability": "http_request"
+    }
+  ],
+  "default": "deny"
+}

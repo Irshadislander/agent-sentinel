@@ -1,0 +1,21 @@
+{
+  "policy_id": "case_allow_fs_http_deny_shell",
+  "rules": [
+    {
+      "rule_id": "deny_shell",
+      "action": "deny",
+      "capability": "shell"
+    },
+    {
+      "rule_id": "allow_filesystem",
+      "action": "allow",
+      "capability": "filesystem"
+    },
+    {
+      "rule_id": "allow_http",
+      "action": "allow",
+      "capability": "http_request"
+    }
+  ],
+  "default": "deny"
+}
