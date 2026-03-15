@@ -1,32 +1,28 @@
 # Related Work
 
-## Positioning Table
+Agent-Sentinel sits at the intersection of LLM-agent security, policy enforcement, and tool-calling infrastructure. Relative to recent work, its contribution is not a new agent framework or a benchmark-first platform, but a runtime mediation layer for tool execution with an explicit capability model, bounded formal claims, and auditable enforcement outputs.
 
-| Approach family | Runtime tool mediation | Deterministic policy decision | Scoped formal safety property | Explainable decision artifacts | Reproducible adversarial benchmark |
+## Capability Control for LLM Agents
+Progent studies programmable privilege control for LLM agents. Its central contribution is a domain-specific language for writing privilege policies over tool calls, enabling flexible and programmable control logic. This is useful for expressing rich policies and adapting them to different tool-use contexts.
+
+Agent-Sentinel is positioned differently. It centers an explicit capability-based security model, a runtime mediation gateway that interposes before execution, a scoped capability-confinement property, and structured audit artifacts that support post-hoc forensic analysis. In reviewer-facing terms, Progent emphasizes **policy programmability**, whereas Agent-Sentinel emphasizes **runtime capability mediation and enforcement guarantees**.
+
+## Agent Security Benchmarks
+SafeAgentBench and Agent Security Bench (ASB) represent a benchmark-oriented line of work for evaluating LLM agents under adversarial or safety-critical conditions. These efforts prioritize broad coverage of attack settings, standardized evaluation, and large test surfaces. ASB in particular spans hundreds of tools, while this benchmark line more generally emphasizes many attack scenarios and systematic comparison across agents or defenses.
+
+Agent-Sentinel is not primarily a benchmark contribution. Its primary contribution is a runtime mediation architecture with explicit capability enforcement. The evaluation is therefore narrower and mechanism-focused: a targeted adversarial study using 75 attack scenarios to assess how the mediation layer performs at the tool boundary.
+
+## Tool Framework Security
+LangChain tool calling, OpenAI function calling, and Model Context Protocol (MCP) provide the interfaces by which LLMs invoke external tools or services. These frameworks are important operational substrates for agent systems, but they do not by themselves enforce capability restrictions, argument-level policy checks, or runtime mediation guarantees at execution time.
+
+Agent-Sentinel is designed as a security layer above such frameworks. It treats tool-calling infrastructure as the integration point at which capability boundaries should be enforced, so that tool requests are checked before they reach filesystem, network, shell, or plugin execution paths.
+
+## Comparison Table
+
+| System | Runtime Tool Mediation | Capability Model | Audit Trail | Formal Security Properties | Evaluation |
 |---|---|---|---|---|---|
-| Prompt guardrails / prompt-injection defenses | No (upstream) | No | Rare/limited | Partial | Partial |
-| General agent runtime infrastructure | Partial | Partial | Rare/limited | Partial | Rare/limited |
-| Sandboxing / isolation systems | Partial (post-execution containment) | Partial | Partial | Limited | Limited |
-| Policy systems (generic access control) | Partial (not agent-specific runtime path) | Partial | Partial | Partial | Rare/limited |
-| **Agent-Sentinel (this work)** | **Yes** | **Yes** | **Yes (runtime-scoped)** | **Yes** | **Yes** |
-
-## Prompt Guardrails
-Prompt-level defenses focus on input/output filtering and instruction conflict handling. They are complementary, but they do not by themselves enforce capability authorization at the moment of tool execution.
-
-## LLM Alignment Approaches
-Alignment-focused methods target model behavior at training or inference time and can reduce unsafe generations, but they are not a substitute for explicit runtime authorization at the tool boundary. Agent-Sentinel is scoped to deterministic runtime mediation rather than model-internal alignment.
-
-## Runtime Infrastructure and Orchestration Frameworks
-Agent runtimes and orchestration frameworks provide planning loops, tool adapters, and state management. These systems are operationally important, but orchestration by itself does not guarantee deterministic allow/deny capability mediation for each request.
-
-## Sandboxing and Isolation
-Sandboxing limits damage after code or tool execution starts. Agent-Sentinel addresses an earlier point in the control path: pre-execution authorization with explicit deny semantics. The two are complementary, not interchangeable.
-
-## Policy Systems
-Generic policy systems provide access-control abstractions, but may not target tool-using agent request semantics, adversarial prompt-to-tool transitions, or decision-artifact reproducibility under benchmark stress.
-
-## Production Agent Relevance
-Agent-Sentinel is positioned as a complementary enforcement layer for production-oriented stacks, including LangChain-style tool agents, OpenAI tool-calling runtimes, and multi-agent orchestration systems. The contrast with prior work is that runtime capability mediation is treated as the primary research object with explicit deny semantics and reproducible benchmarking, without claiming deployed production coverage.
-
-## Reviewer-Facing Positioning
-Agent-Sentinel is positioned as a systems-security research contribution on deterministic runtime capability mediation for agent tool use. Its novelty is the combination of formalized runtime semantics, scoped safety properties, and reproducible adversarial evaluation, not a claim of end-to-end AI safety.
+| Progent | Partial | Programmable privilege rules / DSL | Limited | No | System evaluation |
+| SafeAgentBench | No | No explicit capability model | No | No | Benchmark evaluation |
+| Agent Security Bench | No | No explicit capability model | No | No | Large-scale adversarial benchmark |
+| LangChain / MCP | No | No built-in capability restrictions | Partial | No | Infrastructure, not security evaluation |
+| **Agent-Sentinel** | **✓** | **✓ explicit capability model** | **✓ structured audit trail** | **✓ scoped formal properties** | **✓ adversarial evaluation** |
