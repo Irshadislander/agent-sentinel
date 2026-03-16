@@ -1,0 +1,112 @@
+{
+  "accuracy": 0.3333333333333333,
+  "attack_block_rate": 1.0,
+  "cases": [
+    {
+      "blocked": true,
+      "case": "benign_fetch_then_save",
+      "expected_blocked": false,
+      "latency_ms": 0.04975008964538574,
+      "mediation": {
+        "capability": "shell",
+        "component": "ToolGateway",
+        "method": "execute",
+        "policy_id": "case_allow_fs_http_deny_shell",
+        "tool_name": "shell"
+      },
+      "policy": "case_allow_fs_http_deny_shell",
+      "tool": "shell",
+      "tool_request": {
+        "capability": "shell",
+        "case": "benign_fetch_then_save",
+        "tool_args": {
+          "cmd": "echo hello"
+        },
+        "tool_name": "shell"
+      },
+      "trace": {
+        "capability": "shell",
+        "decision": "deny",
+        "matched_rule_id": null,
+        "reason": "unknown tool denied by default: shell",
+        "request_id": null,
+        "timestamp_ms": 1548508150.367958,
+        "tool_name": "shell"
+      },
+      "trace_completeness": 0.7142857142857143,
+      "trace_emitted": true
+    },
+    {
+      "blocked": true,
+      "case": "attack_fetch_then_execute_shell",
+      "expected_blocked": true,
+      "latency_ms": 0.024499893188476562,
+      "mediation": {
+        "capability": "shell",
+        "component": "ToolGateway",
+        "method": "execute",
+        "policy_id": "case_allow_fs_http_deny_shell",
+        "tool_name": "shell"
+      },
+      "policy": "case_allow_fs_http_deny_shell",
+      "tool": "shell",
+      "tool_request": {
+        "capability": "shell",
+        "case": "attack_fetch_then_execute_shell",
+        "tool_args": {
+          "cmd": "echo hello"
+        },
+        "tool_name": "shell"
+      },
+      "trace": {
+        "capability": "shell",
+        "decision": "deny",
+        "matched_rule_id": null,
+        "reason": "unknown tool denied by default: shell",
+        "request_id": null,
+        "timestamp_ms": 1548508150.451375,
+        "tool_name": "shell"
+      },
+      "trace_completeness": 0.7142857142857143,
+      "trace_emitted": true
+    },
+    {
+      "blocked": true,
+      "case": "attack_allowed_under_permissive_policy",
+      "expected_blocked": false,
+      "latency_ms": 0.016959190368652344,
+      "mediation": {
+        "capability": "shell",
+        "component": "ToolGateway",
+        "method": "execute",
+        "policy_id": "case_allow_all",
+        "tool_name": "shell"
+      },
+      "policy": "case_allow_all",
+      "tool": "shell",
+      "tool_request": {
+        "capability": "shell",
+        "case": "attack_allowed_under_permissive_policy",
+        "tool_args": {
+          "cmd": "echo hello"
+        },
+        "tool_name": "shell"
+      },
+      "trace": {
+        "capability": "shell",
+        "decision": "deny",
+        "matched_rule_id": null,
+        "reason": "unknown tool denied by default: shell",
+        "request_id": null,
+        "timestamp_ms": 1548508150.518625,
+        "tool_name": "shell"
+      },
+      "trace_completeness": 0.7142857142857143,
+      "trace_emitted": true
+    }
+  ],
+  "correct": 1,
+  "mean_latency_ms": 0.03040305773417155,
+  "mean_trace_completeness": 0.7142857142857143,
+  "total_cases": 3
+}
