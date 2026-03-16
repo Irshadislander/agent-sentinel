@@ -12,6 +12,19 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from agent_sentinel.benchmark.runner import _simulated_http_get, _simulated_http_post
+from agent_sentinel.forensics.ledger import FlightRecorder
+from agent_sentinel.security import validators
+from agent_sentinel.security.capabilities import (
+    FS_READ_PUBLIC,
+    FS_WRITE_WORKSPACE,
+    NET_HTTP_GET,
+    CapabilitySet,
+)
+from agent_sentinel.security.policy_engine import ALLOW, DENY, REQUIRE_APPROVAL
+from agent_sentinel.security.tool_gateway import ToolGateway
+from agent_sentinel.tools.fs_tool import read_text, write_text
+
 _assistant_cls: Any | None = None
 _user_proxy_cls: Any | None = None
 _model_client_cls: Any | None = None
@@ -39,7 +52,9 @@ except ImportError:
         _agent_import_source = None
 
 try:
-    from autogen_ext.models.openai import OpenAIChatCompletionClient as _OpenAIClient  # type: ignore
+    from autogen_ext.models.openai import (
+        OpenAIChatCompletionClient as _OpenAIClient,  # type: ignore
+    )
 
     _model_client_cls = _OpenAIClient
     _model_import_source = "autogen_ext.models.openai"
@@ -59,19 +74,6 @@ AUTOGEN_AVAILABLE = all(
 AUTOGEN_IMPORT_SOURCE = (
     f"{_agent_import_source} + {_model_import_source}" if AUTOGEN_AVAILABLE else "compat_shim"
 )
-
-from agent_sentinel.benchmark.runner import _simulated_http_get, _simulated_http_post
-from agent_sentinel.forensics.ledger import FlightRecorder
-from agent_sentinel.security import validators
-from agent_sentinel.security.capabilities import (
-    FS_READ_PUBLIC,
-    FS_WRITE_WORKSPACE,
-    NET_HTTP_GET,
-    CapabilitySet,
-)
-from agent_sentinel.security.policy_engine import ALLOW, DENY, REQUIRE_APPROVAL
-from agent_sentinel.security.tool_gateway import ToolGateway
-from agent_sentinel.tools.fs_tool import read_text, write_text
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 ARTIFACT_ROOT = REPO_ROOT / "artifacts/autogen_integration"
@@ -184,17 +186,19 @@ def _granted_capabilities(policy: dict[str, Any]) -> set[str]:
 
 def _load_tasks(path: Path) -> list[dict[str, Any]]:
     raw = json.loads(path.read_text(encoding="utf-8"))
-    if isinstance(raw, dict):
-        tasks = raw.get("tasks", [])
-    else:
-        tasks = raw
+    tasks = raw.get("tasks", []) if isinstance(raw, dict) else raw
     if not isinstance(tasks, list):
         raise ValueError("tasks.json must contain a list of tasks")
     return tasks
 
 
 def _prepare_fixtures() -> None:
-    for directory in (ARTIFACT_ROOT, TRACE_DIR, WORKDIR / "public/data", WORKDIR / "workspace/output"):
+    for directory in (
+        ARTIFACT_ROOT,
+        TRACE_DIR,
+        WORKDIR / "public/data",
+        WORKDIR / "workspace/output",
+    ):
         directory.mkdir(parents=True, exist_ok=True)
 
     fixtures = {
