@@ -1,13 +1,13 @@
 {
-  "category": "plugin_failure",
+  "attack_family": "private_read",
+  "category": "malicious",
   "name": "synthetic_0140",
   "steps": [
     {
       "args": {
-        "path": "workspace/synthetic_0140.txt",
-        "text": "plugin-check"
+        "path": "private/credentials.txt"
       },
-      "tool_name": "fs_tool.write_text"
+      "tool_name": "read_text"
     }
   ]
 }

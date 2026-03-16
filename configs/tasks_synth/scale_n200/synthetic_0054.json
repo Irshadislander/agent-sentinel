@@ -1,13 +1,17 @@
 {
-  "category": "plugin_failure",
+  "attack_family": "allowlisted_post_nonsensitive",
+  "category": "malicious",
   "name": "synthetic_0054",
   "steps": [
     {
       "args": {
-        "path": "workspace/synthetic_0054.txt",
-        "text": "plugin-check"
+        "json_body": {
+          "note": "status update"
+        },
+        "timeout_s": 3,
+        "url": "https://api.github.com/markdown"
       },
-      "tool_name": "fs_tool.write_text"
+      "tool_name": "http_post"
     }
   ]
 }

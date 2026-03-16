@@ -1,4 +1,5 @@
 {
+  "attack_family": "missing_required_write_text_arg",
   "category": "malformed_payload",
   "name": "synthetic_0158",
   "steps": [

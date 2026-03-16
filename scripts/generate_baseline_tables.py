@@ -8,6 +8,7 @@ from typing import Any
 DEFAULT_INPUT_PATH = Path("artifacts/baselines/baseline_suite.json")
 DEFAULT_MARKDOWN_PATH = Path("paper/tables/table_baseline_comparison.md")
 DEFAULT_CSV_PATH = Path("paper/tables/table_baseline_comparison.csv")
+DEFAULT_LATEX_PATH = Path("paper/tables/evaluation_results.tex")
 DISPLAY_ORDER = [
     "No Protection",
     "Static Allowlist",
@@ -51,6 +52,8 @@ def _render_markdown(payload: dict[str, Any], systems: list[dict[str, Any]]) -> 
         f"- Generated at (UTC): `{payload.get('generated_at_utc', 'unknown')}`",
         f"- Workload: `{payload.get('tasks_dir', 'unknown')}` ({payload.get('workload_scenario_count', 'unknown')} scenarios)",
         f"- Selection Note: {payload.get('workload_selection_reason', 'n/a')}",
+        f"- Security deny categories: `{', '.join(payload.get('unsafe_categories', [])) or 'n/a'}`",
+        f"- Robustness categories: `{', '.join(payload.get('robustness_categories', [])) or 'n/a'}`",
         "",
         "| System | Unsafe Actions Blocked (%) | Safe Actions Allowed (%) | Median Latency (ms) | p95 Latency (ms) | Notes |",
         "|---|---:|---:|---:|---:|---|",
@@ -73,12 +76,49 @@ def _render_markdown(payload: dict[str, Any], systems: list[dict[str, Any]]) -> 
     return "\n".join(lines) + "\n"
 
 
+def _render_latex(systems: list[dict[str, Any]]) -> str:
+    lines = [
+        "\\begin{table*}[t]",
+        "\\centering",
+        "\\small",
+        "\\setlength{\\tabcolsep}{7pt}",
+        "\\caption{Baseline comparison across the Agent-Sentinel evaluation suite. The table reports attack blocking effectiveness, safe-action allowance, and runtime latency across different defense configurations.}",
+        "\\label{tab:evaluation_results}",
+        "\\begin{tabular}{lrrrr}",
+        "\\toprule",
+        "System & Unsafe Actions Blocked (\\%) & Safe Actions Allowed (\\%) & Median Latency (ms) & p95 Latency (ms) \\\\",
+        "\\midrule",
+    ]
+    for system in systems:
+        label = str(system.get("label", ""))
+        blocked = _format_number(system.get("unsafe_actions_blocked_pct"))
+        safe = _format_number(system.get("safe_actions_allowed_pct"))
+        median = _format_number(system.get("median_latency_ms"))
+        p95 = _format_number(system.get("p95_latency_ms"))
+        if label == "Agent-Sentinel":
+            lines.append(
+                f"\\textbf{{{label}}} & \\textbf{{{blocked}}} & \\textbf{{{safe}}} & {median} & {p95} \\\\"
+            )
+        else:
+            lines.append(f"{label} & {blocked} & {safe} & {median} & {p95} \\\\")
+    lines.extend(
+        [
+            "\\bottomrule",
+            "\\end{tabular}",
+            "\\end{table*}",
+            "",
+        ]
+    )
+    return "\n".join(lines)
+
+
 def generate_tables(
     *,
     input_path: Path = DEFAULT_INPUT_PATH,
     markdown_path: Path = DEFAULT_MARKDOWN_PATH,
     csv_path: Path = DEFAULT_CSV_PATH,
-) -> tuple[Path, Path]:
+    latex_path: Path = DEFAULT_LATEX_PATH,
+) -> tuple[Path, Path, Path]:
     payload = _load_payload(input_path)
     systems = _ordered_systems(payload)
 
@@ -99,6 +139,10 @@ def generate_tables(
                 "unsafe_blocked_count",
                 "safe_total",
                 "safe_allowed_count",
+                "robustness_total",
+                "robustness_blocked_count",
+                "robustness_error_count",
+                "robustness_success_count",
                 "execution_error_count",
                 "scenario_count",
                 "Notes",
@@ -121,19 +165,27 @@ def generate_tables(
                     "unsafe_blocked_count": system.get("unsafe_blocked_count", 0),
                     "safe_total": system.get("safe_total", 0),
                     "safe_allowed_count": system.get("safe_allowed_count", 0),
+                    "robustness_total": system.get("robustness_total", 0),
+                    "robustness_blocked_count": system.get("robustness_blocked_count", 0),
+                    "robustness_error_count": system.get("robustness_error_count", 0),
+                    "robustness_success_count": system.get("robustness_success_count", 0),
                     "execution_error_count": system.get("execution_error_count", 0),
                     "scenario_count": system.get("scenario_count", 0),
                     "Notes": system.get("notes", ""),
                 }
             )
 
-    return markdown_path, csv_path
+    latex_path.parent.mkdir(parents=True, exist_ok=True)
+    latex_path.write_text(_render_latex(systems), encoding="utf-8")
+
+    return markdown_path, csv_path, latex_path
 
 
 def main() -> int:
-    markdown_path, csv_path = generate_tables()
+    markdown_path, csv_path, latex_path = generate_tables()
     print(f"Baseline markdown table: {markdown_path}")
     print(f"Baseline CSV table: {csv_path}")
+    print(f"Baseline LaTeX table: {latex_path}")
     return 0
 
 

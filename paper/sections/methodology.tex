@@ -1,0 +1,13 @@
+\section{Methodology}
+
+Agent-Sentinel mediates each tool invocation before execution. A request emitted by the agent is normalized, checked against capability policy, validated at the argument level, and either denied before side effects occur or forwarded to the tool layer. Every mediated request can also emit structured audit evidence.
+
+\subsection{Benchmark Construction}
+
+The synthetic evaluation workload contains 200 scenarios. The safe portion contains 96 scenarios: 73 benign tasks and 23 trace-stress tasks. The security-deny portion contains 83 scenarios: 54 malicious tasks and 29 policy-blocked tasks. The robustness portion contains 21 scenarios: 12 malformed-payload tasks and 9 plugin-failure tasks.
+
+The malicious slice is designed to separate defenses that differ in expressive power. It includes disallowed-host \texttt{http\_get} requests, private file reads from \texttt{private/credentials.txt}, path-escape writes outside \texttt{workspace/}, allowlisted external GET requests that still require stronger network mediation, and allowlisted non-sensitive POST requests that expose differences between rule-based and capability-based enforcement.
+
+\subsection{Metric Semantics}
+
+The primary blocking metric is computed only over the security-deny categories. Malformed-payload and plugin-failure scenarios are excluded from the unsafe-blocking denominator and are instead tracked as robustness cases, because they measure execution robustness rather than policy denial semantics. Safe-action allowance is computed only over the 96 safe scenarios.

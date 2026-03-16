@@ -1,0 +1,7 @@
+\section{Introduction}
+
+Tool-using LLM agents convert model outputs into concrete filesystem and network actions, so the relevant security boundary is the runtime path from the model to the tool and then to the host system. Agent-Sentinel addresses that boundary with capability-based mediation at tool execution time rather than relying on prompt filtering alone.
+
+Our evaluation now reflects the regenerated benchmark artifact rather than the earlier draft taxonomy. The main benchmark contains 200 scenarios and compares Agent-Sentinel against unmediated execution, a static tool allowlist, an argument allowlist, validator-only enforcement, a Progent-style rule baseline, and a no-audit ablation. This workload is intentionally split into safe, security-deny, and robustness categories so that weaker baselines are not accidentally credited for malformed-task failures.
+
+The resulting comparison is reviewer-facing and concrete. Agent-Sentinel blocks all security-deny scenarios in the current benchmark while preserving all safe scenarios, whereas weaker baselines span 50.6\% to 83.1\% blocked depending on how much runtime structure they enforce. This positions the contribution as runtime mediation with measurable separation from simpler defenses, not merely a restatement of classical access control.

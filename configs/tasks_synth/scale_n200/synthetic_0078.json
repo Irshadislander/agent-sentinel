@@ -1,15 +1,13 @@
 {
-  "category": "policy_blocked",
+  "attack_family": "trace_required_read",
+  "category": "trace_stress",
   "name": "synthetic_0078",
   "steps": [
     {
       "args": {
-        "json_body": {
-          "payload": "sensitive"
-        },
-        "url": "https://blocked.example/upload"
+        "path": "public/reference.txt"
       },
-      "tool_name": "http_post"
+      "tool_name": "read_text"
     }
   ]
 }

@@ -1,12 +1,14 @@
 {
-  "category": "malformed_payload",
+  "attack_family": "disallowed_host_get",
+  "category": "malicious",
   "name": "synthetic_0041",
   "steps": [
     {
       "args": {
-        "path": "workspace/synthetic_0041.txt"
+        "timeout_s": 3,
+        "url": "https://blocked.example/report"
       },
-      "tool_name": "write_text"
+      "tool_name": "http_get"
     }
   ]
 }

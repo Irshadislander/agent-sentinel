@@ -7,125 +7,429 @@
       "system_id": "container_sandbox"
     }
   ],
+  "category_breakdown": {
+    "benign": 73,
+    "malformed_payload": 12,
+    "malicious": 54,
+    "plugin_failure": 9,
+    "policy_blocked": 29,
+    "trace_stress": 23
+  },
   "exact_75_scenario_workload_found": false,
-  "generated_at_utc": "2026-03-15T06:30:00.729116+00:00",
+  "generated_at_utc": "2026-03-16T08:56:37.654303+00:00",
   "policy_path": "configs/policies/default.yaml",
+  "robustness_categories": [
+    "malformed_payload",
+    "plugin_failure"
+  ],
   "safe_categories": [
     "benign",
     "trace_stress"
   ],
   "systems": [
     {
+      "category_outcomes": {
+        "benign": {
+          "blocked": 0,
+          "error": 0,
+          "success": 73,
+          "total": 73
+        },
+        "malformed_payload": {
+          "blocked": 0,
+          "error": 12,
+          "success": 0,
+          "total": 12
+        },
+        "malicious": {
+          "blocked": 0,
+          "error": 0,
+          "success": 54,
+          "total": 54
+        },
+        "plugin_failure": {
+          "blocked": 0,
+          "error": 9,
+          "success": 0,
+          "total": 9
+        },
+        "policy_blocked": {
+          "blocked": 0,
+          "error": 0,
+          "success": 29,
+          "total": 29
+        },
+        "trace_stress": {
+          "blocked": 0,
+          "error": 0,
+          "success": 23,
+          "total": 23
+        }
+      },
       "execution_error_count": 21,
       "label": "No Protection",
-      "median_latency_ms": 0.072917,
+      "median_latency_ms": 0.017729,
       "notes": "Always allow tool execution; no runtime mediation.",
-      "p95_latency_ms": 0.121818,
+      "p95_latency_ms": 0.09725,
+      "robustness_blocked_count": 0,
+      "robustness_error_count": 21,
+      "robustness_success_count": 0,
+      "robustness_total": 21,
       "safe_actions_allowed_pct": 100.0,
-      "safe_allowed_count": 115,
-      "safe_total": 115,
+      "safe_allowed_count": 96,
+      "safe_total": 96,
       "scenario_count": 200,
       "system_id": "no_protection",
       "unsafe_actions_blocked_pct": 0.0,
       "unsafe_blocked_count": 0,
-      "unsafe_total": 85
+      "unsafe_total": 83
     },
     {
-      "execution_error_count": 21,
+      "category_outcomes": {
+        "benign": {
+          "blocked": 0,
+          "error": 0,
+          "success": 73,
+          "total": 73
+        },
+        "malformed_payload": {
+          "blocked": 0,
+          "error": 12,
+          "success": 0,
+          "total": 12
+        },
+        "malicious": {
+          "blocked": 13,
+          "error": 0,
+          "success": 41,
+          "total": 54
+        },
+        "plugin_failure": {
+          "blocked": 9,
+          "error": 0,
+          "success": 0,
+          "total": 9
+        },
+        "policy_blocked": {
+          "blocked": 29,
+          "error": 0,
+          "success": 0,
+          "total": 29
+        },
+        "trace_stress": {
+          "blocked": 0,
+          "error": 0,
+          "success": 23,
+          "total": 23
+        }
+      },
+      "execution_error_count": 12,
       "label": "Static Allowlist",
-      "median_latency_ms": 0.072021,
+      "median_latency_ms": 0.017521,
       "notes": "Allow only by tool name; no argument-aware enforcement.",
-      "p95_latency_ms": 0.099666,
+      "p95_latency_ms": 0.092567,
+      "robustness_blocked_count": 9,
+      "robustness_error_count": 12,
+      "robustness_success_count": 0,
+      "robustness_total": 21,
       "safe_actions_allowed_pct": 100.0,
-      "safe_allowed_count": 115,
-      "safe_total": 115,
+      "safe_allowed_count": 96,
+      "safe_total": 96,
       "scenario_count": 200,
       "system_id": "static_allowlist",
-      "unsafe_actions_blocked_pct": 50.59,
-      "unsafe_blocked_count": 43,
-      "unsafe_total": 85
+      "unsafe_actions_blocked_pct": 50.6,
+      "unsafe_blocked_count": 42,
+      "unsafe_total": 83
     },
     {
-      "execution_error_count": 21,
+      "category_outcomes": {
+        "benign": {
+          "blocked": 0,
+          "error": 0,
+          "success": 73,
+          "total": 73
+        },
+        "malformed_payload": {
+          "blocked": 0,
+          "error": 12,
+          "success": 0,
+          "total": 12
+        },
+        "malicious": {
+          "blocked": 40,
+          "error": 0,
+          "success": 14,
+          "total": 54
+        },
+        "plugin_failure": {
+          "blocked": 9,
+          "error": 0,
+          "success": 0,
+          "total": 9
+        },
+        "policy_blocked": {
+          "blocked": 29,
+          "error": 0,
+          "success": 0,
+          "total": 29
+        },
+        "trace_stress": {
+          "blocked": 0,
+          "error": 0,
+          "success": 23,
+          "total": 23
+        }
+      },
+      "execution_error_count": 12,
       "label": "Argument Allowlist",
-      "median_latency_ms": 0.130875,
+      "median_latency_ms": 0.060854,
       "notes": "Allow by tool name plus simple path and destination checks.",
-      "p95_latency_ms": 0.218315,
+      "p95_latency_ms": 0.243919,
+      "robustness_blocked_count": 9,
+      "robustness_error_count": 12,
+      "robustness_success_count": 0,
+      "robustness_total": 21,
       "safe_actions_allowed_pct": 100.0,
-      "safe_allowed_count": 115,
-      "safe_total": 115,
+      "safe_allowed_count": 96,
+      "safe_total": 96,
       "scenario_count": 200,
       "system_id": "argument_allowlist",
-      "unsafe_actions_blocked_pct": 50.59,
-      "unsafe_blocked_count": 43,
-      "unsafe_total": 85
+      "unsafe_actions_blocked_pct": 83.13,
+      "unsafe_blocked_count": 69,
+      "unsafe_total": 83
     },
     {
+      "category_outcomes": {
+        "benign": {
+          "blocked": 0,
+          "error": 0,
+          "success": 73,
+          "total": 73
+        },
+        "malformed_payload": {
+          "blocked": 0,
+          "error": 12,
+          "success": 0,
+          "total": 12
+        },
+        "malicious": {
+          "blocked": 31,
+          "error": 0,
+          "success": 23,
+          "total": 54
+        },
+        "plugin_failure": {
+          "blocked": 0,
+          "error": 9,
+          "success": 0,
+          "total": 9
+        },
+        "policy_blocked": {
+          "blocked": 29,
+          "error": 0,
+          "success": 0,
+          "total": 29
+        },
+        "trace_stress": {
+          "blocked": 0,
+          "error": 0,
+          "success": 23,
+          "total": 23
+        }
+      },
       "execution_error_count": 21,
       "label": "Validator Only",
-      "median_latency_ms": 0.095563,
+      "median_latency_ms": 0.052271,
       "notes": "Argument validation enabled; capability policy mediation disabled.",
-      "p95_latency_ms": 0.174037,
+      "p95_latency_ms": 0.13964,
+      "robustness_blocked_count": 0,
+      "robustness_error_count": 21,
+      "robustness_success_count": 0,
+      "robustness_total": 21,
       "safe_actions_allowed_pct": 100.0,
-      "safe_allowed_count": 115,
-      "safe_total": 115,
+      "safe_allowed_count": 96,
+      "safe_total": 96,
       "scenario_count": 200,
       "system_id": "validator_only",
-      "unsafe_actions_blocked_pct": 50.59,
-      "unsafe_blocked_count": 43,
-      "unsafe_total": 85
+      "unsafe_actions_blocked_pct": 72.29,
+      "unsafe_blocked_count": 60,
+      "unsafe_total": 83
     },
     {
-      "execution_error_count": 21,
+      "category_outcomes": {
+        "benign": {
+          "blocked": 0,
+          "error": 0,
+          "success": 73,
+          "total": 73
+        },
+        "malformed_payload": {
+          "blocked": 0,
+          "error": 12,
+          "success": 0,
+          "total": 12
+        },
+        "malicious": {
+          "blocked": 54,
+          "error": 0,
+          "success": 0,
+          "total": 54
+        },
+        "plugin_failure": {
+          "blocked": 9,
+          "error": 0,
+          "success": 0,
+          "total": 9
+        },
+        "policy_blocked": {
+          "blocked": 29,
+          "error": 0,
+          "success": 0,
+          "total": 29
+        },
+        "trace_stress": {
+          "blocked": 0,
+          "error": 0,
+          "success": 23,
+          "total": 23
+        }
+      },
+      "execution_error_count": 12,
       "label": "No Audit",
-      "median_latency_ms": 0.13575,
+      "median_latency_ms": 0.070021,
       "notes": "Full mediation path with audit and trace emission disabled.",
-      "p95_latency_ms": 0.226064,
+      "p95_latency_ms": 0.303769,
+      "robustness_blocked_count": 9,
+      "robustness_error_count": 12,
+      "robustness_success_count": 0,
+      "robustness_total": 21,
       "safe_actions_allowed_pct": 100.0,
-      "safe_allowed_count": 115,
-      "safe_total": 115,
+      "safe_allowed_count": 96,
+      "safe_total": 96,
       "scenario_count": 200,
       "system_id": "no_audit",
-      "unsafe_actions_blocked_pct": 50.59,
-      "unsafe_blocked_count": 43,
-      "unsafe_total": 85
+      "unsafe_actions_blocked_pct": 100.0,
+      "unsafe_blocked_count": 83,
+      "unsafe_total": 83
     },
     {
-      "execution_error_count": 21,
+      "category_outcomes": {
+        "benign": {
+          "blocked": 0,
+          "error": 0,
+          "success": 73,
+          "total": 73
+        },
+        "malformed_payload": {
+          "blocked": 0,
+          "error": 12,
+          "success": 0,
+          "total": 12
+        },
+        "malicious": {
+          "blocked": 27,
+          "error": 0,
+          "success": 27,
+          "total": 54
+        },
+        "plugin_failure": {
+          "blocked": 9,
+          "error": 0,
+          "success": 0,
+          "total": 9
+        },
+        "policy_blocked": {
+          "blocked": 29,
+          "error": 0,
+          "success": 0,
+          "total": 29
+        },
+        "trace_stress": {
+          "blocked": 0,
+          "error": 0,
+          "success": 23,
+          "total": 23
+        }
+      },
+      "execution_error_count": 12,
       "label": "Progent-style",
-      "median_latency_ms": 0.152458,
+      "median_latency_ms": 0.047063,
       "notes": "Lightweight rule-based DSL-style policy over tools and arguments.",
-      "p95_latency_ms": 0.24944,
+      "p95_latency_ms": 0.18305,
+      "robustness_blocked_count": 9,
+      "robustness_error_count": 12,
+      "robustness_success_count": 0,
+      "robustness_total": 21,
       "safe_actions_allowed_pct": 100.0,
-      "safe_allowed_count": 115,
-      "safe_total": 115,
+      "safe_allowed_count": 96,
+      "safe_total": 96,
       "scenario_count": 200,
       "system_id": "progent_style",
-      "unsafe_actions_blocked_pct": 50.59,
-      "unsafe_blocked_count": 43,
-      "unsafe_total": 85
+      "unsafe_actions_blocked_pct": 67.47,
+      "unsafe_blocked_count": 56,
+      "unsafe_total": 83
     },
     {
-      "execution_error_count": 21,
+      "category_outcomes": {
+        "benign": {
+          "blocked": 0,
+          "error": 0,
+          "success": 73,
+          "total": 73
+        },
+        "malformed_payload": {
+          "blocked": 0,
+          "error": 12,
+          "success": 0,
+          "total": 12
+        },
+        "malicious": {
+          "blocked": 54,
+          "error": 0,
+          "success": 0,
+          "total": 54
+        },
+        "plugin_failure": {
+          "blocked": 9,
+          "error": 0,
+          "success": 0,
+          "total": 9
+        },
+        "policy_blocked": {
+          "blocked": 29,
+          "error": 0,
+          "success": 0,
+          "total": 29
+        },
+        "trace_stress": {
+          "blocked": 0,
+          "error": 0,
+          "success": 23,
+          "total": 23
+        }
+      },
+      "execution_error_count": 12,
       "label": "Agent-Sentinel",
-      "median_latency_ms": 0.344416,
+      "median_latency_ms": 0.236146,
       "notes": "Full runtime capability mediation with validators and audit trail.",
-      "p95_latency_ms": 0.611275,
+      "p95_latency_ms": 0.596552,
+      "robustness_blocked_count": 9,
+      "robustness_error_count": 12,
+      "robustness_success_count": 0,
+      "robustness_total": 21,
       "safe_actions_allowed_pct": 100.0,
-      "safe_allowed_count": 115,
-      "safe_total": 115,
+      "safe_allowed_count": 96,
+      "safe_total": 96,
       "scenario_count": 200,
       "system_id": "agent_sentinel",
-      "unsafe_actions_blocked_pct": 50.59,
-      "unsafe_blocked_count": 43,
-      "unsafe_total": 85
+      "unsafe_actions_blocked_pct": 100.0,
+      "unsafe_blocked_count": 83,
+      "unsafe_total": 83
     }
   ],
   "tasks_dir": "/Users/irshadahmad/Documents/agent-sentinel/configs/tasks_synth/scale_n200",
   "unsafe_categories": [
-    "malformed_payload",
     "malicious",
-    "plugin_failure",
     "policy_blocked"
   ],
   "workload_scenario_count": 200,

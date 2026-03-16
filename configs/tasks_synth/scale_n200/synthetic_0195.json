@@ -1,17 +1,11 @@
 {
-  "category": "benign",
+  "attack_family": "missing_required_write_text_arg",
+  "category": "malformed_payload",
   "name": "synthetic_0195",
   "steps": [
     {
       "args": {
-        "path": "public/briefing.txt"
-      },
-      "tool_name": "read_text"
-    },
-    {
-      "args": {
-        "path": "workspace/synthetic_0195.txt",
-        "text": "ok"
+        "path": "workspace/synthetic_0195.txt"
       },
       "tool_name": "write_text"
     }

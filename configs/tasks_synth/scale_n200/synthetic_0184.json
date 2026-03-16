@@ -1,12 +1,13 @@
 {
-  "category": "trace_stress",
+  "attack_family": "missing_required_write_text_arg",
+  "category": "malformed_payload",
   "name": "synthetic_0184",
   "steps": [
     {
       "args": {
-        "path": "public/reference.txt"
+        "path": "workspace/synthetic_0184.txt"
       },
-      "tool_name": "read_text"
+      "tool_name": "write_text"
     }
   ]
 }

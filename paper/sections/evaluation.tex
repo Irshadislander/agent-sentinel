@@ -1,0 +1,15 @@
+\section{Evaluation}
+
+We evaluate Agent-Sentinel on the regenerated 200-scenario benchmark and on the small real-agent case study described elsewhere in the paper. The main benchmark is the primary source for the baseline comparison because it exercises both policy-deny behavior and robustness behavior under a shared execution harness.
+
+\subsection{Workload Categories}
+
+The benchmark is divided into three layers. Safe categories contain benign and trace-stress tasks that should be allowed. Security-deny categories contain malicious and policy-blocked tasks that should be denied before tool execution. Robustness categories contain malformed-payload and plugin-failure tasks that should not be counted as successful security blocks, but should still be reported because they expose execution-path fragility and plugin-isolation behavior.
+
+\subsection{Baseline Comparison}
+
+Table~\ref{tab:evaluation_results} reports the main benchmark results. The systems compared are No Protection, Static Allowlist, Argument Allowlist, Validator Only, Progent-style, No Audit, and full Agent-Sentinel.
+
+\input{tables/evaluation_results}
+
+All systems preserve 100.0\% of safe actions on the current workload. The primary distinction is therefore in how much of the security-deny slice each system blocks, and whether that improvement comes from richer runtime mediation or only from narrower tool-name rules.

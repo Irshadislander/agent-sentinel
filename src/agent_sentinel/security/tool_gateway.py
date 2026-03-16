@@ -358,6 +358,11 @@ class ToolGateway:
         normalized = tool_name.strip().lower()
         base_dir = Path(self._policy.get("base_dir", "."))
         capabilities_map = self._policy.get("capabilities", {})
+        allowlist = self._policy.get("allowlist_domains", [])
+        if not isinstance(allowlist, list):
+            allowlist = []
+        allowlist_domains = [str(item) for item in allowlist]
+        allow_post = self._caps.has(NET_HTTP_POST)
 
         if normalized in _FS_READ_TOOL_NAMES:
             allow_private = self._caps.has(FS_READ_PRIVATE) or bool(
@@ -366,6 +371,32 @@ class ToolGateway:
             path = str(args.get("path", ""))
             return validators.validate_fs_read(path, base_dir=base_dir, allow_private=allow_private)
 
+        if normalized in _FS_WRITE_TOOL_NAMES:
+            path = str(args.get("path", ""))
+            return self._validate_workspace_write(path=path, base_dir=base_dir)
+
+        if normalized in _HTTP_GET_TOOL_NAMES:
+            url = str(args.get("url", ""))
+            if not self._caps.has(NET_HTTP_GET):
+                return validators.ValidationResult(
+                    False, f"GET denied: missing capability {NET_HTTP_GET}"
+                )
+            return validators.validate_http_request(
+                method="GET",
+                url=url,
+                allowlist_domains=allowlist_domains,
+                allow_post=allow_post,
+            )
+
+        if normalized in _HTTP_POST_TOOL_NAMES:
+            url = str(args.get("url", ""))
+            return validators.validate_http_request(
+                method="POST",
+                url=url,
+                allowlist_domains=allowlist_domains,
+                allow_post=allow_post,
+            )
+
         if normalized in _HTTP_REQUEST_TOOL_NAMES:
             method = str(args.get("method", "GET")).upper()
             url = str(args.get("url", ""))
@@ -373,14 +404,10 @@ class ToolGateway:
                 return validators.ValidationResult(
                     False, f"GET denied: missing capability {NET_HTTP_GET}"
                 )
-            allowlist = self._policy.get("allowlist_domains", [])
-            if not isinstance(allowlist, list):
-                allowlist = []
-            allow_post = self._caps.has(NET_HTTP_POST)
             return validators.validate_http_request(
                 method=method,
                 url=url,
-                allowlist_domains=[str(item) for item in allowlist],
+                allowlist_domains=allowlist_domains,
                 allow_post=allow_post,
             )
 
@@ -398,3 +425,26 @@ class ToolGateway:
         if any(part == ".." for part in parts):
             return "invalid"
         return parts[0]
+
+    @staticmethod
+    def _validate_workspace_write(*, path: str, base_dir: Path) -> validators.ValidationResult:
+        if not isinstance(path, str) or not path:
+            return validators.ValidationResult(False, "invalid fs path")
+
+        posix_path = PurePosixPath(path.replace("\\", "/"))
+        if posix_path.is_absolute():
+            return validators.ValidationResult(False, "absolute paths are not allowed")
+        if any(part == ".." for part in posix_path.parts):
+            return validators.ValidationResult(False, "path traversal is not allowed")
+
+        root = base_dir.resolve()
+        candidate = (root / posix_path).resolve()
+        try:
+            candidate.relative_to(root)
+        except ValueError:
+            return validators.ValidationResult(False, "path escapes base_dir")
+
+        parts = [part for part in posix_path.parts if part not in ("", ".")]
+        if not parts or parts[0] != "workspace":
+            return validators.ValidationResult(False, "only workspace/ paths are writable")
+        return validators.ValidationResult(True, "ok")

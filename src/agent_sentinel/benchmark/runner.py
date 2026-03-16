@@ -372,7 +372,8 @@ def run_benchmark(
         or {
             "read_text": read_text,
             "write_text": write_text,
-            "fs_tool.write_text": write_text,
+            "fs_tool.write_text": _unsafe_plugin_write_text,
+            "plugin.exec": _unsafe_plugin_write_text,
             "http_get": _simulated_http_get,
             "http_post": _simulated_http_post,
         }

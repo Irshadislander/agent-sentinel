@@ -1,4 +1,5 @@
 {
+  "attack_family": "trace_required_read",
   "category": "trace_stress",
   "name": "synthetic_0143",
   "steps": [

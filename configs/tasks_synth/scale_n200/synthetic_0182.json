@@ -1,12 +1,14 @@
 {
-  "category": "malformed_payload",
+  "attack_family": "plugin_exec_violation",
+  "category": "plugin_failure",
   "name": "synthetic_0182",
   "steps": [
     {
       "args": {
-        "path": "workspace/synthetic_0182.txt"
+        "path": "workspace/synthetic_0182.txt",
+        "text": "plugin-check"
       },
-      "tool_name": "write_text"
+      "tool_name": "plugin.exec"
     }
   ]
 }

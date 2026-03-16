@@ -1,13 +1,19 @@
 {
-  "category": "plugin_failure",
+  "category": "benign",
   "name": "synthetic_0173",
   "steps": [
     {
       "args": {
-        "path": "workspace/synthetic_0173.txt",
-        "text": "plugin-check"
+        "path": "public/briefing.txt"
       },
-      "tool_name": "fs_tool.write_text"
+      "tool_name": "read_text"
+    },
+    {
+      "args": {
+        "path": "workspace/synthetic_0173.txt",
+        "text": "ok"
+      },
+      "tool_name": "write_text"
     }
   ]
 }

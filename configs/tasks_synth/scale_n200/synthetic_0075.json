@@ -1,10 +1,17 @@
 {
-  "category": "malformed_payload",
+  "category": "benign",
   "name": "synthetic_0075",
   "steps": [
     {
       "args": {
-        "path": "workspace/synthetic_0075.txt"
+        "path": "public/briefing.txt"
+      },
+      "tool_name": "read_text"
+    },
+    {
+      "args": {
+        "path": "workspace/synthetic_0075.txt",
+        "text": "ok"
       },
       "tool_name": "write_text"
     }

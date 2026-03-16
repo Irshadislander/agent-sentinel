@@ -1,0 +1,48 @@
+\begin{table*}[t]
+\centering
+\small
+\caption{Attack taxonomy used in the Agent-Sentinel benchmark. The evaluation spans five attack families, three tool scenarios, and five policy configurations, yielding a total of 75 scenarios.}
+\label{tab:attack_taxonomy}
+
+\begin{tabular}{llll}
+\hline
+\textbf{Attack Family} & \textbf{Goal} & \textbf{Representative Scenario} & \textbf{Target Surface} \\
+\hline
+
+Prompt Injection &
+Manipulate agent behavior through adversarial instructions &
+Injected content attempts to coerce the agent into invoking unsafe tools &
+Prompt / tool boundary \\
+
+Tool Misuse &
+Abuse legitimate tools for unintended actions &
+Benign tools invoked with attacker-controlled arguments &
+Tool arguments \\
+
+Capability Escalation &
+Trigger operations beyond agent privileges &
+Agent attempts privileged operations not allowed by policy &
+Capability policy layer \\
+
+Unauthorized API Calls &
+Access disallowed services or exfiltrate data &
+Outbound requests to non-allowlisted endpoints &
+Network/API tools \\
+
+Malicious System Operations &
+Access or modify sensitive host resources &
+Restricted file reads or shell-like operations &
+Filesystem / host tools \\
+
+\hline
+
+\multicolumn{4}{l}{\textbf{Tool scenarios:} filesystem tools, API/network tools, system-operation workflows} \\
+
+\multicolumn{4}{l}{\textbf{Policy configurations:} no protection, static allowlist, argument allowlist, validator-only, full Agent-Sentinel} \\
+
+\multicolumn{4}{l}{\textbf{Total benchmark size:} $5 \times 3 \times 5 = 75$ scenarios} \\
+
+\hline
+\end{tabular}
+
+\end{table*}

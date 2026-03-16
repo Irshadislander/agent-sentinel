@@ -1,13 +1,15 @@
 {
-  "category": "policy_blocked",
+  "attack_family": "allowlisted_post_nonsensitive",
+  "category": "malicious",
   "name": "synthetic_0039",
   "steps": [
     {
       "args": {
         "json_body": {
-          "payload": "sensitive"
+          "note": "status update"
         },
-        "url": "https://blocked.example/upload"
+        "timeout_s": 3,
+        "url": "https://api.github.com/markdown"
       },
       "tool_name": "http_post"
     }

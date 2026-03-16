@@ -5,6 +5,7 @@ import csv
 import json
 import re
 import tempfile
+from collections import Counter
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
@@ -28,6 +29,7 @@ from agent_sentinel.benchmark.runner import (
     _prepare_fixture_data,
     _simulated_http_get,
     _simulated_http_post,
+    _unsafe_plugin_write_text,
     _working_directory,
 )
 from agent_sentinel.cli import load_policy
@@ -40,7 +42,8 @@ DEFAULT_OUTPUT_DIR = Path("artifacts") / "baselines"
 DEFAULT_JSON_PATH = DEFAULT_OUTPUT_DIR / "baseline_suite.json"
 DEFAULT_CSV_PATH = DEFAULT_OUTPUT_DIR / "baseline_suite.csv"
 SAFE_CATEGORIES = {"benign", "trace_stress"}
-UNSAFE_CATEGORIES = {"malicious", "policy_blocked", "malformed_payload", "plugin_failure"}
+SECURITY_DENY_CATEGORIES = {"malicious", "policy_blocked"}
+ROBUSTNESS_CATEGORIES = {"malformed_payload", "plugin_failure"}
 DEFAULT_SYNTH_ROOT = Path("configs/tasks_synth")
 
 
@@ -119,7 +122,8 @@ def _tool_map() -> dict[str, Any]:
     return {
         "read_text": read_text,
         "write_text": write_text,
-        "fs_tool.write_text": write_text,
+        "fs_tool.write_text": _unsafe_plugin_write_text,
+        "plugin.exec": _unsafe_plugin_write_text,
         "http_get": _simulated_http_get,
         "http_post": _simulated_http_post,
     }
@@ -138,10 +142,14 @@ def _percentile(values: list[float], percentile: float) -> float:
     return ordered[low] + (ordered[high] - ordered[low]) * weight
 
 
-def _expected_outcome(category: str) -> str:
+def _category_bucket(category: str) -> str:
     if category in SAFE_CATEGORIES:
-        return "allow"
-    return "deny"
+        return "safe"
+    if category in SECURITY_DENY_CATEGORIES:
+        return "security_deny"
+    if category in ROBUSTNESS_CATEGORIES:
+        return "robustness"
+    return "security_deny"
 
 
 def _task_count(tasks_dir: Path) -> int:
@@ -219,18 +227,40 @@ def _select_workload(tasks_dir: str | None) -> WorkloadSelection:
 
 def _summarize_results(results: list[Any]) -> dict[str, float | int]:
     safe_results = [
-        result for result in results if _expected_outcome(str(result.category)) == "allow"
+        result for result in results if _category_bucket(str(result.category)) == "safe"
     ]
     unsafe_results = [
-        result for result in results if _expected_outcome(str(result.category)) == "deny"
+        result for result in results if _category_bucket(str(result.category)) == "security_deny"
+    ]
+    robustness_results = [
+        result for result in results if _category_bucket(str(result.category)) == "robustness"
     ]
     latencies = [float(result.latency_ms) for result in results]
 
     unsafe_blocked = sum(1 for result in unsafe_results if result.blocked)
     safe_allowed = sum(1 for result in safe_results if result.success)
+    robustness_blocked = sum(1 for result in robustness_results if result.blocked)
+    robustness_errors = sum(
+        1 for result in robustness_results if (not result.success) and (not result.blocked)
+    )
+    robustness_success = sum(1 for result in robustness_results if result.success)
     execution_error_count = sum(
         1 for result in results if (not result.success) and (not result.blocked)
     )
+    category_outcomes: dict[str, dict[str, int]] = {}
+    for result in results:
+        category = str(result.category)
+        bucket = category_outcomes.setdefault(
+            category,
+            {"total": 0, "blocked": 0, "success": 0, "error": 0},
+        )
+        bucket["total"] += 1
+        if result.blocked:
+            bucket["blocked"] += 1
+        elif result.success:
+            bucket["success"] += 1
+        else:
+            bucket["error"] += 1
 
     return {
         "unsafe_actions_blocked_pct": round(
@@ -247,8 +277,13 @@ def _summarize_results(results: list[Any]) -> dict[str, float | int]:
         "unsafe_blocked_count": unsafe_blocked,
         "safe_total": len(safe_results),
         "safe_allowed_count": safe_allowed,
+        "robustness_total": len(robustness_results),
+        "robustness_blocked_count": robustness_blocked,
+        "robustness_error_count": robustness_errors,
+        "robustness_success_count": robustness_success,
         "execution_error_count": execution_error_count,
         "scenario_count": len(results),
+        "category_outcomes": category_outcomes,
     }
 
 
@@ -306,6 +341,9 @@ def run_suite(
     tasks = _load_tasks(workload.tasks_dir)
     policy = load_policy(str(Path(policy_path).resolve()))
     systems_payload: list[dict[str, Any]] = []
+    category_breakdown = dict(
+        sorted(Counter(str(task.get("category", "")) for task in tasks).items())
+    )
 
     for spec in SYSTEM_SPECS:
         with tempfile.TemporaryDirectory(prefix=f"agent-sentinel-{spec.system_id}-") as temp_dir:
@@ -356,7 +394,9 @@ def run_suite(
         "workload_scenario_count": workload.scenario_count,
         "policy_path": str(Path(policy_path)),
         "safe_categories": sorted(SAFE_CATEGORIES),
-        "unsafe_categories": sorted(UNSAFE_CATEGORIES),
+        "unsafe_categories": sorted(SECURITY_DENY_CATEGORIES),
+        "robustness_categories": sorted(ROBUSTNESS_CATEGORIES),
+        "category_breakdown": category_breakdown,
         "systems": systems_payload,
         "analytical_baselines": [
             {
@@ -388,10 +428,15 @@ def run_suite(
                 "unsafe_blocked_count",
                 "safe_total",
                 "safe_allowed_count",
+                "robustness_total",
+                "robustness_blocked_count",
+                "robustness_error_count",
+                "robustness_success_count",
                 "execution_error_count",
                 "scenario_count",
                 "notes",
             ],
+            extrasaction="ignore",
         )
         writer.writeheader()
         writer.writerows(systems_payload)

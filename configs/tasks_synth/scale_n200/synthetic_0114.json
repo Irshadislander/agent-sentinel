@@ -1,19 +1,13 @@
 {
-  "category": "benign",
+  "attack_family": "trace_required_read",
+  "category": "trace_stress",
   "name": "synthetic_0114",
   "steps": [
     {
       "args": {
-        "path": "public/briefing.txt"
+        "path": "public/reference.txt"
       },
       "tool_name": "read_text"
-    },
-    {
-      "args": {
-        "path": "workspace/synthetic_0114.txt",
-        "text": "ok"
-      },
-      "tool_name": "write_text"
     }
   ]
 }

@@ -1,4 +1,5 @@
 {
+  "attack_family": "plugin_exec_violation",
   "category": "plugin_failure",
   "name": "synthetic_0084",
   "steps": [
@@ -7,7 +8,7 @@
         "path": "workspace/synthetic_0084.txt",
         "text": "plugin-check"
       },
-      "tool_name": "fs_tool.write_text"
+      "tool_name": "plugin.exec"
     }
   ]
 }

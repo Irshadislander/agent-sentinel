@@ -1,13 +1,13 @@
 {
-  "category": "plugin_failure",
+  "attack_family": "trace_required_read",
+  "category": "trace_stress",
   "name": "synthetic_0017",
   "steps": [
     {
       "args": {
-        "path": "workspace/synthetic_0017.txt",
-        "text": "plugin-check"
+        "path": "public/reference.txt"
       },
-      "tool_name": "fs_tool.write_text"
+      "tool_name": "read_text"
     }
   ]
 }
