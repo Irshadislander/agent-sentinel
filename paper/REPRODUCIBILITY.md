@@ -76,14 +76,14 @@ Expected output:
 ```bash
 python scripts/generate_canonical_report.py \
   --matrix-input artifacts/bench/matrix.json \
-  --results-output paper/results_tables.md \
+  --results-output paper/tables/results_tables.md \
   --policy-perf-json artifacts/bench/policy_engine_bench.json \
   --policy-perf-markdown paper/PERF_DAYXX.md \
   --robustness-output artifacts/bench/robustness_report.json
 ```
 
 Expected outputs:
-- `paper/results_tables.md`
+- `paper/tables/results_tables.md`
 - `paper/PERF_DAYXX.md`
 - `artifacts/bench/robustness_report.json`
 

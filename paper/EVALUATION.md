@@ -13,7 +13,7 @@
 
 This table is intended to surface the main evaluation outcomes once the baseline results are populated. In particular, it summarizes whether Agent-Sentinel blocks the majority of unsafe tool invocations, whether legitimate tool usage remains mostly unaffected, and whether the runtime mediation overhead remains small.
 
-Table summaries in `paper/results_tables.md` provide a compact reviewer-facing view of the paper's three evaluation layers: baseline benchmark comparison, autonomous agent integration case study, and reproducibility artifacts.
+Table summaries in `paper/tables/results_tables.md` provide a compact reviewer-facing view of the paper's three evaluation layers: baseline benchmark comparison, autonomous agent integration case study, and reproducibility artifacts.
 
 ## Real-Agent Integration Case Study
 

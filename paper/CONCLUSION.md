@@ -14,5 +14,5 @@ The system is accompanied by a reproducible artifact package containing the full
 - [FORMAL_MODEL](FORMAL_MODEL.md)
 - [THREAT_MODEL](THREAT_MODEL.md)
 - [METRICS](METRICS.md)
-- [RESULTS](results_tables.md)
+- [RESULTS](tables/results_tables.md)
 - [RELATED_WORK](RELATED_WORK.md)

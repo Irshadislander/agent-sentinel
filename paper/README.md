@@ -31,7 +31,7 @@ The real-agent integration case study output is written to:
 - `THREAT_MODEL.md`
 - `METRICS.md`
 - `EXPERIMENTS.md`
-- `results_tables.md` (legacy consolidated table file)
+- `tables/results_tables.md` (legacy consolidated table file)
 - `CONCLUSION.md`
 
 ## Reproduce Evaluation Artifacts
