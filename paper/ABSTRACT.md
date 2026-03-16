@@ -10,5 +10,5 @@ Evaluation combines a reproducible adversarial benchmark (attack families, diffi
 - [FORMAL_MODEL](FORMAL_MODEL.md)
 - [THREAT_MODEL](THREAT_MODEL.md)
 - [METRICS](METRICS.md)
-- [RESULTS](results_tables.md)
+- [RESULTS](tables/results_tables.md)
 - [ROBUSTNESS](ROBUSTNESS.md)

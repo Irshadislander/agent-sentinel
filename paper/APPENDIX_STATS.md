@@ -60,19 +60,19 @@ No synthetic values should be inserted. Unavailable slices stay as placeholders.
 
 - Use deterministic aggregation scripts and fixed seeds where supported.
 - Keep artifact source path and generation timestamp in table headers.
-- Ensure `results_tables.md` and `STATS_TABLES.md` are generated from the same artifact snapshot.
+- Ensure `tables/results_tables.md` and `tables/STATS_TABLES.md` are generated from the same artifact snapshot.
 
 ## 7) Example Aggregation Command
 
 ```bash
 python3 scripts/aggregate_results.py \
   --input artifacts/bench \
-  --out paper/results_tables.md \
-  --stats-out paper/STATS_TABLES.md \
+  --out paper/tables/results_tables.md \
+  --stats-out paper/tables/STATS_TABLES.md \
   --baseline default \
   --resamples 10000
 ```
 
 Expected outputs:
-- `paper/results_tables.md`
-- `paper/STATS_TABLES.md`
+- `paper/tables/results_tables.md`
+- `paper/tables/STATS_TABLES.md`

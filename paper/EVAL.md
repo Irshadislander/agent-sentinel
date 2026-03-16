@@ -10,7 +10,7 @@ Primary metrics include safety (UER), failure disambiguation (FAR), trace comple
 We execute matrix runs over baseline modes and scenario classes, then aggregate results into canonical tables and appendix-level reports.
 
 ## Outputs
-- Main comparison tables in `results_tables.md`.
+- Main comparison tables in `tables/results_tables.md`.
 - Robustness-specific analysis in `ROBUSTNESS.md`.
 - Performance summaries and latency distributions in `PERF_DAYXX.md`.
 
@@ -18,6 +18,6 @@ We execute matrix runs over baseline modes and scenario classes, then aggregate 
 - [FORMAL_MODEL](FORMAL_MODEL.md)
 - [THREAT_MODEL](THREAT_MODEL.md)
 - [METRICS](METRICS.md)
-- [RESULTS](results_tables.md)
+- [RESULTS](tables/results_tables.md)
 - [ROBUSTNESS](ROBUSTNESS.md)
 - [PERF](PERF_DAYXX.md)

@@ -45,6 +45,6 @@ Method claims are scoped to runtime mediation behavior under the declared threat
 - [FORMAL_MODEL](FORMAL_MODEL.md)
 - [THREAT_MODEL](THREAT_MODEL.md)
 - [METRICS](METRICS.md)
-- [RESULTS](results_tables.md)
+- [RESULTS](tables/results_tables.md)
 - [ROBUSTNESS](ROBUSTNESS.md)
 - [PERF](PERF_DAYXX.md)

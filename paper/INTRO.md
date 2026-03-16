@@ -33,5 +33,5 @@ The claim is framework applicability of the mediation model, not evidence of bro
 - [FORMAL_MODEL](FORMAL_MODEL.md)
 - [THREAT_MODEL](THREAT_MODEL.md)
 - [METRICS](METRICS.md)
-- [RESULTS](results_tables.md)
+- [RESULTS](tables/results_tables.md)
 - [RELATED_WORK](RELATED_WORK.md)
