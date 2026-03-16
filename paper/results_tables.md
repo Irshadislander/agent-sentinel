@@ -3,6 +3,15 @@
 - Source: `bench/results/matrix.json`
 - Generated at (UTC): `2026-03-07T18:32:03.144025+00:00`
 
+## Evaluation-at-a-Glance
+
+| Evaluation Component | Workload | Main Outcome | Artifact |
+|---|---|---|---|
+| Baseline evaluation suite | Benchmark scenarios | Measures policy enforcement, safe allowances, and latency | artifacts/baselines/ |
+| AutoGen integration case study | 5 tasks (3 benign, 2 attack) | Benign tasks completed while attack attempts are blocked | artifacts/autogen_integration/autogen_results.json |
+| Trace artifacts | JSONL execution traces | Enables forensic inspection of tool mediation and blocked actions | artifacts/autogen_integration/traces/ |
+| Reproducibility package | Scripts and configs | Allows reviewers to reproduce experiments locally | examples/ , configs/ , paper/ |
+
 ## Table 1: Baseline Metrics
 
 | Baseline | UER | ΔUER vs default | FAR | ΔFAR vs default | TCR | ΔTCR vs default | EDS | ΔEDS vs default | plugin_loads | Δplugin_loads vs default |
