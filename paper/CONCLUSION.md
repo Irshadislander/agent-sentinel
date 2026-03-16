@@ -8,6 +8,8 @@ The practical takeaway is that runtime capability mediation can be deployed as a
 
 Future work includes broader workload coverage, stronger policy-authoring support, and deeper evaluation in production-oriented agent frameworks.
 
+The system is accompanied by a reproducible artifact package containing the full evaluation harness, experiment outputs, and integration examples to facilitate independent verification of the reported results.
+
 ## Links
 - [FORMAL_MODEL](FORMAL_MODEL.md)
 - [THREAT_MODEL](THREAT_MODEL.md)
