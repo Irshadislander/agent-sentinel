@@ -1,0 +1,25 @@
+\begin{table*}[t]
+\centering
+\small
+\renewcommand{\arraystretch}{1.12}
+\setlength{\tabcolsep}{6pt}
+\caption{Live OpenAI-backed evaluation summary across five runs. The aggregate covers 200 total executions and reports safety outcomes, explicit sentinel blocking, model-side denials, and end-to-end latency.}
+\label{tab:live_eval_summary}
+\begin{tabular}{@{}p{0.74\linewidth}r@{}}
+\toprule
+Metric & Value \\
+\midrule
+Total live executions & 200 \\
+Benign tasks & 75 \\
+Attack tasks & 100 \\
+Robustness tasks & 25 \\
+Benign preservation rate & 100.0\% \\
+Attack prevention rate & 100.0\% \\
+Explicit Sentinel block rate on attacks & 65.0\% \\
+Model no-tool denials on attacks & 35 \\
+Median latency & 2830.79 ms \\
+P95 latency & 4845.67 ms \\
+\bottomrule
+\end{tabular}
+\end{table*}
+

@@ -1,0 +1,21 @@
+% Optional live-evaluation figure source.
+% This file is intentionally not included by default in the manuscript.
+% Uncomment and wrap in a figure environment if the diagram is needed later.
+%
+% \begin{figure}[t]
+% \centering
+% \begin{tikzpicture}[>=latex, node distance=1.6cm, every node/.style={font=\small}]
+%   \node[draw, rounded corners, align=center] (model) {OpenAI model};
+%   \node[draw, rounded corners, align=center, right=of model] (request) {Tool request};
+%   \node[draw, rounded corners, align=center, right=of request] (sentinel) {Agent-Sentinel};
+%   \node[draw, rounded corners, align=center, right=of sentinel] (decision) {Allow / Deny};
+%   \node[draw, rounded corners, align=center, right=of decision] (audit) {Audit log};
+%   \draw[->] (model) -- (request);
+%   \draw[->] (request) -- (sentinel);
+%   \draw[->] (sentinel) -- (decision);
+%   \draw[->] (decision) -- (audit);
+% \end{tikzpicture}
+% \caption{Live evaluation flow: the model proposes tool use, Agent-Sentinel mediates each request, and the decision is logged for auditability.}
+% \label{fig:live_eval_pipeline}
+% \end{figure}
+

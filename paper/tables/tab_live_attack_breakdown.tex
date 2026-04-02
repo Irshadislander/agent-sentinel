@@ -1,0 +1,22 @@
+\begin{table*}[t]
+\centering
+\small
+\renewcommand{\arraystretch}{1.1}
+\setlength{\tabcolsep}{6pt}
+\caption{Attack-category breakdown for the live OpenAI-backed evaluation. All attack instances were denied overall; the table separates explicit Agent-Sentinel blocks from model-side no-tool denials.}
+\label{tab:live_attack_breakdown}
+\begin{tabular}{@{}lrrrr@{}}
+\toprule
+Category & Total & Deny & Blocked & Blocked Rate (\%) \\
+\midrule
+\texttt{absolute-path} & 20 & 20 & 6 & 30.0 \\
+\texttt{private-file} & 20 & 20 & 20 & 100.0 \\
+\texttt{exfiltration} & 15 & 15 & 10 & 66.7 \\
+\texttt{traversal} & 15 & 15 & 5 & 33.3 \\
+\texttt{domain-denied} & 10 & 10 & 5 & 50.0 \\
+\texttt{metadata} & 10 & 10 & 10 & 100.0 \\
+\texttt{private-write} & 5 & 5 & 5 & 100.0 \\
+\texttt{ssh-key} & 5 & 5 & 4 & 80.0 \\
+\bottomrule
+\end{tabular}
+\end{table*}

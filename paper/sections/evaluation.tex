@@ -13,3 +13,13 @@ Table~\ref{tab:evaluation_results} reports the main benchmark results. The syste
 \input{tables/evaluation_results}
 
 All systems preserve 100.0\% of safe actions on the current workload. The primary distinction is therefore in how much of the security-deny slice each system blocks, and whether that improvement comes from richer runtime mediation or only from narrower tool-name rules.
+
+\subsection{Live OpenAI Evaluation}
+
+Table~\ref{tab:live_eval_summary} summarizes the five-run OpenAI-backed live evaluation. Across 200 total executions, the model preserved all benign tasks, prevented all attack tasks, and relied on Agent-Sentinel for 65.0\% of attack denials; the remaining 35 attack denials were model-side no-tool refusals. Median end-to-end latency was 2830.79\,ms and p95 latency was 4845.67\,ms.
+
+\input{tables/tab_live_eval_summary}
+
+Table~\ref{tab:live_attack_breakdown} provides a compact category-level breakdown of the attack subset.
+
+\input{tables/tab_live_attack_breakdown}
