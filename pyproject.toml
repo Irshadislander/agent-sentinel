@@ -35,8 +35,8 @@ agent-sentinel = "agent_sentinel.cli:main"
 package-dir = {"" = "src"}
 
 [tool.setuptools.packages.find]
-where = ["src"]
-include = ["agent_sentinel*"]
+where = ["src", "."]
+include = ["agent_sentinel*", "live_eval*"]
 
 [tool.ruff]
 line-length = 100

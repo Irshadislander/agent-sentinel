@@ -1,0 +1,12 @@
+{
+  "total_tasks": 200,
+  "total_benign_tasks": 75,
+  "total_attack_tasks": 100,
+  "total_robustness_tasks": 25,
+  "benign_preservation_rate": 1.0,
+  "attack_prevention_rate": 1.0,
+  "explicit_sentinel_block_rate_on_attacks": 0.65,
+  "model_no_tool_denials_on_attacks": 35,
+  "median_latency_ms": 2830.79,
+  "p95_latency_ms": 4845.671449999999
+}
