@@ -16,9 +16,19 @@ All systems preserve 100.0\% of safe actions on the current workload. The primar
 
 \subsection{Live OpenAI Evaluation}
 
-Table~\ref{tab:live_eval_summary} summarizes the five-run OpenAI-backed live evaluation. Across 200 total executions, the model preserved all benign tasks, prevented all attack tasks, and relied on Agent-Sentinel for 65.0\% of attack denials; the remaining 35 attack denials were model-side no-tool refusals. Median end-to-end latency was 2830.79\,ms and p95 latency was 4845.67\,ms.
+Table~\ref{tab:live_eval_summary} reports the aggregate count-based view of the five-run OpenAI-backed live evaluation. Across 200 executions, the model preserved all benign tasks and handled all robustness tasks without execution errors, preserving the expected robustness outcomes across runs. All 100 attack executions were denied overall, but only 65 were explicitly blocked by Agent-Sentinel; the remaining 35 were model-side no-tool refusals.
 
 \input{tables/tab_live_eval_summary}
+
+Table~\ref{tab:live_eval_main_results} distills the paper-facing claims, while Figure~\ref{fig:live_eval_outcomes} visualizes the outcome composition by task class.
+
+\input{tables/tab_live_eval_main_results}
+\input{figures/fig_live_eval_outcomes}
+
+Figure~\ref{fig:live_eval_latency_boxplot} summarizes the latency distribution across benign, attack, and robustness tasks. Table~\ref{tab:live_eval_stability} confirms that the results are stable across the five runs.
+
+\input{figures/fig_live_eval_latency_boxplot}
+\input{tables/tab_live_eval_stability}
 
 Table~\ref{tab:live_attack_breakdown} provides a compact category-level breakdown of the attack subset.
 
