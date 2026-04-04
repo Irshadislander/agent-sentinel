@@ -12,8 +12,10 @@ from typing import Any
 from PIL import Image, ImageDraw, ImageFont
 
 ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_RESULTS_CSV = ROOT / "live_eval" / "results" / "live_results_5runs.csv"
-DEFAULT_SUMMARY_JSON = ROOT / "live_eval" / "results" / "live_summary_5runs.json"
+DEFAULT_LIVE_RESULTS_CSV = ROOT / "live_eval" / "results" / "live_results_80x5.csv"
+DEFAULT_LIVE_SUMMARY_JSON = ROOT / "live_eval" / "results" / "live_summary_80x5.json"
+DEFAULT_STRESS_RESULTS_CSV = ROOT / "live_eval" / "results" / "live_results_5k.csv"
+DEFAULT_STRESS_SUMMARY_JSON = ROOT / "live_eval" / "results" / "live_summary_5k.json"
 DEFAULT_TABLES_DIR = ROOT / "paper" / "tables"
 DEFAULT_FIGURES_DIR = ROOT / "paper" / "figures"
 
@@ -122,9 +124,9 @@ def _compute_overall_metrics(rows: list[dict[str, str]]) -> dict[str, Any]:
 
     return {
         "total_tasks": len(rows),
-        "benign_tasks": len(benign_rows),
-        "attack_tasks": len(attack_rows),
-        "robustness_tasks": len(robustness_rows),
+        "total_benign_tasks": len(benign_rows),
+        "total_attack_tasks": len(attack_rows),
+        "total_robustness_tasks": len(robustness_rows),
         "benign_preservation_rate": benign_allowed / len(benign_rows) if benign_rows else 0.0,
         "attack_prevention_rate": attack_denied / len(attack_rows) if attack_rows else 0.0,
         "explicit_sentinel_block_rate_on_attacks": attack_blocked / len(attack_rows)
@@ -139,6 +141,7 @@ def _compute_overall_metrics(rows: list[dict[str, str]]) -> dict[str, Any]:
         "model_no_tool_denials_on_attacks": attack_model_denied,
         "median_latency_ms": _percentile(latencies, 0.50),
         "p95_latency_ms": _percentile(latencies, 0.95),
+        "max_latency_ms": max(latencies) if latencies else 0.0,
     }
 
 
@@ -225,33 +228,26 @@ def _attack_breakdown(rows: list[dict[str, str]]) -> list[dict[str, Any]]:
     return breakdown
 
 
-def _check_summary_against_json(summary: dict[str, Any], computed: dict[str, Any]) -> None:
-    checks = {
-        "total_tasks": (200, 0.0),
-        "total_benign_tasks": (75, 0.0),
-        "total_attack_tasks": (100, 0.0),
-        "total_robustness_tasks": (25, 0.0),
-        "benign_preservation_rate": (1.0, 1e-6),
-        "attack_prevention_rate": (1.0, 1e-6),
-        "explicit_sentinel_block_rate_on_attacks": (0.65, 1e-6),
-        "model_no_tool_denials_on_attacks": (35, 0.0),
-        "median_latency_ms": (2830.79, 0.05),
-        "p95_latency_ms": (4845.67145, 0.05),
-    }
+def _validate_summary_against_csv(
+    summary: dict[str, Any],
+    computed: dict[str, Any],
+    *,
+    label: str,
+) -> None:
     mismatches: list[str] = []
-    for key, (expected, tolerance) in checks.items():
-        actual = summary.get(key, computed.get(key))
-        if actual is None:
+    for key, actual in summary.items():
+        if key not in computed:
             mismatches.append(f"{key}: missing")
             continue
-        if isinstance(expected, float):
-            if abs(float(actual) - expected) > tolerance:
+        expected = computed[key]
+        if isinstance(expected, (int, float)) and isinstance(actual, (int, float)):
+            if abs(float(actual) - float(expected)) > 1e-6:
                 mismatches.append(f"{key}: expected {expected}, got {actual}")
         elif actual != expected:
             mismatches.append(f"{key}: expected {expected}, got {actual}")
     if mismatches:
         joined = "; ".join(mismatches)
-        raise SystemExit(f"live_summary_5runs.json does not match computed values: {joined}")
+        raise SystemExit(f"{label} does not match computed values: {joined}")
 
 
 def _format_percent(value: float, digits: int = 1) -> str:
@@ -270,15 +266,21 @@ def _write(path: Path, content: str) -> None:
     path.write_text(content.rstrip() + "\n", encoding="utf-8")
 
 
-def _render_summary_table(summary: dict[str, Any]) -> str:
+def _render_summary_table(
+    summary: dict[str, Any],
+    *,
+    caption: str = "Live OpenAI-backed evaluation summary for the 80x5 benchmark.",
+    label: str = "tab:live_eval_summary",
+    explicit_block_digits: int = 1,
+) -> str:
     lines = [
         r"\begin{table}[t]",
         r"\centering",
         r"\small",
         r"\renewcommand{\arraystretch}{1.12}",
         r"\setlength{\tabcolsep}{6pt}",
-        r"\caption{Live OpenAI-backed evaluation summary over five runs.}",
-        r"\label{tab:live_eval_summary}",
+        rf"\caption{{{caption}}}",
+        rf"\label{{{label}}}",
         r"\begin{tabular}{@{}p{0.74\linewidth}r@{}}",
         r"\toprule",
         r"Metric & Value \\",
@@ -290,11 +292,12 @@ def _render_summary_table(summary: dict[str, Any]) -> str:
         r"\addlinespace",
         f"Benign preservation rate & {_format_percent(float(summary['benign_preservation_rate']))} {ROW_BREAK}",
         f"Attack prevention rate & {_format_percent(float(summary['attack_prevention_rate']))} {ROW_BREAK}",
-        f"Explicit Sentinel block rate on attacks & {_format_percent(float(summary['explicit_sentinel_block_rate_on_attacks']))} {ROW_BREAK}",
+        f"Explicit Sentinel block rate on attacks & {_format_percent(float(summary['explicit_sentinel_block_rate_on_attacks']), digits=explicit_block_digits)} {ROW_BREAK}",
         f"Model no-tool denials on attacks & {int(summary['model_no_tool_denials_on_attacks'])} {ROW_BREAK}",
         r"\addlinespace",
-        f"Median latency & {_format_float(float(summary['median_latency_ms']))} ms {ROW_BREAK}",
-        f"P95 latency & {_format_float(float(summary['p95_latency_ms']))} ms {ROW_BREAK}",
+        f"Median latency & {_format_float(float(summary['median_latency_ms']), digits=1)} ms {ROW_BREAK}",
+        f"P95 latency & {_format_float(float(summary['p95_latency_ms']), digits=1)} ms {ROW_BREAK}",
+        f"Max latency & {_format_float(float(summary['max_latency_ms']), digits=1)} ms {ROW_BREAK}",
         r"\bottomrule",
         r"\end{tabular}",
         r"\end{table}",
@@ -310,20 +313,21 @@ def _render_main_results_table(summary: dict[str, Any]) -> str:
         r"\small",
         r"\renewcommand{\arraystretch}{1.12}",
         r"\setlength{\tabcolsep}{6pt}",
-        r"\caption{Main live OpenAI-backed evaluation results.}",
+        r"\caption{Main results for the 80x5 live evaluation.}",
         r"\label{tab:live_eval_main_results}",
-        r"\begin{tabular}{@{}p{0.69\linewidth}r@{}}",
+        r"\begin{tabular}{@{}p{0.71\linewidth}r@{}}",
         r"\toprule",
         r"Metric & Result \\",
         r"\midrule",
+        f"Total live executions & {int(summary['total_tasks'])} {ROW_BREAK}",
+        f"Benign tasks & {int(summary['total_benign_tasks'])} {ROW_BREAK}",
+        f"Attack tasks & {int(summary['total_attack_tasks'])} {ROW_BREAK}",
+        f"Robustness tasks & {int(summary['total_robustness_tasks'])} {ROW_BREAK}",
+        r"\addlinespace",
         f"Benign preservation rate & {_format_percent(float(summary['benign_preservation_rate']))} {ROW_BREAK}",
         f"Attack prevention rate & {_format_percent(float(summary['attack_prevention_rate']))} {ROW_BREAK}",
-        f"Robustness handled rate & {_format_percent(float(summary['robustness_handled_rate']))} {ROW_BREAK}",
         f"Explicit Sentinel block rate on attacks & {_format_percent(float(summary['explicit_sentinel_block_rate_on_attacks']))} {ROW_BREAK}",
-        f"Model self-denial rate on attacks & {_format_percent(float(summary['model_self_denial_rate_on_attacks']))} {ROW_BREAK}",
-        r"\addlinespace",
-        f"Median latency & {_format_float(float(summary['median_latency_ms']))} ms {ROW_BREAK}",
-        f"P95 latency & {_format_float(float(summary['p95_latency_ms']))} ms {ROW_BREAK}",
+        f"Model-only denials & {int(summary['model_no_tool_denials_on_attacks'])} {ROW_BREAK}",
         r"\bottomrule",
         r"\end{tabular}",
         r"\end{table}",
@@ -336,12 +340,10 @@ def _render_stability_table(run_summary: dict[str, dict[str, float]]) -> str:
     rows = [
         ("Benign preservation rate", run_summary["benign_preservation_rate"]),
         ("Attack prevention rate", run_summary["attack_prevention_rate"]),
-        ("Robustness handled rate", run_summary["robustness_handled_rate"]),
         (
             "Explicit Sentinel block rate on attacks",
             run_summary["explicit_sentinel_block_rate_on_attacks"],
         ),
-        ("Model self-denial rate on attacks", run_summary["model_self_denial_rate_on_attacks"]),
         ("Median latency", run_summary["median_latency_ms"]),
         ("P95 latency", run_summary["p95_latency_ms"]),
     ]
@@ -351,7 +353,7 @@ def _render_stability_table(run_summary: dict[str, dict[str, float]]) -> str:
         r"\small",
         r"\renewcommand{\arraystretch}{1.12}",
         r"\setlength{\tabcolsep}{6pt}",
-        r"\caption{Run-to-run stability of the live evaluation.}",
+        r"\caption{Run-to-run stability of the 80x5 live evaluation.}",
         r"\label{tab:live_eval_stability}",
         r"\begin{tabular}{@{}p{0.67\linewidth}r@{}}",
         r"\toprule",
@@ -377,7 +379,7 @@ def _render_attack_breakdown_table(breakdown: list[dict[str, Any]]) -> str:
         r"\small",
         r"\renewcommand{\arraystretch}{1.1}",
         r"\setlength{\tabcolsep}{6pt}",
-        r"\caption{Attack-category breakdown of the live evaluation.}",
+        r"\caption{Attack-category breakdown of the 80x5 live evaluation.}",
         r"\label{tab:live_attack_breakdown}",
         r"\begin{tabular}{@{}lrrrr@{}}",
         r"\toprule",
@@ -393,15 +395,25 @@ def _render_attack_breakdown_table(breakdown: list[dict[str, Any]]) -> str:
     return "\n".join(lines)
 
 
+def _render_stress_table(summary: dict[str, Any]) -> str:
+    return _render_summary_table(
+        summary,
+        caption="Live OpenAI-backed stress evaluation over 5,000 executions.",
+        label="tab:live_eval_stress_5k",
+        explicit_block_digits=2,
+    )
+
+
 def _render_notes() -> str:
     return "\n".join(
         [
             "# Live Evaluation Notes",
             "",
-            "- `tab_live_eval_summary.tex` is the aggregate count-and-rate summary for the five-run OpenAI-backed live evaluation. It reports the total number of executions, task counts by class, attack blocking, model-side denials, and latency percentiles.",
+            "- `tab_live_eval_summary.tex` is the aggregate count-and-rate summary for the 80x5 OpenAI-backed live evaluation. It reports the total number of executions, task counts by class, attack blocking, model-side denials, and latency statistics.",
             "- `tab_live_eval_main_results.tex` is the paper-facing results table. It highlights the primary safety claims and keeps the presentation compact for the Evaluation section.",
             "- `tab_live_eval_stability.tex` reports mean $\\pm$ std across the five runs so the manuscript can discuss run-to-run stability instead of a single point estimate.",
             "- `tab_live_attack_breakdown.tex` summarizes the attack-only slice by category, showing total cases, total denials, explicit Sentinel blocks, and the resulting blocked rate.",
+            "- `tab_live_eval_stress_5k.tex` summarizes the 5,000-execution stress evaluation used to report large-scale live performance.",
             "- `fig_live_eval_outcomes.png` visualizes the aggregate outcome composition by task type.",
             "- `fig_live_eval_latency_boxplot.png` shows the latency distribution by task type.",
             "",
@@ -411,7 +423,6 @@ def _render_notes() -> str:
 
 def _render_figure_tex(
     *,
-    filename: str,
     label: str,
     caption: str,
     graphic_path: str,
@@ -518,6 +529,10 @@ def _generate_outcomes_figure(rows: list[dict[str, str]], out_path: Path) -> Non
                 for row in subset
             )
         )
+    total_counts = [
+        allowed_counts[idx] + blocked_counts[idx] + denied_counts[idx]
+        for idx in range(len(task_types))
+    ]
 
     width, height = 1600, 900
     image = Image.new("RGB", (width, height), "white")
@@ -530,8 +545,10 @@ def _generate_outcomes_figure(rows: list[dict[str, str]], out_path: Path) -> Non
     plot_left, plot_top, plot_right, plot_bottom = 160, 140, 1510, 720
     plot_height = plot_bottom - plot_top
 
-    y_max = 105.0
-    tick_values = [0, 20, 40, 60, 80, 100]
+    max_total = max(total_counts) if total_counts else 0.0
+    y_max = max(20.0, math.ceil(max_total * 1.1 / 10.0) * 10.0)
+    tick_step = 50 if y_max <= 250 else 100
+    tick_values = list(range(0, int(y_max) + 1, tick_step))
     for tick in tick_values:
         y = _value_to_y(tick, top=plot_top, height=plot_height, y_max=y_max)
         draw.line([(plot_left, y), (plot_right, y)], fill="#E5E7EB", width=2)
@@ -695,13 +712,23 @@ def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Generate paper-ready live evaluation artifacts.")
     parser.add_argument(
         "--results-csv",
-        default=str(DEFAULT_RESULTS_CSV),
-        help=f"Path to the 5-run results CSV (default: {DEFAULT_RESULTS_CSV})",
+        default=str(DEFAULT_LIVE_RESULTS_CSV),
+        help=f"Path to the 80x5 results CSV (default: {DEFAULT_LIVE_RESULTS_CSV})",
     )
     parser.add_argument(
         "--summary-json",
-        default=str(DEFAULT_SUMMARY_JSON),
-        help=f"Path to the 5-run summary JSON (default: {DEFAULT_SUMMARY_JSON})",
+        default=str(DEFAULT_LIVE_SUMMARY_JSON),
+        help=f"Path to the 80x5 summary JSON (default: {DEFAULT_LIVE_SUMMARY_JSON})",
+    )
+    parser.add_argument(
+        "--stress-results-csv",
+        default=str(DEFAULT_STRESS_RESULTS_CSV),
+        help=f"Path to the 5k stress results CSV (default: {DEFAULT_STRESS_RESULTS_CSV})",
+    )
+    parser.add_argument(
+        "--stress-summary-json",
+        default=str(DEFAULT_STRESS_SUMMARY_JSON),
+        help=f"Path to the 5k stress summary JSON (default: {DEFAULT_STRESS_SUMMARY_JSON})",
     )
     parser.add_argument(
         "--tables-dir",
@@ -722,13 +749,24 @@ def main(argv: list[str] | None = None) -> int:
 
     results_csv = Path(args.results_csv)
     summary_json = Path(args.summary_json)
+    stress_results_csv = Path(args.stress_results_csv)
+    stress_summary_json = Path(args.stress_summary_json)
     tables_dir = Path(args.tables_dir)
     figures_dir = Path(args.figures_dir)
 
     rows = _load_csv_rows(results_csv)
     summary_payload = _load_json(summary_json)
     computed_summary = _compute_overall_metrics(rows)
-    _check_summary_against_json(summary_payload, computed_summary)
+    _validate_summary_against_csv(summary_payload, computed_summary, label=str(summary_json))
+
+    stress_rows = _load_csv_rows(stress_results_csv)
+    stress_summary_payload = _load_json(stress_summary_json)
+    stress_computed_summary = _compute_overall_metrics(stress_rows)
+    _validate_summary_against_csv(
+        stress_summary_payload,
+        stress_computed_summary,
+        label=str(stress_summary_json),
+    )
 
     run_metrics = _compute_run_metrics(rows)
     run_summary = _summarize_run_metrics(run_metrics)
@@ -741,6 +779,7 @@ def main(argv: list[str] | None = None) -> int:
     main_results_tex = _render_main_results_table(computed_summary)
     stability_tex = _render_stability_table(run_summary)
     attack_breakdown_tex = _render_attack_breakdown_table(attack_breakdown)
+    stress_tex = _render_stress_table(stress_summary_payload)
     notes_md = _render_notes()
 
     outcomes_png = figures_dir / "fig_live_eval_outcomes.png"
@@ -749,21 +788,13 @@ def main(argv: list[str] | None = None) -> int:
     _generate_latency_figure(rows, latency_png)
 
     outcomes_tex = _render_figure_tex(
-        filename="fig_live_eval_outcomes.tex",
         label="fig:live_eval_outcomes",
-        caption="Live evaluation outcomes across benign, attack, and robustness tasks.",
+        caption="Outcome composition in the 80x5 live evaluation.",
         graphic_path="figures/fig_live_eval_outcomes.png",
     )
-    latencies = [_float(row.get("latency_ms")) for row in rows]
-    latency_min = int(min(latencies))
-    latency_max = int(max(latencies))
     latency_tex = _render_figure_tex(
-        filename="fig_live_eval_latency_boxplot.tex",
         label="fig:live_eval_latency_boxplot",
-        caption=(
-            "Latency distribution across live-evaluation task classes; observed range is "
-            f"{latency_min}--{latency_max} ms."
-        ),
+        caption="Latency distribution across the 80x5 live evaluation.",
         graphic_path="figures/fig_live_eval_latency_boxplot.png",
     )
 
@@ -771,6 +802,7 @@ def main(argv: list[str] | None = None) -> int:
     _write(tables_dir / "tab_live_eval_main_results.tex", main_results_tex)
     _write(tables_dir / "tab_live_eval_stability.tex", stability_tex)
     _write(tables_dir / "tab_live_attack_breakdown.tex", attack_breakdown_tex)
+    _write(tables_dir / "tab_live_eval_stress_5k.tex", stress_tex)
     _write(tables_dir / "live_eval_notes.md", notes_md)
     _write(figures_dir / "fig_live_eval_outcomes.tex", outcomes_tex)
     _write(figures_dir / "fig_live_eval_latency_boxplot.tex", latency_tex)
@@ -779,6 +811,7 @@ def main(argv: list[str] | None = None) -> int:
     print(f"Wrote {tables_dir / 'tab_live_eval_main_results.tex'}")
     print(f"Wrote {tables_dir / 'tab_live_eval_stability.tex'}")
     print(f"Wrote {tables_dir / 'tab_live_attack_breakdown.tex'}")
+    print(f"Wrote {tables_dir / 'tab_live_eval_stress_5k.tex'}")
     print(f"Wrote {tables_dir / 'live_eval_notes.md'}")
     print(f"Wrote {outcomes_png}")
     print(f"Wrote {latency_png}")

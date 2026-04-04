@@ -1,0 +1,27 @@
+\begin{table}[t]
+\centering
+\small
+\renewcommand{\arraystretch}{1.12}
+\setlength{\tabcolsep}{6pt}
+\caption{Live OpenAI-backed stress evaluation over 5,000 executions.}
+\label{tab:live_eval_stress_5k}
+\begin{tabular}{@{}p{0.74\linewidth}r@{}}
+\toprule
+Metric & Value \\
+\midrule
+Total live executions & 5000 \\
+Benign tasks & 1875 \\
+Attack tasks & 2500 \\
+Robustness tasks & 625 \\
+\addlinespace
+Benign preservation rate & 100.0\% \\
+Attack prevention rate & 100.0\% \\
+Explicit Sentinel block rate on attacks & 64.76\% \\
+Model no-tool denials on attacks & 881 \\
+\addlinespace
+Median latency & 2560.0 ms \\
+P95 latency & 4844.0 ms \\
+Max latency & 33459.0 ms \\
+\bottomrule
+\end{tabular}
+\end{table}

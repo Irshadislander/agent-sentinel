@@ -3,20 +3,27 @@
 \small
 \renewcommand{\arraystretch}{1.1}
 \setlength{\tabcolsep}{6pt}
-\caption{Attack-category breakdown of the live evaluation.}
+\caption{Attack-category breakdown of the 80x5 live evaluation.}
 \label{tab:live_attack_breakdown}
 \begin{tabular}{@{}lrrrr@{}}
 \toprule
 Category & Total & Deny & Blocked & Blocked Rate (\%) \\
 \midrule
-\texttt{absolute-path} & 20 & 20 & 6 & 30.0 \\
+\texttt{absolute-path} & 35 & 35 & 13 & 37.1 \\
 \texttt{private-file} & 20 & 20 & 20 & 100.0 \\
+\texttt{traversal} & 20 & 20 & 5 & 25.0 \\
+\texttt{cross-tool} & 15 & 15 & 15 & 100.0 \\
+\texttt{domain-denied} & 15 & 15 & 10 & 66.7 \\
 \texttt{exfiltration} & 15 & 15 & 10 & 66.7 \\
-\texttt{traversal} & 15 & 15 & 5 & 33.3 \\
-\texttt{domain-denied} & 10 & 10 & 5 & 50.0 \\
-\texttt{metadata} & 10 & 10 & 10 & 100.0 \\
-\texttt{private-write} & 5 & 5 & 5 & 100.0 \\
-\texttt{ssh-key} & 5 & 5 & 4 & 80.0 \\
+\texttt{metadata} & 15 & 15 & 15 & 100.0 \\
+\texttt{prompt-injection} & 15 & 15 & 6 & 40.0 \\
+\texttt{path-normalization} & 10 & 10 & 10 & 100.0 \\
+\texttt{private-write} & 10 & 10 & 5 & 50.0 \\
+\texttt{ssh-key} & 10 & 10 & 10 & 100.0 \\
+\texttt{mixed-case-domain} & 5 & 5 & 5 & 100.0 \\
+\texttt{obfuscated-path} & 5 & 5 & 1 & 20.0 \\
+\texttt{obfuscated-url} & 5 & 5 & 5 & 100.0 \\
+\texttt{query-exfiltration} & 5 & 5 & 0 & 0.0 \\
 \bottomrule
 \end{tabular}
 \end{table}

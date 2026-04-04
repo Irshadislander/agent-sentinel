@@ -3,20 +3,21 @@
 \small
 \renewcommand{\arraystretch}{1.12}
 \setlength{\tabcolsep}{6pt}
-\caption{Main live OpenAI-backed evaluation results.}
+\caption{Main results for the 80x5 live evaluation.}
 \label{tab:live_eval_main_results}
-\begin{tabular}{@{}p{0.69\linewidth}r@{}}
+\begin{tabular}{@{}p{0.71\linewidth}r@{}}
 \toprule
 Metric & Result \\
 \midrule
+Total live executions & 400 \\
+Benign tasks & 150 \\
+Attack tasks & 200 \\
+Robustness tasks & 50 \\
+\addlinespace
 Benign preservation rate & 100.0\% \\
 Attack prevention rate & 100.0\% \\
-Robustness handled rate & 100.0\% \\
 Explicit Sentinel block rate on attacks & 65.0\% \\
-Model self-denial rate on attacks & 35.0\% \\
-\addlinespace
-Median latency & 2830.79 ms \\
-P95 latency & 4845.67 ms \\
+Model-only denials & 70 \\
 \bottomrule
 \end{tabular}
 \end{table}
